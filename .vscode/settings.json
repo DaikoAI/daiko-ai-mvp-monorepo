@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    ".cursorrules": "markdown"
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "daiko-ai-mvp-monorepo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "turbo run build",
+    "build:x-scraper": "turbo run build --filter=@daiko-ai/x-scraper",
+    "build:news-scraper": "turbo run build --filter=@daiko-ai/news-scraper",
+    "build:client": "turbo run build --filter=@daiko-ai/client",
+    "build:shared": "turbo run build --filter=@daiko-ai/shared",
+    "clean": "sh scripts/clean-packages.sh"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "semi": true,
+    "singleQuote": false,
+    "tabWidth": 2,
+    "trailingComma": "all",
+    "useTabs": false
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.6.3"
+}
