@@ -2,7 +2,7 @@ import { createLogger } from "@daiko-ai/shared";
 import { OpenAI } from "openai";
 import { Builder, By, until, WebDriver } from "selenium-webdriver";
 import { config } from "./config";
-import { getAllXAccounts, saveChangeLog, saveNotificationLog, saveSystemLog, saveXAccount } from "./db";
+import { getAllXAccounts, saveChangeLog, saveSystemLog, saveXAccount } from "./db";
 import { ChangeLog, CryptoAnalysis, Tweet } from "./types";
 
 export class XScraper {
@@ -65,7 +65,7 @@ export class XScraper {
         try {
           await this.checkSingleAccount(account.id);
           // アカウント間で少し間隔を空ける（レート制限対策）
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
           this.logger.error(`Error checking account ${account.id}:`, { error });
         }
@@ -135,9 +135,6 @@ export class XScraper {
           content: tweets,
         };
         await saveChangeLog(changeLog);
-
-        // 仮想通貨関連のコンテンツかチェックして通知
-        await this.notifyUsers(xId, tweets);
 
         return tweets;
       } else {
@@ -238,56 +235,6 @@ export class XScraper {
         isCryptoRelated: false,
         analysisResult: "Error analyzing content",
       };
-    }
-  }
-
-  /**
-   * ユーザーに通知
-   */
-  private async notifyUsers(xId: string, tweetData: Tweet[]): Promise<void> {
-    try {
-      this.logger.info(`Analyzing updates from ${xId} for notification`);
-
-      // コンテンツが仮想通貨関連かどうかをチェック
-      const analysis = await this.isCryptoRelated(JSON.stringify(tweetData));
-
-      if (!analysis.isCryptoRelated) {
-        this.logger.info(`Content is not crypto-related: ${xId}`);
-        return;
-      }
-
-      this.logger.info(`Crypto-related content detected for ${xId}: ${analysis.analysisResult}`);
-
-      // アカウントの登録ユーザーを取得
-      const accounts = await getAllXAccounts();
-      const account = accounts.find((acc) => acc.id === xId);
-
-      if (!account || !account.userIds || account.userIds.length === 0) {
-        this.logger.warn(`No users to notify for ${xId}`);
-        return;
-      }
-
-      // 通知メッセージを作成
-      const message = `
-      ${xId}から仮想通貨関連の新しい投稿があります:
-
-      ${tweetData[0].data}
-
-      分析: ${analysis.analysisResult}
-      `;
-
-      // 通知ログを保存
-      const notificationLog = {
-        timestamp: new Date().toISOString(),
-        accountId: xId,
-        notifiedUsers: account.userIds,
-        message: message,
-      };
-
-      await saveNotificationLog(notificationLog);
-      this.logger.info(`Notification sent for ${xId} to ${account.userIds.length} users`);
-    } catch (error) {
-      this.logger.error(`Error notifying for ${xId}:`, { error });
     }
   }
 

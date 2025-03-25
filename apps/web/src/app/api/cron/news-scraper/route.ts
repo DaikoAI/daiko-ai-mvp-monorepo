@@ -1,3 +1,4 @@
+import { env } from "@/env";
 import { NewsScraper, NewsScraperDB } from "@daiko-ai/news-scraper";
 import { NextResponse } from "next/server";
 
@@ -6,7 +7,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
       return new Response("Unauthorized", {
         status: 401,
       });
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
     console.log("Starting news scraping cron job...");
 
     // API KEYの取得
-    const apiKey = process.env.FIRECRAWL_API_KEY || "";
+    const apiKey = env.FIRECRAWL_API_KEY || "";
     if (!apiKey) {
       throw new Error("FIRECRAWL_API_KEY is not set");
     }

@@ -43,3 +43,5 @@ next-env.d.ts
 # service worker
 public/sw*
 public/swe-worker*
+
+logs/
