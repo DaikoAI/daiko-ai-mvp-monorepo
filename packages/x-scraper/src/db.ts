@@ -1,129 +1,124 @@
-import { getAdminFirestore } from '@daiko-ai/shared'
-import { ChangeLog, NotificationLog, XAccount } from './types'
-import logger from './utils/logger'
+import { defaultLogger, getAdminFirestore } from "@daiko-ai/shared";
+import { ChangeLog, NotificationLog, XAccount } from "./types";
 
 // Firestoreの参照を取得
-const db = getAdminFirestore()
+const db = getAdminFirestore();
 
 // XAccounts関連の操作
-export const xAccountsCollection = db.collection('xAccounts')
+export const xAccountsCollection = db.collection("xAccounts");
 
 export const getAllXAccounts = async (): Promise<XAccount[]> => {
   try {
-    const snapshot = await xAccountsCollection.get()
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    } as XAccount))
+    const snapshot = await xAccountsCollection.get();
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        }) as XAccount,
+    );
   } catch (error) {
-    logger.error('Error getting all X accounts:', error)
-    return []
+    defaultLogger.error("Error getting all X accounts:", { error });
+    return [];
   }
-}
+};
 
 export const saveXAccount = async (account: XAccount): Promise<void> => {
   try {
-    await xAccountsCollection.doc(account.id).set({
-      ...account,
-      updatedAt: new Date()
-    }, { merge: true })
-    logger.info(`Saved X account: ${account.id}`)
+    await xAccountsCollection.doc(account.id).set(
+      {
+        ...account,
+        updatedAt: new Date(),
+      },
+      { merge: true },
+    );
+    defaultLogger.info(`Saved X account: ${account.id}`);
   } catch (error) {
-    logger.error(`Error saving X account ${account.id}:`, error)
-    throw error
+    defaultLogger.error(`Error saving X account ${account.id}:`, { error });
+    throw error;
   }
-}
+};
 
 // 変更ログの操作
-export const changeLogsCollection = db.collection('changeLogs')
+export const changeLogsCollection = db.collection("changeLogs");
 
 export const saveChangeLog = async (log: ChangeLog): Promise<void> => {
   try {
     const newLogRef = await changeLogsCollection.add({
       ...log,
-      createdAt: new Date()
-    })
-    logger.info(`Saved change log for ${log.xid} with ID: ${newLogRef.id}`)
+      createdAt: new Date(),
+    });
+    defaultLogger.info(`Saved change log for ${log.xid} with ID: ${newLogRef.id}`);
 
     // 古いログを削除（最新100件のみ保持）
-    const snapshot = await changeLogsCollection
-      .orderBy('timestamp', 'asc')
-      .limit(1000)
-      .get()
+    const snapshot = await changeLogsCollection.orderBy("timestamp", "asc").limit(1000).get();
 
     if (snapshot.docs.length > 100) {
       // 古いものから削除
-      const docsToDelete = snapshot.docs.slice(0, snapshot.docs.length - 100)
+      const docsToDelete = snapshot.docs.slice(0, snapshot.docs.length - 100);
 
       // バッチ処理で一度に削除
-      const batch = db.batch()
+      const batch = db.batch();
       for (const doc of docsToDelete) {
-        batch.delete(doc.ref)
+        batch.delete(doc.ref);
       }
-      await batch.commit()
+      await batch.commit();
 
-      logger.info(`Removed ${docsToDelete.length} old change logs`)
+      defaultLogger.info(`Removed ${docsToDelete.length} old change logs`);
     }
   } catch (error) {
-    logger.error(`Error saving change log for ${log.xid}:`, error)
-    throw error
+    defaultLogger.error(`Error saving change log for ${log.xid}:`, { error });
+    throw error;
   }
-}
+};
 
 // 通知ログの操作
-export const notificationLogsCollection = db.collection('notificationLogs')
+export const notificationLogsCollection = db.collection("notificationLogs");
 
-export const saveNotificationLog = async (
-  log: NotificationLog
-): Promise<void> => {
+export const saveNotificationLog = async (log: NotificationLog): Promise<void> => {
   try {
     const newLogRef = await notificationLogsCollection.add({
       ...log,
-      createdAt: new Date()
-    })
-    logger.info(
-      `Saved notification log for ${log.accountId} with ID: ${newLogRef.id}`
-    )
+      createdAt: new Date(),
+    });
+    defaultLogger.info(`Saved notification log for ${log.accountId} with ID: ${newLogRef.id}`);
 
     // 古いログを削除（最新100件のみ保持）
-    const snapshot = await notificationLogsCollection
-      .orderBy('timestamp', 'asc')
-      .limit(1000)
-      .get()
+    const snapshot = await notificationLogsCollection.orderBy("timestamp", "asc").limit(1000).get();
 
     if (snapshot.docs.length > 100) {
       // 古いものから削除
-      const docsToDelete = snapshot.docs.slice(0, snapshot.docs.length - 100)
+      const docsToDelete = snapshot.docs.slice(0, snapshot.docs.length - 100);
 
       // バッチ処理で一度に削除
-      const batch = db.batch()
+      const batch = db.batch();
       for (const doc of docsToDelete) {
-        batch.delete(doc.ref)
+        batch.delete(doc.ref);
       }
-      await batch.commit()
+      await batch.commit();
 
-      logger.info(`Removed ${docsToDelete.length} old notification logs`)
+      defaultLogger.info(`Removed ${docsToDelete.length} old notification logs`);
     }
   } catch (error) {
-    logger.error(`Error saving notification log for ${log.accountId}:`, error)
-    throw error
+    defaultLogger.error(`Error saving notification log for ${log.accountId}:`, { error });
+    throw error;
   }
-}
+};
 
 // システムログの操作
-export const systemLogsCollection = db.collection('systemLogs')
+export const systemLogsCollection = db.collection("systemLogs");
 
 export const saveSystemLog = async (action: string): Promise<void> => {
   try {
     const log = {
       timestamp: new Date().toISOString(),
       action,
-      createdAt: new Date()
-    }
+      createdAt: new Date(),
+    };
 
-    const newLogRef = await systemLogsCollection.add(log)
-    logger.info(`Saved system log: ${action} with ID: ${newLogRef.id}`)
+    const newLogRef = await systemLogsCollection.add(log);
+    defaultLogger.info(`Saved system log: ${action} with ID: ${newLogRef.id}`);
   } catch (error) {
-    logger.error(`Error saving system log (${action}):`, error)
+    defaultLogger.error(`Error saving system log (${action}):`, { error });
   }
-}
+};

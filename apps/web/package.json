@@ -1,5 +1,5 @@
 {
-  "name": "@daiko-ai/client",
+  "name": "@daiko-ai/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {

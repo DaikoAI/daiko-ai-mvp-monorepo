@@ -1,4 +1,4 @@
-import { DocumentData, QueryDocumentSnapshot, Timestamp } from 'firebase/firestore';
+import { DocumentData, QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
 
 /**
  * FirestoreのTimestampをDateに変換するコンバーター
@@ -17,12 +17,10 @@ export const firestoreConverter = <T extends DocumentData>() => ({
       }
       // 配列の場合は各要素をチェック
       else if (Array.isArray(value)) {
-        processedData[key] = value.map((item) =>
-          item instanceof Date ? Timestamp.fromDate(item) : item
-        );
+        processedData[key] = value.map((item) => (item instanceof Date ? Timestamp.fromDate(item) : item));
       }
       // オブジェクトの場合は再帰的に処理
-      else if (value && typeof value === 'object' && !(value instanceof Timestamp)) {
+      else if (value && typeof value === "object" && !(value instanceof Timestamp)) {
         processedData[key] = processObject(value);
       }
     });
@@ -41,12 +39,10 @@ export const firestoreConverter = <T extends DocumentData>() => ({
       }
       // 配列の場合は各要素をチェック
       else if (Array.isArray(value)) {
-        data[key] = value.map((item) =>
-          item instanceof Timestamp ? item.toDate() : item
-        );
+        data[key] = value.map((item) => (item instanceof Timestamp ? item.toDate() : item));
       }
       // オブジェクトの場合は再帰的に処理
-      else if (value && typeof value === 'object' && !(value instanceof Date)) {
+      else if (value && typeof value === "object" && !(value instanceof Date)) {
         data[key] = processObjectFromFirestore(value);
       }
     });
@@ -55,7 +51,7 @@ export const firestoreConverter = <T extends DocumentData>() => ({
       ...data,
       id: snapshot.id,
     } as unknown as T;
-  }
+  },
 });
 
 // オブジェクトをFirestore用に処理する再帰関数
@@ -69,10 +65,9 @@ const processObject = (obj: Record<string, any>): Record<string, any> => {
       result[key] = Timestamp.fromDate(value);
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) =>
-        item instanceof Date ? Timestamp.fromDate(item) :
-        item && typeof item === 'object' ? processObject(item) : item
+        item instanceof Date ? Timestamp.fromDate(item) : item && typeof item === "object" ? processObject(item) : item,
       );
-    } else if (value && typeof value === 'object' && !(value instanceof Timestamp)) {
+    } else if (value && typeof value === "object" && !(value instanceof Timestamp)) {
       result[key] = processObject(value);
     }
   });
@@ -91,10 +86,13 @@ const processObjectFromFirestore = (obj: Record<string, any>): Record<string, an
       result[key] = value.toDate();
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) =>
-        item instanceof Timestamp ? item.toDate() :
-        item && typeof item === 'object' ? processObjectFromFirestore(item) : item
+        item instanceof Timestamp
+          ? item.toDate()
+          : item && typeof item === "object"
+            ? processObjectFromFirestore(item)
+            : item,
       );
-    } else if (value && typeof value === 'object' && !(value instanceof Date)) {
+    } else if (value && typeof value === "object" && !(value instanceof Date)) {
       result[key] = processObjectFromFirestore(value);
     }
   });

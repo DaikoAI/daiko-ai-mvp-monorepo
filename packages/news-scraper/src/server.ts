@@ -1,3 +1,4 @@
+import { defaultLogger } from "@daiko-ai/shared";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -5,7 +6,6 @@ import { logger } from "hono/logger";
 import { NewsScraperDB } from "./db";
 import { NewsScraper } from "./scraper";
 import type { NewsSite } from "./types";
-import loggerUtil from "./utils/logger";
 
 // 環境変数読み込み
 import * as dotenv from "dotenv";
@@ -64,7 +64,7 @@ app.post("/sites", async (c) => {
     const siteId = await db.saveNewsSite(site);
     return c.json({ id: siteId });
   } catch (error) {
-    loggerUtil.error("Error adding site:", error);
+    defaultLogger.error("Error adding site:", { error });
     return c.json({ error: "Failed to add site" }, 500);
   }
 });
@@ -76,7 +76,7 @@ app.get("/sites", async (c) => {
     const sites = await db.getNewsSites(userId);
     return c.json(sites);
   } catch (error) {
-    loggerUtil.error("Error getting sites:", error);
+    defaultLogger.error("Error getting sites:", { error });
     return c.json({ error: "Failed to get sites" }, 500);
   }
 });
@@ -98,7 +98,7 @@ app.post("/sites/:siteId/crawl", async (c) => {
 
     return c.json(result);
   } catch (error) {
-    loggerUtil.error("Error crawling site:", error);
+    defaultLogger.error("Error crawling site:", { error });
     return c.json({ error: "Failed to crawl site" }, 500);
   }
 });
@@ -110,7 +110,7 @@ app.post("/crawl/scheduled", async (c) => {
     const securityKey = c.req.query("key");
 
     if (!securityKey || securityKey !== process.env.CRON_SECURITY_KEY) {
-      loggerUtil.warn("Unauthorized scheduled crawl attempt");
+      defaultLogger.warn("Unauthorized scheduled crawl attempt");
       return c.json(
         {
           success: false,
@@ -125,20 +125,20 @@ app.post("/crawl/scheduled", async (c) => {
 
     for (const site of sites) {
       try {
-        loggerUtil.info(`Crawling site ${site.id}`);
+        defaultLogger.info(`Crawling site ${site.id}`);
         const result = await crawler.scrapeSite(site);
         await db.saveScrapeResult(result);
         await db.updateNewsSiteLastCrawled(site.id || "");
         results.push({ siteId: site.id, status: "success" });
       } catch (error) {
-        loggerUtil.error(`Error crawling site ${site.id}:`, error);
+        defaultLogger.error(`Error crawling site ${site.id}:`, { error });
         results.push({ siteId: site.id, status: "error" });
       }
     }
 
     return c.json({ results });
   } catch (error) {
-    loggerUtil.error("Error in scheduled crawl:", error);
+    defaultLogger.error("Error in scheduled crawl:", { error });
     return c.json({ error: "Failed to execute scheduled crawl" }, 500);
   }
 });
@@ -150,5 +150,5 @@ export const startServer = (port = 3000) => {
     port,
   });
 
-  loggerUtil.info(`News Scraper server running on port ${port}`);
+  defaultLogger.info(`News Scraper server running on port ${port}`);
 };

@@ -1,9 +1,11 @@
 // Firebase関連のエクスポート
-export * from './firebase/admin';
-export * from './firebase/client';
+export * from "./lib/firebase/admin";
+export * from "./lib/firebase/client";
 
 // 型定義のエクスポート
-export * from './types';
+export * from "./types";
 
 // ユーティリティのエクスポート
-export * from './utils/firebase-utils';
+export * from "./utils/firebase";
+
+export { createLogger, defaultLogger, type LogLevel, type LogMetadata } from "./utils/logger";

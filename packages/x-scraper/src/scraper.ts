@@ -1,25 +1,20 @@
-import { OpenAI } from 'openai'
-import { Builder, By, until, WebDriver } from 'selenium-webdriver'
-import { config } from './config'
-import {
-  getAllXAccounts,
-  saveChangeLog,
-  saveNotificationLog,
-  saveSystemLog,
-  saveXAccount,
-} from './db'
-import { ChangeLog, CryptoAnalysis, Tweet } from './types'
-import logger from './utils/logger'
+import { createLogger } from "@daiko-ai/shared";
+import { OpenAI } from "openai";
+import { Builder, By, until, WebDriver } from "selenium-webdriver";
+import { config } from "./config";
+import { getAllXAccounts, saveChangeLog, saveNotificationLog, saveSystemLog, saveXAccount } from "./db";
+import { ChangeLog, CryptoAnalysis, Tweet } from "./types";
 
 export class XScraper {
-  private openai: OpenAI
-  private driver: WebDriver | null = null
+  private openai: OpenAI;
+  private driver: WebDriver | null = null;
+  private logger = createLogger("XScraper");
 
   constructor() {
     // OpenAI APIクライアントを初期化
     this.openai = new OpenAI({
       apiKey: config.openAiApiKey,
-    })
+    });
   }
 
   /**
@@ -27,15 +22,15 @@ export class XScraper {
    */
   private async initDriver(): Promise<WebDriver> {
     if (this.driver) {
-      return this.driver
+      return this.driver;
     }
 
-    logger.info('Initializing Selenium WebDriver')
+    this.logger.info("Initializing Selenium WebDriver");
 
     // WebDriverの作成
-    this.driver = await new Builder().forBrowser('chrome').build()
+    this.driver = await new Builder().forBrowser("chrome").build();
 
-    return this.driver
+    return this.driver;
   }
 
   /**
@@ -43,9 +38,9 @@ export class XScraper {
    */
   public async closeDriver(): Promise<void> {
     if (this.driver) {
-      logger.info('Closing WebDriver')
-      await this.driver.quit()
-      this.driver = null
+      this.logger.info("Closing WebDriver");
+      await this.driver.quit();
+      this.driver = null;
     }
   }
 
@@ -54,35 +49,35 @@ export class XScraper {
    */
   public async checkXAccounts(): Promise<void> {
     try {
-      logger.info('Starting to check all X accounts')
+      this.logger.info("Starting to check all X accounts");
 
-      const accounts = await getAllXAccounts()
-      logger.info(`Found ${accounts.length} accounts to check`)
+      const accounts = await getAllXAccounts();
+      this.logger.info(`Found ${accounts.length} accounts to check`);
 
       if (accounts.length === 0) {
-        logger.warn('No accounts to check')
-        return
+        this.logger.warn("No accounts to check");
+        return;
       }
 
       for (const account of accounts) {
-        if (!account.id) continue
+        if (!account.id) continue;
 
         try {
-          await this.checkSingleAccount(account.id)
+          await this.checkSingleAccount(account.id);
           // アカウント間で少し間隔を空ける（レート制限対策）
-          await new Promise((resolve) => setTimeout(resolve, 5000))
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         } catch (error) {
-          logger.error(`Error checking account ${account.id}:`, error)
+          this.logger.error(`Error checking account ${account.id}:`, { error });
         }
       }
 
-      await saveSystemLog('Periodic X account check finished')
-      logger.info('Finished checking all X accounts')
+      await saveSystemLog("Periodic X account check finished");
+      this.logger.info("Finished checking all X accounts");
     } catch (error) {
-      logger.error('Error checking X accounts:', error)
-      throw error
+      this.logger.error("Error checking X accounts:", { error });
+      throw error;
     } finally {
-      await this.closeDriver()
+      await this.closeDriver();
     }
   }
 
@@ -91,70 +86,67 @@ export class XScraper {
    */
   public async checkSingleAccount(xId: string): Promise<Tweet[] | null> {
     try {
-      logger.info(`Checking X account: ${xId}`)
+      this.logger.info(`Checking X account: ${xId}`);
 
-      const driver = await this.initDriver()
-      const url = `https://x.com/${xId}`
+      const driver = await this.initDriver();
+      const url = `https://x.com/${xId}`;
 
       // ページに移動
-      logger.debug(`Navigating to ${url}`)
-      await driver.get(url)
+      this.logger.debug(`Navigating to ${url}`);
+      await driver.get(url);
 
       // ページが読み込まれるのを待つ
       // X は「ツイート」セクションが表示されるのを待つ
-      await driver.wait(
-        until.elementLocated(By.css('article[data-testid="tweet"]')),
-        5000
-      )
+      await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 5000);
 
       // ツイートを抽出
-      const tweets = await this.extractTweets(driver)
-      logger.info(`Extracted ${tweets.length} tweets from ${xId}`)
+      const tweets = await this.extractTweets(driver);
+      this.logger.info(`Extracted ${tweets.length} tweets from ${xId}`);
 
       if (tweets.length === 0) {
-        logger.warn(`No tweets found for ${xId}`)
-        return null
+        this.logger.warn(`No tweets found for ${xId}`);
+        return null;
       }
 
       // アカウント情報を取得
-      const accounts = await getAllXAccounts()
-      const account = accounts.find((acc) => acc.id === xId)
+      const accounts = await getAllXAccounts();
+      const account = accounts.find((acc) => acc.id === xId);
 
       if (!account) {
-        logger.error(`Account ${xId} not found in database`)
-        return null
+        this.logger.error(`Account ${xId} not found in database`);
+        return null;
       }
 
-      const lastContent = account.lastContent || []
+      const lastContent = account.lastContent || [];
 
       // 更新データを設定して保存
-      account.lastContent = tweets
-      await saveXAccount(account)
-      logger.info(`Updated account data for ${xId}`)
+      account.lastContent = tweets;
+      await saveXAccount(account);
+      this.logger.info(`Updated account data for ${xId}`);
 
       // 変更があるかチェック
       if (lastContent.length === 0 || lastContent[0].data !== tweets[0].data) {
-        logger.info(`Change detected for ${xId}`)
+        this.logger.info(`Change detected for ${xId}`);
 
         // 変更ログを保存
         const changeLog: ChangeLog = {
           timestamp: new Date().toISOString(),
           xid: xId,
           content: tweets,
-        }
-        await saveChangeLog(changeLog)
+        };
+        await saveChangeLog(changeLog);
 
         // 仮想通貨関連のコンテンツかチェックして通知
-        await this.notifyUsers(xId, tweets)
+        await this.notifyUsers(xId, tweets);
 
-        return tweets
+        return tweets;
       } else {
-        logger.info(`No change for ${xId}`)
-        return null
+        this.logger.info(`No change for ${xId}`);
+        return null;
       }
     } catch (error) {
-      logger.error(`Error checking account ${xId}:`, error)
-      return null
+      this.logger.error(`Error checking account ${xId}:`, { error });
+      return null;
     }
   }
 
@@ -162,32 +154,28 @@ export class XScraper {
    * ドライバーからツイートを抽出
    */
   private async extractTweets(driver: WebDriver): Promise<Tweet[]> {
-    const tweets: Tweet[] = []
+    const tweets: Tweet[] = [];
 
     try {
       // ツイート要素を取得
-      const tweetElements = await driver.findElements(
-        By.css('article[data-testid="tweet"]')
-      )
-      logger.debug(`Found ${tweetElements.length} tweet elements`)
+      const tweetElements = await driver.findElements(By.css('article[data-testid="tweet"]'));
+      this.logger.debug(`Found ${tweetElements.length} tweet elements`);
 
       for (const element of tweetElements) {
         try {
           // タイムスタンプを持つ要素を探す
-          const timeElement = await element.findElement(By.css('time'))
-          const timestamp = await timeElement.getAttribute('datetime')
+          const timeElement = await element.findElement(By.css("time"));
+          const timestamp = await timeElement.getAttribute("datetime");
 
           // ツイートのテキストを取得
-          const tweetTextElement = await element
-            .findElement(By.css('div[data-testid="tweetText"]'))
-            .catch(() => null)
+          const tweetTextElement = await element.findElement(By.css('div[data-testid="tweetText"]')).catch(() => null);
 
-          let tweetText = ''
+          let tweetText = "";
           if (tweetTextElement) {
-            tweetText = await tweetTextElement.getText()
+            tweetText = await tweetTextElement.getText();
           } else {
             // ツイートテキストが見つからない場合、記事全体のテキストを取得
-            tweetText = await element.getText()
+            tweetText = await element.getText();
           }
 
           // テキストが存在し、最小限の長さがある場合のみ追加
@@ -195,17 +183,17 @@ export class XScraper {
             tweets.push({
               time: timestamp,
               data: tweetText,
-            })
+            });
           }
         } catch (error) {
-          logger.error('Error extracting tweet data:', error)
+          this.logger.error("Error extracting tweet data:", { error });
         }
       }
     } catch (error) {
-      logger.error('Error finding tweet elements:', error)
+      this.logger.error("Error finding tweet elements:", { error });
     }
 
-    return tweets
+    return tweets;
   }
 
   /**
@@ -213,7 +201,7 @@ export class XScraper {
    */
   private async isCryptoRelated(content: string): Promise<CryptoAnalysis> {
     try {
-      logger.info('Analyzing content for crypto relevance')
+      this.logger.info("Analyzing content for crypto relevance");
 
       const prompt = `
       以下のコンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連しているかどうかを判断してください:
@@ -223,33 +211,33 @@ export class XScraper {
       関連していない場合は「関連なし」と回答してください。
       ただの仮想通貨の情報であれば「関連なし」と回答してください。
       コンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連している場合は特定のコインの情報を含んでいるかも確認してください、コインの情報を含んでいる場合はそのコインの情報を解説してください。
-      `
+      `;
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: "gpt-4o",
         messages: [
           {
-            role: 'system',
-            content: 'あなたはコンテンツの分析を行う専門家です。',
+            role: "system",
+            content: "あなたはコンテンツの分析を行う専門家です。",
           },
-          { role: 'user', content: prompt },
+          { role: "user", content: prompt },
         ],
         max_tokens: 150,
-      })
+      });
 
-      const result = response.choices[0].message.content || ''
-      logger.debug(`OpenAI analysis result: ${result}`)
+      const result = response.choices[0].message.content || "";
+      this.logger.debug(`OpenAI analysis result: ${result}`);
 
       return {
-        isCryptoRelated: !result.includes('関連なし'),
+        isCryptoRelated: !result.includes("関連なし"),
         analysisResult: result,
-      }
+      };
     } catch (error) {
-      logger.error('Error checking crypto relevance:', error)
+      this.logger.error("Error checking crypto relevance:", { error });
       return {
         isCryptoRelated: false,
-        analysisResult: 'Error analyzing content',
-      }
+        analysisResult: "Error analyzing content",
+      };
     }
   }
 
@@ -258,27 +246,25 @@ export class XScraper {
    */
   private async notifyUsers(xId: string, tweetData: Tweet[]): Promise<void> {
     try {
-      logger.info(`Analyzing updates from ${xId} for notification`)
+      this.logger.info(`Analyzing updates from ${xId} for notification`);
 
       // コンテンツが仮想通貨関連かどうかをチェック
-      const analysis = await this.isCryptoRelated(JSON.stringify(tweetData))
+      const analysis = await this.isCryptoRelated(JSON.stringify(tweetData));
 
       if (!analysis.isCryptoRelated) {
-        logger.info(`Content is not crypto-related: ${xId}`)
-        return
+        this.logger.info(`Content is not crypto-related: ${xId}`);
+        return;
       }
 
-      logger.info(
-        `Crypto-related content detected for ${xId}: ${analysis.analysisResult}`
-      )
+      this.logger.info(`Crypto-related content detected for ${xId}: ${analysis.analysisResult}`);
 
       // アカウントの登録ユーザーを取得
-      const accounts = await getAllXAccounts()
-      const account = accounts.find((acc) => acc.id === xId)
+      const accounts = await getAllXAccounts();
+      const account = accounts.find((acc) => acc.id === xId);
 
       if (!account || !account.userIds || account.userIds.length === 0) {
-        logger.warn(`No users to notify for ${xId}`)
-        return
+        this.logger.warn(`No users to notify for ${xId}`);
+        return;
       }
 
       // 通知メッセージを作成
@@ -288,7 +274,7 @@ export class XScraper {
       ${tweetData[0].data}
 
       分析: ${analysis.analysisResult}
-      `
+      `;
 
       // 通知ログを保存
       const notificationLog = {
@@ -296,14 +282,12 @@ export class XScraper {
         accountId: xId,
         notifiedUsers: account.userIds,
         message: message,
-      }
+      };
 
-      await saveNotificationLog(notificationLog)
-      logger.info(
-        `Notification sent for ${xId} to ${account.userIds.length} users`
-      )
+      await saveNotificationLog(notificationLog);
+      this.logger.info(`Notification sent for ${xId} to ${account.userIds.length} users`);
     } catch (error) {
-      logger.error(`Error notifying for ${xId}:`, error)
+      this.logger.error(`Error notifying for ${xId}:`, { error });
     }
   }
 
@@ -312,43 +296,43 @@ export class XScraper {
    */
   public async addAccount(xId: string, userId: string): Promise<boolean> {
     try {
-      logger.info(`Adding/updating account ${xId} for user ${userId}`)
+      this.logger.info(`Adding/updating account ${xId} for user ${userId}`);
 
       // アカウントリストを取得
-      const accounts = await getAllXAccounts()
-      let account = accounts.find((acc) => acc.id === xId)
+      const accounts = await getAllXAccounts();
+      let account = accounts.find((acc) => acc.id === xId);
 
       if (account) {
         // 既存のアカウントを更新
         if (!account.userIds) {
-          account.userIds = []
+          account.userIds = [];
         }
 
         if (!account.userIds.includes(userId)) {
-          account.userIds.push(userId)
-          logger.info(`Added user ${userId} to existing account ${xId}`)
+          account.userIds.push(userId);
+          this.logger.info(`Added user ${userId} to existing account ${xId}`);
         } else {
-          logger.info(`User ${userId} already following account ${xId}`)
+          this.logger.info(`User ${userId} already following account ${xId}`);
         }
       } else {
         // 新しいアカウントを作成
         account = {
           id: xId,
           userIds: [userId],
-        }
-        logger.info(`Created new account entry for ${xId}`)
+        };
+        this.logger.info(`Created new account entry for ${xId}`);
       }
 
       // アカウントを保存
-      await saveXAccount(account)
+      await saveXAccount(account);
 
       // 初回チェックを実施
-      await this.checkSingleAccount(xId)
+      await this.checkSingleAccount(xId);
 
-      return true
+      return true;
     } catch (error) {
-      logger.error(`Error adding account ${xId}:`, error)
-      return false
+      this.logger.error(`Error adding account ${xId}:`, { error });
+      return false;
     }
   }
 }

@@ -1,3 +1,4 @@
+import { defaultLogger } from "@daiko-ai/shared";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -5,7 +6,6 @@ import { logger } from "hono/logger";
 import { config, validateConfig } from "./config";
 import { saveSystemLog } from "./db";
 import { XScraper } from "./scraper";
-import loggerUtil from "./utils/logger";
 
 // 環境変数読み込み
 import * as dotenv from "dotenv";
@@ -22,7 +22,7 @@ try {
   // 設定の検証
   validateConfig();
 } catch (error) {
-  loggerUtil.error("Configuration error:", error);
+  defaultLogger.error("Configuration error:", { error });
   process.exit(1);
 }
 
@@ -70,14 +70,14 @@ app.get("/health", (c) => {
 // すべてのアカウントをチェック
 app.get("/check", async (c) => {
   try {
-    loggerUtil.info("Manual check of all accounts triggered");
+    defaultLogger.info("Manual check of all accounts triggered");
 
     // レスポンスを先に返す
     c.status(200);
 
     // スクレイピングを実行
     scraper.checkXAccounts().catch((error) => {
-      loggerUtil.error("Error in check operation:", error);
+      defaultLogger.error("Error in check operation:", { error });
     });
 
     return c.json({
@@ -85,7 +85,7 @@ app.get("/check", async (c) => {
       success: true,
     });
   } catch (error) {
-    loggerUtil.error("Error in /check endpoint:", error);
+    defaultLogger.error("Error in /check endpoint:", { error });
     return c.json(
       {
         success: false,
@@ -111,7 +111,7 @@ app.post("/check-account", async (c) => {
       );
     }
 
-    loggerUtil.info(`Manual check of account ${xId} triggered`);
+    defaultLogger.info(`Manual check of account ${xId} triggered`);
 
     // 特定のアカウントをチェック
     const result = await scraper.checkSingleAccount(xId);
@@ -122,7 +122,7 @@ app.post("/check-account", async (c) => {
       data: result,
     });
   } catch (error) {
-    loggerUtil.error("Error in /check-account endpoint:", error);
+    defaultLogger.error("Error in /check-account endpoint:", { error });
     return c.json(
       {
         success: false,
@@ -148,7 +148,7 @@ app.post("/add-account", async (c) => {
       );
     }
 
-    loggerUtil.info(`Adding account ${xId} for user ${userId}`);
+    defaultLogger.info(`Adding account ${xId} for user ${userId}`);
 
     // アカウントを追加
     const success = await scraper.addAccount(xId, userId);
@@ -168,7 +168,7 @@ app.post("/add-account", async (c) => {
       );
     }
   } catch (error) {
-    loggerUtil.error("Error in /add-account endpoint:", error);
+    defaultLogger.error("Error in /add-account endpoint:", { error });
     return c.json(
       {
         success: false,
@@ -186,7 +186,7 @@ app.post("/crawl/scheduled", async (c) => {
     const securityKey = c.req.query("key");
 
     if (!securityKey || securityKey !== process.env.CRON_SECURITY_KEY) {
-      loggerUtil.warn("Unauthorized scheduled crawl attempt");
+      defaultLogger.warn("Unauthorized scheduled crawl attempt");
       return c.json(
         {
           success: false,
@@ -196,12 +196,12 @@ app.post("/crawl/scheduled", async (c) => {
       );
     }
 
-    loggerUtil.info("Scheduled crawl triggered via API");
+    defaultLogger.info("Scheduled crawl triggered via API");
     await saveSystemLog("Starting scheduled crawl via API");
 
     // スクレイピングを非同期で実行
     scraper.checkXAccounts().catch((error) => {
-      loggerUtil.error("Error in scheduled crawl:", error);
+      defaultLogger.error("Error in scheduled crawl:", { error });
     });
 
     return c.json({
@@ -209,7 +209,7 @@ app.post("/crawl/scheduled", async (c) => {
       message: "Scheduled crawl started",
     });
   } catch (error) {
-    loggerUtil.error("Error in scheduled crawl endpoint:", error);
+    defaultLogger.error("Error in scheduled crawl endpoint:", { error });
     return c.json(
       {
         success: false,
@@ -229,16 +229,16 @@ const startScheduledTask = () => {
   const intervalMinutes = config.checkIntervalMinutes;
   const intervalMs = intervalMinutes * 60 * 1000;
 
-  loggerUtil.info(`Setting up scheduled task to run every ${intervalMinutes} minutes`);
+  defaultLogger.info(`Setting up scheduled task to run every ${intervalMinutes} minutes`);
 
   // 定期的にスクレイピングを実行
   scheduledTask = setInterval(async () => {
     try {
-      loggerUtil.info("Running scheduled X scraper check");
+      defaultLogger.info("Running scheduled X scraper check");
       await saveSystemLog("Starting scheduled check");
       await scraper.checkXAccounts();
     } catch (error) {
-      loggerUtil.error("Error in scheduled task:", error);
+      defaultLogger.error("Error in scheduled task:", { error });
     }
   }, intervalMs);
 };
@@ -250,8 +250,8 @@ export const startServer = (port = config.port) => {
     port,
   });
 
-  loggerUtil.info(`X Scraper server running on port ${port}`);
-  loggerUtil.info(`Environment: ${config.nodeEnv}`);
+  defaultLogger.info(`X Scraper server running on port ${port}`);
+  defaultLogger.info(`Environment: ${config.nodeEnv}`);
 
   // 開発環境では定期スクレイピングを開始
   if (config.nodeEnv !== "production") {
@@ -260,16 +260,16 @@ export const startServer = (port = config.port) => {
 
   // 開発環境では初回起動時にチェックを実行
   if (config.nodeEnv === "development") {
-    loggerUtil.info("Running initial check on startup");
+    defaultLogger.info("Running initial check on startup");
     scraper.checkXAccounts().catch((error) => {
-      loggerUtil.error("Error in initial check:", error);
+      defaultLogger.error("Error in initial check:", { error });
     });
   }
 };
 
 // プロセス終了時の処理
 process.on("SIGTERM", async () => {
-  loggerUtil.info("SIGTERM received, shutting down gracefully");
+  defaultLogger.info("SIGTERM received, shutting down gracefully");
   if (scheduledTask) {
     clearInterval(scheduledTask);
   }
@@ -278,7 +278,7 @@ process.on("SIGTERM", async () => {
 });
 
 process.on("SIGINT", async () => {
-  loggerUtil.info("SIGINT received, shutting down gracefully");
+  defaultLogger.info("SIGINT received, shutting down gracefully");
   if (scheduledTask) {
     clearInterval(scheduledTask);
   }
