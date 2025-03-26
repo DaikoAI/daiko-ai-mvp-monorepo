@@ -285,3 +285,8 @@ process.on("SIGINT", async () => {
   await scraper.closeDriver();
   process.exit(0);
 });
+
+// このファイルが直接実行された場合にサーバーを起動
+if (require.main === module) {
+  startServer();
+}

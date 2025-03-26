@@ -1,22 +1,14 @@
-import { env } from "@/env";
 import { NewsScraper, NewsScraperDB } from "@daiko-ai/news-scraper";
-import { NextResponse } from "next/server";
+import * as dotenv from "dotenv";
 
-// Vercel Cron Jobから呼び出されるGETハンドラー
-// Vercel.jsonで設定したスケジュールに従って実行される
-export async function GET(request: Request) {
+dotenv.config();
+
+async function runNewsScraperJob() {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
-      return new Response("Unauthorized", {
-        status: 401,
-      });
-    }
-
     console.log("Starting news scraping cron job...");
 
     // API KEYの取得
-    const apiKey = env.FIRECRAWL_API_KEY || "";
+    const apiKey = process.env.FIRECRAWL_API_KEY || "";
     if (!apiKey) {
       throw new Error("FIRECRAWL_API_KEY is not set");
     }
@@ -31,11 +23,7 @@ export async function GET(request: Request) {
 
     if (sites.length === 0) {
       console.log("No sites to scrape");
-      return NextResponse.json({
-        success: true,
-        message: "No news sites found to scrape",
-        count: 0,
-      });
+      return;
     }
 
     // サイトをクロール
@@ -61,18 +49,10 @@ export async function GET(request: Request) {
     }
 
     console.log(`News scraping completed. Scraped ${results.length} sites.`);
-
-    return NextResponse.json({
-      success: true,
-      message: "News scraping completed successfully",
-      count: results.length,
-    });
   } catch (error) {
     console.error("Error in news scraper cron job:", error);
-    return NextResponse.json({ error: "Internal server error", details: String(error) }, { status: 500 });
+    process.exit(1);
   }
 }
 
-// Vercel Cron Job設定
-export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5分（スクレイピングには時間がかかることがあるため）
+runNewsScraperJob();

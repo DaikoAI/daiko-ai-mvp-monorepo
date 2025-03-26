@@ -1,6 +1,6 @@
 import { createLogger } from "@daiko-ai/shared";
 import { OpenAI } from "openai";
-import { Builder, By, until, WebDriver } from "selenium-webdriver";
+import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import { config } from "./config";
 import { getAllXAccounts, saveChangeLog, saveSystemLog, saveXAccount } from "./db";
@@ -30,14 +30,23 @@ export class XScraper {
 
     try {
       const options = new chrome.Options();
-      options
-        .addArguments("--headless")
-        .addArguments("--no-sandbox")
-        .addArguments("--disable-dev-shm-usage")
-        .addArguments("--disable-gpu")
-        .windowSize({ width: 390, height: 844 });
+      options.addArguments("--headless");
+      // ヘッドレスモードでの検出を回避するための追加オプション
+      options.addArguments("--disable-blink-features=AutomationControlled");
+      options.addArguments("--no-sandbox");
+      options.addArguments("--disable-dev-shm-usage");
+      options.addArguments("--disable-gpu");
+      options.addArguments("--window-size=1920,1080");
+      options.addArguments(
+        "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      );
 
-      this.driver = await new Builder().forBrowser("chrome").setChromeOptions(options).build();
+      // ヘッドレスモードでも自動化を検出されにくくするための設定
+      options.addArguments("--disable-infobars"); // 「Chrome is being controlled by automated test software」を非表示
+      options.addArguments("--disable-notifications");
+      options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
+
+      this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
 
       return this.driver;
     } catch (error) {
@@ -102,7 +111,7 @@ export class XScraper {
         try {
           await this.checkSingleAccount(account.id);
           // アカウント間で少し間隔を空ける（レート制限対策）
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 20000));
         } catch (error) {
           this.logger.error(`Error checking account ${account.id}:`, this.formatError(error));
         }
@@ -132,8 +141,10 @@ export class XScraper {
       this.logger.debug(`Navigating to ${url}`);
       await driver.get(url);
 
-      // ページが読み込まれるのを待つ
-      // X は「ツイート」セクションが表示されるのを待つ
+      // Xのページが完全に読み込まれるのを十分な時間待つ
+      await driver.sleep(5000); // ページのJavaScriptが実行される時間を確保
+
+      // ページが読み込まれるのを待つ - 複数のセレクターを試す
       await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 10000);
 
       // ツイートを抽出
@@ -227,7 +238,7 @@ export class XScraper {
       this.logger.error("Error finding tweet elements:", { error });
     }
 
-    return tweets;
+    return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }
 
   /**

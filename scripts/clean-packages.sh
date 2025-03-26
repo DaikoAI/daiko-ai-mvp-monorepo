@@ -2,6 +2,9 @@
 
 # パッケージディレクトリの配列
 PACKAGES=(
+    "apps/news-scraper-job"
+    "apps/x-scraper-job"
+    "apps/web"
     "packages/client"
     "packages/shared"
     "packages/news-scraper"

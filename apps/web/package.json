@@ -11,9 +11,7 @@
     "generate-pwa-assets": "npx pwa-asset-generator src/app/icon.jpg public/pwa --background '#000000'"
   },
   "dependencies": {
-    "@daiko-ai/news-scraper": "workspace:*",
     "@daiko-ai/shared": "workspace:*",
-    "@daiko-ai/x-scraper": "workspace:*",
     "@radix-ui/react-checkbox": "^1.1.4",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.2",

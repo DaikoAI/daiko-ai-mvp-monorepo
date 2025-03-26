@@ -4,10 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev:x-scraper": "turbo run dev --filter=@daiko-ai/x-scraper",
+    "dev:news-scraper": "turbo run dev --filter=@daiko-ai/news-scraper",
+    "dev:web": "turbo run dev --filter=@daiko-ai/web",
     "build": "turbo run build",
     "build:x-scraper": "turbo run build --filter=@daiko-ai/x-scraper",
     "build:news-scraper": "turbo run build --filter=@daiko-ai/news-scraper",
-    "build:client": "turbo run build --filter=@daiko-ai/client",
+    "build:web": "turbo run build --filter=@daiko-ai/web",
     "build:shared": "turbo run build --filter=@daiko-ai/shared",
     "clean": "sh scripts/clean-packages.sh"
   },

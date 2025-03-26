@@ -6,6 +6,10 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "inputs": ["src/**"],
       "cache": true
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
     }
   }
 }
