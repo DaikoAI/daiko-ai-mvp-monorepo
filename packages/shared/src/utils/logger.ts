@@ -1,149 +1,153 @@
-import path from "path";
-import winston from "winston";
-import DailyRotateFile from "winston-daily-rotate-file";
-
 // ログレベルの定義
-export type LogLevel = "error" | "warn" | "info" | "http" | "debug";
+export enum LogLevel {
+  ERROR = 0,
+  WARN = 1,
+  INFO = 2,
+  HTTP = 3,
+  DEBUG = 4,
+}
 
 // メタデータの型定義
 export interface LogMetadata {
-  service?: string;
-  correlationId?: string;
-  userId?: string;
   [key: string]: any;
 }
 
-// ログフォーマットの設定
-const logFormat = winston.format.combine(
-  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
-  winston.format.errors({ stack: true }),
-  winston.format.json(),
-);
+// ログエントリの型定義
+export interface LogEntry {
+  timestamp: Date;
+  level: LogLevel;
+  service: string;
+  message: string;
+  metadata?: LogMetadata;
+}
 
-// 開発環境用のコンソールフォーマット
-const consoleFormat = winston.format.combine(
-  winston.format.colorize(),
-  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
-  winston.format.printf((info) => {
-    const { timestamp, level, message, service, correlationId, ...metadata } = info;
-    let msg = `${timestamp || ""} [${level}]`;
-    if (service) msg += ` [${service}]`;
-    if (correlationId) msg += ` [${correlationId}]`;
-    msg += `: ${message}`;
+// ロガーの設定
+export interface LoggerConfig {
+  level?: LogLevel;
+  service: string;
+  enableTimestamp?: boolean;
+  enableColors?: boolean;
+  logToFile?: boolean;
+  logPath?: string;
+}
 
-    if (Object.keys(metadata).length > 0) {
-      msg += ` ${JSON.stringify(metadata)}`;
-    }
-    return msg;
-  }),
-);
+export class Logger {
+  private config: Required<Omit<LoggerConfig, "logPath">>;
+  private logPath?: string;
 
-class Logger {
-  private logger: winston.Logger;
-  private defaultMetadata: LogMetadata;
+  constructor(config: LoggerConfig) {
+    this.config = {
+      level: config.level ?? LogLevel.INFO,
+      service: config.service,
+      enableTimestamp: config.enableTimestamp ?? true,
+      enableColors: config.enableColors ?? true,
+      logToFile: config.logToFile ?? false,
+    };
+    this.logPath = config.logPath;
+  }
 
-  constructor(service: string) {
-    this.defaultMetadata = { service };
+  private log(level: LogLevel, message: string, metadata?: LogMetadata): void {
+    if (level > this.config.level) return;
 
-    // ログファイルの保存先設定
-    const logDir = process.env.LOG_DIR || "logs";
-    const maxSize = process.env.LOG_MAX_SIZE || "10m";
-    const maxFiles = process.env.LOG_MAX_FILES || "14d";
+    const entry: LogEntry = {
+      timestamp: new Date(),
+      level,
+      service: this.config.service,
+      message,
+      metadata,
+    };
 
-    // トランスポートの設定
-    const transports: winston.transport[] = [
-      // 開発環境用のコンソール出力
-      new winston.transports.Console({
-        level: process.env.NODE_ENV === "production" ? "info" : "debug",
-        format: process.env.NODE_ENV === "production" ? logFormat : consoleFormat,
-      }),
-    ];
+    const formatted = this.formatLogEntry(entry);
 
-    // 本番環境の場合、ファイル出力を追加
-    if (process.env.NODE_ENV === "production") {
-      // 通常ログ
-      transports.push(
-        new DailyRotateFile({
-          dirname: path.join(logDir, "app"),
-          filename: "%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize,
-          maxFiles,
-          level: "info",
-          format: logFormat,
-        }),
-      );
-
-      // エラーログ
-      transports.push(
-        new DailyRotateFile({
-          dirname: path.join(logDir, "error"),
-          filename: "%DATE%.error.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize,
-          maxFiles,
-          level: "error",
-          format: logFormat,
-        }),
-      );
+    if (this.config.enableColors) {
+      console.log(this.colorize(formatted, level));
+    } else {
+      console.log(formatted);
     }
 
-    this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || "info",
-      defaultMeta: this.defaultMetadata,
-      transports,
-    });
+    if (this.config.logToFile) {
+      this.writeToFile(formatted);
+    }
   }
 
-  private log(level: LogLevel, message: string, metadata: LogMetadata = {}) {
-    this.logger.log(level, message, {
-      ...this.defaultMetadata,
-      ...metadata,
-    });
+  private formatLogEntry(entry: LogEntry): string {
+    const parts: string[] = [];
+
+    if (this.config.enableTimestamp) {
+      parts.push(`[${entry.timestamp.toISOString()}]`);
+    }
+
+    parts.push(`[${LogLevel[entry.level]}]`);
+    parts.push(`[${entry.service}]`);
+    parts.push(entry.message);
+
+    if (entry.metadata) {
+      parts.push(JSON.stringify(entry.metadata, null, 2));
+    }
+
+    return parts.join(" ");
   }
 
-  error(message: string, metadata: LogMetadata = {}) {
-    this.log("error", message, metadata);
+  private colorize(message: string, level: LogLevel): string {
+    const colors = {
+      [LogLevel.ERROR]: "\x1b[31m", // Red
+      [LogLevel.WARN]: "\x1b[33m", // Yellow
+      [LogLevel.INFO]: "\x1b[36m", // Cyan
+      [LogLevel.HTTP]: "\x1b[35m", // Magenta
+      [LogLevel.DEBUG]: "\x1b[32m", // Green
+    };
+
+    const reset = "\x1b[0m";
+    return `${colors[level]}${message}${reset}`;
   }
 
-  warn(message: string, metadata: LogMetadata = {}) {
-    this.log("warn", message, metadata);
+  private writeToFile(message: string): void {
+    if (!this.logPath) return;
+
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const logFile = path.join(this.logPath, `${this.config.service}.log`);
+
+      fs.appendFileSync(logFile, message + "\n");
+    } catch (error) {
+      console.error("Failed to write to log file:", error);
+    }
   }
 
-  info(message: string, metadata: LogMetadata = {}) {
-    this.log("info", message, metadata);
+  error(message: string, metadata?: LogMetadata): void {
+    this.log(LogLevel.ERROR, message, metadata);
   }
 
-  http(message: string, metadata: LogMetadata = {}) {
-    this.log("http", message, metadata);
+  warn(message: string, metadata?: LogMetadata): void {
+    this.log(LogLevel.WARN, message, metadata);
   }
 
-  debug(message: string, metadata: LogMetadata = {}) {
-    this.log("debug", message, metadata);
+  info(message: string, metadata?: LogMetadata): void {
+    this.log(LogLevel.INFO, message, metadata);
+  }
+
+  http(message: string, metadata?: LogMetadata): void {
+    this.log(LogLevel.HTTP, message, metadata);
+  }
+
+  debug(message: string, metadata?: LogMetadata): void {
+    this.log(LogLevel.DEBUG, message, metadata);
   }
 }
 
 // シングルトンインスタンスを作成するファクトリ関数
 const loggers: { [key: string]: Logger } = {};
 
-export function createLogger(service: string): Logger {
+export function createLogger(service: string, config?: Partial<Omit<LoggerConfig, "service">>): Logger {
   if (!loggers[service]) {
-    loggers[service] = new Logger(service);
+    loggers[service] = new Logger({
+      service,
+      ...config,
+    });
   }
   return loggers[service];
 }
 
 // デフォルトのロガーインスタンス
 export const defaultLogger = createLogger("default");
-
-// 使用例:
-/*
-const logger = createLogger('UserService');
-
-logger.info('User logged in', { userId: '123', action: 'login' });
-logger.error('Failed to process payment', {
-  userId: '123',
-  error: new Error('Payment declined'),
-  orderId: 'ORDER123'
-});
-*/

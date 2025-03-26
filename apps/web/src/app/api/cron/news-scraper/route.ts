@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     const results = [];
     for (const site of sites) {
       try {
-        console.log(`Crawling site ${site.url}`);
+        console.log(`Scraping site ${site.url}`);
         const result = await scraper.scrapeSite(site);
 
         // 結果を保存

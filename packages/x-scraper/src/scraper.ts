@@ -1,6 +1,7 @@
 import { createLogger } from "@daiko-ai/shared";
 import { OpenAI } from "openai";
 import { Builder, By, until, WebDriver } from "selenium-webdriver";
+import chrome from "selenium-webdriver/chrome";
 import { config } from "./config";
 import { getAllXAccounts, saveChangeLog, saveSystemLog, saveXAccount } from "./db";
 import { ChangeLog, CryptoAnalysis, Tweet } from "./types";
@@ -27,10 +28,41 @@ export class XScraper {
 
     this.logger.info("Initializing Selenium WebDriver");
 
-    // WebDriverの作成
-    this.driver = await new Builder().forBrowser("chrome").build();
+    try {
+      const options = new chrome.Options();
+      options
+        .addArguments("--headless")
+        .addArguments("--no-sandbox")
+        .addArguments("--disable-dev-shm-usage")
+        .addArguments("--disable-gpu")
+        .windowSize({ width: 390, height: 844 });
 
-    return this.driver;
+      this.driver = await new Builder().forBrowser("chrome").setChromeOptions(options).build();
+
+      return this.driver;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error("Failed to initialize WebDriver", {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`WebDriver initialization failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * エラーオブジェクトを文字列に変換
+   */
+  private formatError(error: unknown): { message: string; stack?: string } {
+    if (error instanceof Error) {
+      return {
+        message: error.message,
+        stack: error.stack,
+      };
+    }
+    return {
+      message: String(error),
+    };
   }
 
   /**
@@ -39,8 +71,13 @@ export class XScraper {
   public async closeDriver(): Promise<void> {
     if (this.driver) {
       this.logger.info("Closing WebDriver");
-      await this.driver.quit();
-      this.driver = null;
+      try {
+        await this.driver.quit();
+      } catch (error) {
+        this.logger.error("Error closing WebDriver", this.formatError(error));
+      } finally {
+        this.driver = null;
+      }
     }
   }
 
@@ -67,14 +104,14 @@ export class XScraper {
           // アカウント間で少し間隔を空ける（レート制限対策）
           await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
-          this.logger.error(`Error checking account ${account.id}:`, { error });
+          this.logger.error(`Error checking account ${account.id}:`, this.formatError(error));
         }
       }
 
       await saveSystemLog("Periodic X account check finished");
       this.logger.info("Finished checking all X accounts");
     } catch (error) {
-      this.logger.error("Error checking X accounts:", { error });
+      this.logger.error("Error checking X accounts:", this.formatError(error));
       throw error;
     } finally {
       await this.closeDriver();
@@ -97,7 +134,7 @@ export class XScraper {
 
       // ページが読み込まれるのを待つ
       // X は「ツイート」セクションが表示されるのを待つ
-      await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 5000);
+      await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 10000);
 
       // ツイートを抽出
       const tweets = await this.extractTweets(driver);
@@ -142,7 +179,7 @@ export class XScraper {
         return null;
       }
     } catch (error) {
-      this.logger.error(`Error checking account ${xId}:`, { error });
+      this.logger.error(`Error checking account ${xId}:`, this.formatError(error));
       return null;
     }
   }
