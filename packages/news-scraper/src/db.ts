@@ -2,7 +2,7 @@ import type { CollectionName, NewsSite, ScrapeResult } from "@daiko-ai/shared";
 import { COLLECTIONS, getAdminFirestore } from "@daiko-ai/shared";
 
 export class NewsScraperDB {
-  private readonly NEWS_SITES_COLLECTION: CollectionName = COLLECTIONS.NEWS;
+  private readonly NEWS_SITES_COLLECTION: CollectionName = COLLECTIONS.NEWS_SITES;
   private readonly SCRAPE_RESULTS_COLLECTION: CollectionName = COLLECTIONS.SCRAPE_RESULTS;
   private readonly db = getAdminFirestore();
 

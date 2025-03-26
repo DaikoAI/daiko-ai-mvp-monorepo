@@ -1,35 +1,18 @@
-import type { Tool } from "@langchain/core/tools";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import {} from "solana-agent-kit/dist/langchain";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { analyzerPrompt, parser } from "../prompts/analyzer";
 import { gpt4oMini } from "../utils/model";
-import { memory, type solanaAgentState } from "../utils/state";
-// import { SolanaGetAllAssetsByOwner } from "../tools/getAllAssetsByOwner";
-// import { solanaAgent } from "../utils/solanaAgent";
-import { analyzerPrompt } from "../prompts/analyzer";
+import { type proposalAgentState } from "../utils/state";
 
-// Initialize tools array
-const tools: Tool[] = [
-  // new SolanaGetAllAssetsByOwner(solanaAgent),
-  // new SolanaAlloraGetPriceInference(solanaAgent),
-  // new SolanaFetchTokenReportSummaryTool(solanaAgent),
-  // new SolanaFetchPriceTool(solanaAgent),
-  // new SolanaTokenDataByTickerTool(solanaAgent),
-  // new SolanaOrcaFetchPositions(solanaAgent),
-];
+const chain = RunnableSequence.from([analyzerPrompt, gpt4oMini, parser]);
 
-export const analyzerAgent = createReactAgent({
-  llm: gpt4oMini,
-  tools,
-  checkpointSaver: memory,
-  prompt: analyzerPrompt,
-});
+export const analyzerNode = async (state: typeof proposalAgentState.State) => {
+  const { messages } = state;
 
-export const analyzerNode = async (state: typeof solanaAgentState.State) => {
-  console.log("analyzerNode", state);
-  const { messages, userProfile } = state;
+  const result = await chain.invoke({
+    messages,
+    formatInstructions: parser.getFormatInstructions(),
+  });
+  const { proposal } = result;
 
-  const result = await analyzerAgent.invoke({ messages });
-  console.log("analyzer result", result);
-
-  return { messages: [...result.messages] };
+  return { proposal };
 };

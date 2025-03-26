@@ -1,28 +1,42 @@
-import { Annotation, MemorySaver } from "@langchain/langgraph";
+import type { NewsSite, TradeProposal, Tweet, User } from "@daiko-ai/shared";
 import type { BaseMessage } from "@langchain/core/messages";
-import { messagesStateReducer } from "@langchain/langgraph";
-import type { UserProfile } from "../types/db";
+import { Annotation, MemorySaver, messagesStateReducer } from "@langchain/langgraph";
 
 export const memory = new MemorySaver();
 
-export const solanaAgentState = Annotation.Root({
-    messages: Annotation<BaseMessage[]>({
-        reducer: messagesStateReducer,
-        default: () => [],
-    }),
+export const proposalAgentState = Annotation.Root({
+  messages: Annotation<BaseMessage[]>({
+    reducer: messagesStateReducer,
+    default: () => [],
+  }),
 
-    userProfile: Annotation<UserProfile | null>({
-        reducer: (oldValue, newValue) => newValue ?? oldValue,
-        default: () => null,
-    }),
+  proposal: Annotation<TradeProposal | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
 
-    isDataFetchOperatorNodeQuery: Annotation<boolean>({
-        reducer: (oldValue, newValue) => newValue ?? oldValue,
-        default: () => false,
-    }),
+  user: Annotation<User | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
 
-    isGeneralQuery: Annotation<boolean>({
-        reducer: (oldValue, newValue) => newValue ?? oldValue,
-        default: () => false,
-    }),
+  newsSites: Annotation<NewsSite[]>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => [],
+  }),
+
+  tweets: Annotation<Tweet[]>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => [],
+  }),
+
+  isDataFetchOperatorNodeQuery: Annotation<boolean>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => false,
+  }),
+
+  isGeneralQuery: Annotation<boolean>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => false,
+  }),
 });
