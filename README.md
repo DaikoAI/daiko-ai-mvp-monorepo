@@ -32,7 +32,6 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
   - Node.js
   - Hono
   - Firebase Admin
-  - Express
 
 - **データベース**:
 
@@ -42,55 +41,38 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
   - Turborepo (モノレポ管理)
   - pnpm (パッケージマネージャー)
 
-## セットアップ手順
+## プロジェクト構成
 
-### 前提条件
-
-- Node.js 20以上
-- pnpm 10.6.3以上
-- Firebase CLIツール
-
-### 開発環境のセットアップ
-
-1. リポジトリのクローン
-
-```bash
-git clone https://github.com/your-org/daiko-ai-mvp-monorepo.git
-cd daiko-ai-mvp-monorepo
-```
-
-2. 依存関係のインストール
-
-```bash
-pnpm install
-```
-
-3. 環境変数の設定
-
-```bash
-# webアプリ用
-cp apps/web/.env.example apps/web/.env
-# 必要な環境変数を設定
-
-# スクレイパー用
-cp packages/news-scraper/.env.example packages/news-scraper/.env
-# 必要な環境変数を設定
-```
-
-4. 開発サーバーの起動
-
-```bash
-# フロントエンド
-pnpm dev:web
-
-# X (Twitter) スクレイパー
-pnpm dev:x-scraper
-
-# ニューススクレイパー
-pnpm dev:news-scraper
+```zsh
+.
+├── README.md
+├── package.json
+├── turbo.json
+├── pnpm-workspace.yaml
+├── apps
+│   ├── news-scraper-job      # ニュースサイトスクレイパージョブ
+│   ├── web                  # メインのウェブアプリケーション (Next.js)
+│   │   ├── src
+│   │   ├── public
+│   │   └── package.json
+│   └── x-scraper-job        # Xスクレイパージョブ
+├── packages
+│   ├── shared               # 共有コード、型定義、ユーティリティ
+│   │   ├── src
+│   │   └── package.json
+│   ├── news-scraper         # ニュースサイトスクレイパー
+│   │   ├── src
+│   │   └── package.json
+│   └── x-scraper            # X (Twitter) スクレイパー
+│       ├── src
+│       └── package.json
+└── scripts
+    └── clean-packages.sh    # ビルドファイルのクリーンアップ
 ```
 
 ## アーキテクチャ
+
+### 全体アーキテクチャ
 
 ```mermaid
 flowchart TB
@@ -203,30 +185,54 @@ flowchart TB
     class FE,PN,WC,PD,PFB frontendNode
 ```
 
-## プロジェクト構成
+### Agent Architecture
 
-```zsh
-.
-├── README.md
-├── package.json
-├── turbo.json
-├── pnpm-workspace.yaml
-├── apps
-│   ├── web                  # メインのウェブアプリケーション (Next.js)
-│   │   ├── src
-│   │   ├── public
-│   │   └── package.json
-│   └── x-scraper-job        # Xスクレイパージョブ
-├── packages
-│   ├── shared               # 共有コード、型定義、ユーティリティ
-│   │   ├── src
-│   │   └── package.json
-│   ├── news-scraper         # ニュースサイトスクレイパー
-│   │   ├── src
-│   │   └── package.json
-│   └── x-scraper            # X (Twitter) スクレイパー
-│       ├── src
-│       └── package.json
-└── scripts
-    └── clean-packages.sh    # ビルドファイルのクリーンアップ
+![Agent Architecture](./packages/proposal-agent/docs/graph.png)
+
+## セットアップ手順
+
+### 前提条件
+
+- Node.js 20以上
+- pnpm 10.6.3以上
+- Firebase CLIツール
+
+### 開発環境のセットアップ
+
+1. リポジトリのクローン
+
+```bash
+git clone https://github.com/your-org/daiko-ai-mvp-monorepo.git
+cd daiko-ai-mvp-monorepo
+```
+
+2. 依存関係のインストール
+
+```bash
+pnpm install
+```
+
+3. 環境変数の設定
+
+```bash
+# webアプリ用
+cp apps/web/.env.example apps/web/.env
+# 必要な環境変数を設定
+
+# スクレイパー用
+cp packages/news-scraper/.env.example packages/news-scraper/.env
+# 必要な環境変数を設定
+```
+
+4. 開発サーバーの起動
+
+```bash
+# フロントエンド
+pnpm dev:web
+
+# X (Twitter) スクレイパー
+pnpm dev:x-scraper
+
+# ニューススクレイパー
+pnpm dev:news-scraper
 ```

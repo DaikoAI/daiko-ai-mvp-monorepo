@@ -57,6 +57,7 @@
 ├── package.json
 ├── packages
 │   ├── news-scraper
+│   ├── proposal-agent
 │   ├── shared
 │   └── x-scraper
 ├── pnpm-lock.yaml

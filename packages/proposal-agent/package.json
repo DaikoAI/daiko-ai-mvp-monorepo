@@ -13,12 +13,15 @@
   "license": "MIT",
   "dependencies": {
     "@daiko-ai/shared": "workspace:*",
+    "@daiko-ai/x-scraper": "workspace:*",
+    "@daiko-ai/news-scraper": "workspace:*",
     "@langchain/community": "^0.3.36",
     "@langchain/core": "^0.3.42",
     "@langchain/langgraph": "^0.2.56",
     "@langchain/openai": "^0.3.17",
     "@solana/web3.js": "^1.98.0",
     "dotenv": "^16.4.7",
+    "react": "^19.0.0",
     "solana-agent-kit": "^1.4.9",
     "zod": "^3.22.4"
   },
