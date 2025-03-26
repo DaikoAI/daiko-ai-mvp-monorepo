@@ -3,7 +3,6 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { config, validateConfig } from "./config";
 import { saveSystemLog } from "./db";
 import { XScraper } from "./scraper";
 
@@ -17,14 +16,6 @@ const app = new Hono();
 // ミドルウェア
 app.use("*", logger());
 app.use("*", cors());
-
-try {
-  // 設定の検証
-  validateConfig();
-} catch (error) {
-  defaultLogger.error("Configuration error:", { error });
-  process.exit(1);
-}
 
 // スクレイパーのインスタンスを作成
 const scraper = new XScraper();
@@ -220,51 +211,14 @@ app.post("/crawl/scheduled", async (c) => {
   }
 });
 
-// 定期スクレイピングの開始（ローカル開発環境用）
-const startScheduledTask = () => {
-  if (scheduledTask) {
-    clearInterval(scheduledTask);
-  }
-
-  const intervalMinutes = config.checkIntervalMinutes;
-  const intervalMs = intervalMinutes * 60 * 1000;
-
-  defaultLogger.info(`Setting up scheduled task to run every ${intervalMinutes} minutes`);
-
-  // 定期的にスクレイピングを実行
-  scheduledTask = setInterval(async () => {
-    try {
-      defaultLogger.info("Running scheduled X scraper check");
-      await saveSystemLog("Starting scheduled check");
-      await scraper.checkXAccounts();
-    } catch (error) {
-      defaultLogger.error("Error in scheduled task:", { error });
-    }
-  }, intervalMs);
-};
-
 // サーバー起動関数
-export const startServer = (port = config.port) => {
+export const startServer = (port = 3000) => {
   serve({
     fetch: app.fetch,
     port,
   });
 
   defaultLogger.info(`X Scraper server running on port ${port}`);
-  defaultLogger.info(`Environment: ${config.nodeEnv}`);
-
-  // 開発環境では定期スクレイピングを開始
-  if (config.nodeEnv !== "production") {
-    startScheduledTask();
-  }
-
-  // 開発環境では初回起動時にチェックを実行
-  if (config.nodeEnv === "development") {
-    defaultLogger.info("Running initial check on startup");
-    scraper.checkXAccounts().catch((error) => {
-      defaultLogger.error("Error in initial check:", { error });
-    });
-  }
 };
 
 // プロセス終了時の処理

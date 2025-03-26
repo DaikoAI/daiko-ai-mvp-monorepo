@@ -1,3 +1,4 @@
+import type { NewsSite } from "@daiko-ai/shared";
 import { defaultLogger } from "@daiko-ai/shared";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
@@ -5,7 +6,6 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { NewsScraperDB } from "./db";
 import { NewsScraper } from "./scraper";
-import type { NewsSite } from "./types";
 
 // 環境変数読み込み
 import * as dotenv from "dotenv";

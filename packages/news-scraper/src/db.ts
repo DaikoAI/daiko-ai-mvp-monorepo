@@ -1,9 +1,9 @@
-import { getAdminFirestore } from "@daiko-ai/shared";
-import type { NewsSite, ScrapeResult } from "./types";
+import type { CollectionName, NewsSite, ScrapeResult } from "@daiko-ai/shared";
+import { COLLECTIONS, getAdminFirestore } from "@daiko-ai/shared";
 
 export class NewsScraperDB {
-  private readonly NEWS_SITES_COLLECTION = "news_sites";
-  private readonly CRAWL_RESULTS_COLLECTION = "crawl_results";
+  private readonly NEWS_SITES_COLLECTION: CollectionName = COLLECTIONS.NEWS;
+  private readonly CRAWL_RESULTS_COLLECTION: CollectionName = COLLECTIONS.CRAWL_RESULTS;
   private readonly db = getAdminFirestore();
 
   async saveNewsSite(site: NewsSite): Promise<string> {

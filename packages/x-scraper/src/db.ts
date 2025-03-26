@@ -1,11 +1,11 @@
-import { defaultLogger, getAdminFirestore } from "@daiko-ai/shared";
-import { ChangeLog, NotificationLog, XAccount } from "./types";
+import type { ChangeLog, NotificationLog, XAccount } from "@daiko-ai/shared";
+import { COLLECTIONS, defaultLogger, getAdminFirestore } from "@daiko-ai/shared";
 
 // Firestoreの参照を取得
 const db = getAdminFirestore();
 
 // XAccounts関連の操作
-export const xAccountsCollection = db.collection("xAccounts");
+export const xAccountsCollection = db.collection(COLLECTIONS.X_ACCOUNTS);
 
 export const getAllXAccounts = async (): Promise<XAccount[]> => {
   try {
@@ -40,7 +40,7 @@ export const saveXAccount = async (account: XAccount): Promise<void> => {
 };
 
 // 変更ログの操作
-export const changeLogsCollection = db.collection("changeLogs");
+export const changeLogsCollection = db.collection(COLLECTIONS.CHANGE_LOGS);
 
 export const saveChangeLog = async (log: ChangeLog): Promise<void> => {
   try {

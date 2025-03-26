@@ -7,7 +7,7 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
 ## 主な機能
 
 - リアルタイムのマーケットデータ監視
-- ソーシャルメディア（Twitter、Farcaster）の感情分析
+- ソーシャルメディア（X、Farcaster）の感情分析
 - ニュースサイトからの情報収集
 - オンチェーンデータの分析
 - AIによる取引提案生成
@@ -15,20 +15,40 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
 
 ## 技術スタック
 
-- **フロントエンド**: Next.js
-- **バックエンド**: Python (FastAPI)
-- **データベース**: Firebase
-- **AI/ML**: LangGraph
-- **インフラ**: Cloud Run, Cloud Functions
+- **フロントエンド**:
+
+  - Next.js 15
+  - React 19
+  - TypeScript
+  - Tailwind CSS 4
+  - Radix UI
+  - Solana Wallet Adapter
+  - Firebase クライアント
+  - Serwist (PWA)
+
+- **バックエンド**:
+
+  - TypeScript
+  - Node.js
+  - Hono
+  - Firebase Admin
+  - Express
+
+- **データベース**:
+
+  - Firebase Firestore
+
+- **インフラ**:
+  - Turborepo (モノレポ管理)
+  - pnpm (パッケージマネージャー)
 
 ## セットアップ手順
 
 ### 前提条件
 
-- Node.js 18以上
-- Python 3.10以上
+- Node.js 20以上
+- pnpm 10.6.3以上
 - Firebase CLIツール
-- Google Cloud SDKツール
 
 ### 開発環境のセットアップ
 
@@ -39,29 +59,35 @@ git clone https://github.com/your-org/daiko-ai-mvp-monorepo.git
 cd daiko-ai-mvp-monorepo
 ```
 
-2. 環境変数の設定
+2. 依存関係のインストール
 
 ```bash
-cp .env.example .env
-# .envファイルを編集して必要な環境変数を設定
+pnpm install
 ```
 
-3. フロントエンドのセットアップ
+3. 環境変数の設定
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# webアプリ用
+cp apps/web/.env.example apps/web/.env
+# 必要な環境変数を設定
+
+# スクレイパー用
+cp packages/news-scraper/.env.example packages/news-scraper/.env
+# 必要な環境変数を設定
 ```
 
-4. バックエンドのセットアップ
+4. 開発サーバーの起動
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+# フロントエンド
+pnpm dev:web
+
+# X (Twitter) スクレイパー
+pnpm dev:x-scraper
+
+# ニューススクレイパー
+pnpm dev:news-scraper
 ```
 
 ## アーキテクチャ
@@ -71,7 +97,7 @@ flowchart TB
     %% Batch Jobs Group
     subgraph "Batch Jobs"
         direction TB
-        TS["Twitter Scraper<br>(every 15 minutes)"]
+        TS["X (Twitter) Scraper<br>(every 15 minutes)"]
         FS["Farcaster Scraper<br>(every 15 minutes)"]
         NS["News Site Scraper<br>(every 30 minutes)"]
         GM["Global Market Data<br>(every 5 minutes)"]
@@ -179,19 +205,28 @@ flowchart TB
 
 ## プロジェクト構成
 
-```bash
+```zsh
 .
 ├── README.md
-├── apps
-│   └── web
 ├── package.json
-├── packages
-│   ├── news-scraper
-│   ├── shared
-│   └── x-scraper
-├── pnpm-lock.yaml
+├── turbo.json
 ├── pnpm-workspace.yaml
-├── scripts
-│   └── clean-packages.sh
-└── turbo.json
+├── apps
+│   ├── web                  # メインのウェブアプリケーション (Next.js)
+│   │   ├── src
+│   │   ├── public
+│   │   └── package.json
+│   └── x-scraper-job        # Xスクレイパージョブ
+├── packages
+│   ├── shared               # 共有コード、型定義、ユーティリティ
+│   │   ├── src
+│   │   └── package.json
+│   ├── news-scraper         # ニュースサイトスクレイパー
+│   │   ├── src
+│   │   └── package.json
+│   └── x-scraper            # X (Twitter) スクレイパー
+│       ├── src
+│       └── package.json
+└── scripts
+    └── clean-packages.sh    # ビルドファイルのクリーンアップ
 ```

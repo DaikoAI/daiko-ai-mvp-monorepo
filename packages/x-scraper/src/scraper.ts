@@ -1,10 +1,8 @@
-import { createLogger } from "@daiko-ai/shared";
+import { ChangeLog, createLogger, CryptoAnalysis, Tweet } from "@daiko-ai/shared";
 import { OpenAI } from "openai";
 import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
-import { config } from "./config";
 import { getAllXAccounts, saveChangeLog, saveSystemLog, saveXAccount } from "./db";
-import { ChangeLog, CryptoAnalysis, Tweet } from "./types";
 
 export class XScraper {
   private openai: OpenAI;
@@ -14,7 +12,7 @@ export class XScraper {
   constructor() {
     // OpenAI APIクライアントを初期化
     this.openai = new OpenAI({
-      apiKey: config.openAiApiKey,
+      apiKey: process.env.OPENAI_API_KEY,
     });
   }
 

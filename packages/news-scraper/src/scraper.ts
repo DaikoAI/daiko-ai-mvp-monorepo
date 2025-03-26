@@ -1,5 +1,5 @@
+import type { NewsSite, ScrapeResult } from "@daiko-ai/shared";
 import FirecrawlApp from "@mendable/firecrawl-js";
-import type { NewsSite, ScrapeResult } from "./types";
 
 export class NewsScraper {
   private app: FirecrawlApp;

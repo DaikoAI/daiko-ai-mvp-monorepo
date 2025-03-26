@@ -1,39 +1,22 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // ニュース記事の型定義
-export const NewsSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  content: z.string().optional(),
-  summary: z.string().optional(),
-  url: z.string().url(),
-  imageUrl: z.string().url().optional(),
-  publishedAt: z.string().or(z.date()),
-  source: z.string(),
-  categories: z.array(z.string()).optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-});
+export interface NewsSite {
+  id?: string;
+  url: string;
+  userId: string;
+  lastCrawled?: string;
+  title?: string;
+  description?: string;
+}
 
-export type News = z.infer<typeof NewsSchema>;
-
-// X(Twitter)の投稿型定義
-export const TweetSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-  authorId: z.string(),
-  authorName: z.string(),
-  authorUsername: z.string(),
-  authorProfileImageUrl: z.string().url().optional(),
-  createdAt: z.string().or(z.date()),
-  likeCount: z.number().optional(),
-  retweetCount: z.number().optional(),
-  replyCount: z.number().optional(),
-  url: z.string().url().optional(),
-  mediaUrls: z.array(z.string().url()).optional(),
-});
-
-export type Tweet = z.infer<typeof TweetSchema>;
+export interface ScrapeResult {
+  id: string;
+  siteId: string;
+  url: string;
+  content: string;
+  timestamp: string;
+}
 
 // ユーザープロファイル型定義
 export const UserProfileSchema = z.object({
@@ -52,9 +35,51 @@ export type UserProfile = z.infer<typeof UserProfileSchema>;
 
 // コレクション名の定数
 export const COLLECTIONS = {
-  NEWS: 'news',
-  TWEETS: 'tweets',
-  USER_PROFILES: 'userProfiles',
+  NEWS: "news",
+  TWEETS: "tweets",
+  USER_PROFILES: "userProfiles",
+  CRAWL_RESULTS: "crawlResults",
+  X_ACCOUNTS: "xAccounts",
+  CHANGE_LOGS: "changeLogs",
+  NOTIFICATION_LOGS: "notificationLogs",
+  CRYPTO_ANALYSES: "cryptoAnalyses",
 } as const;
 
-export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
+export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
+
+export interface XAccount {
+  id: string;
+  lastContent?: Tweet[];
+  userIds?: string[];
+}
+
+export interface Tweet {
+  time: string;
+  data: string;
+}
+
+export interface ChangeLog {
+  timestamp: string;
+  xid: string;
+  content: Tweet[];
+}
+
+export interface NotificationLog {
+  timestamp: string;
+  accountId: string;
+  notifiedUsers: string[];
+  message: string;
+}
+
+export interface AppConfig {
+  port: number;
+  openAiApiKey: string;
+  checkIntervalMinutes: number;
+  nodeEnv: string;
+  firebaseDatabaseUrl: string;
+}
+
+export interface CryptoAnalysis {
+  isCryptoRelated: boolean;
+  analysisResult: string;
+}

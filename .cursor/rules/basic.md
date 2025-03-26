@@ -2,6 +2,7 @@
 
 - `Turborepo`, `pnpm`を用いたmonorepo構成を効果的に使用し、packageの切り分けや、型の共通化などを考えながらコードを書いて下さい
 - `pnpm build`が通るようにして下さい
+- packageにはapps以下のapplicationやその他のインフラやツールでもportableに使えるようなcore機能のpackageを提供し保守性の高いコード、アーキテクチャを保って下さい。
 
 ## Practices
 
@@ -43,3 +44,24 @@
 4. **アダプター実装**
    - 外部サービスやDBへのアクセスを抽象化
    - テスト用モックを用意
+
+## ディレクトリ構造
+
+```zsh
+.
+├── README.md
+├── apps
+│   ├── news-scraper-job
+│   ├── web
+│   └── x-scraper-job
+├── package.json
+├── packages
+│   ├── news-scraper
+│   ├── shared
+│   └── x-scraper
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── scripts
+│   └── clean-packages.sh
+└── turbo.json
+```
