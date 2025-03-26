@@ -1,7 +1,7 @@
 {
-  "name": "@daiko-ai/x-scraper",
+  "name": "@daiko-ai/proposal-agent",
   "version": "0.1.0",
-  "description": "X (Twitter) scraper with selenium for analyzing crypto-related content",
+  "description": "Agent for analyzing crypto-related content",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -13,19 +13,17 @@
   "license": "MIT",
   "dependencies": {
     "@daiko-ai/shared": "workspace:*",
-    "@hono/node-server": "^1.14.0",
+    "@langchain/community": "^0.3.36",
+    "@langchain/core": "^0.3.42",
+    "@langchain/langgraph": "^0.2.56",
+    "@langchain/openai": "^0.3.17",
+    "@solana/web3.js": "^1.98.0",
     "dotenv": "^16.4.7",
-    "firebase-admin": "^12.7.0",
-    "hono": "^4.7.5",
-    "openai": "^4.89.0",
-    "selenium-webdriver": "4.16.0",
-    "uuid": "^9.0.1",
+    "solana-agent-kit": "^1.4.9",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "typescript": "^5.8.2",
     "@types/node": "^20.17.26",
-    "@types/selenium-webdriver": "^4.1.28",
     "@types/uuid": "^9.0.7",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0"
