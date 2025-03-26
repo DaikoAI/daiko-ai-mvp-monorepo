@@ -38,7 +38,7 @@ export const COLLECTIONS = {
   NEWS: "news",
   TWEETS: "tweets",
   USER_PROFILES: "userProfiles",
-  CRAWL_RESULTS: "crawlResults",
+  SCRAPE_RESULTS: "scrapeResults",
   X_ACCOUNTS: "xAccounts",
   CHANGE_LOGS: "changeLogs",
   NOTIFICATION_LOGS: "notificationLogs",

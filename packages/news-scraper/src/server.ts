@@ -94,7 +94,6 @@ app.post("/sites/:siteId/crawl", async (c) => {
 
     const result = await crawler.scrapeSite(site);
     await db.saveScrapeResult(result);
-    await db.updateNewsSiteLastCrawled(siteId);
 
     return c.json(result);
   } catch (error) {
@@ -128,7 +127,6 @@ app.post("/crawl/scheduled", async (c) => {
         defaultLogger.info(`Crawling site ${site.id}`);
         const result = await crawler.scrapeSite(site);
         await db.saveScrapeResult(result);
-        await db.updateNewsSiteLastCrawled(site.id || "");
         results.push({ siteId: site.id, status: "success" });
       } catch (error) {
         defaultLogger.error(`Error crawling site ${site.id}:`, { error });

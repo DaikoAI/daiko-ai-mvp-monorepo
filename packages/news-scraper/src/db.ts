@@ -3,7 +3,7 @@ import { COLLECTIONS, getAdminFirestore } from "@daiko-ai/shared";
 
 export class NewsScraperDB {
   private readonly NEWS_SITES_COLLECTION: CollectionName = COLLECTIONS.NEWS;
-  private readonly CRAWL_RESULTS_COLLECTION: CollectionName = COLLECTIONS.CRAWL_RESULTS;
+  private readonly SCRAPE_RESULTS_COLLECTION: CollectionName = COLLECTIONS.SCRAPE_RESULTS;
   private readonly db = getAdminFirestore();
 
   async saveNewsSite(site: NewsSite): Promise<string> {
@@ -30,17 +30,10 @@ export class NewsScraperDB {
   }
 
   async saveScrapeResult(result: ScrapeResult): Promise<string> {
-    const docRef = await this.db.collection(this.CRAWL_RESULTS_COLLECTION).add({
+    const docRef = await this.db.collection(this.SCRAPE_RESULTS_COLLECTION).add({
       ...result,
       createdAt: new Date(),
     });
     return docRef.id;
-  }
-
-  async updateNewsSiteLastCrawled(siteId: string): Promise<void> {
-    await this.db.collection(this.NEWS_SITES_COLLECTION).doc(siteId).update({
-      lastCrawled: new Date().toISOString(),
-      updatedAt: new Date(),
-    });
   }
 }

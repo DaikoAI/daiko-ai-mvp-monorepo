@@ -36,15 +36,10 @@ async function runNewsScraperJob() {
         // 結果を保存
         await db.saveScrapeResult(result);
 
-        // 最終クロール日時を更新
-        if (site.id) {
-          await db.updateNewsSiteLastCrawled(site.id);
-        }
-
         results.push(result);
-        console.log(`Successfully crawled site: ${site.id}`);
+        console.log(`Successfully scraped site: ${site.id}`);
       } catch (error) {
-        console.error(`Error crawling site ${site.id}:`, error);
+        console.error(`Error scraping site ${site.id}:`, error);
       }
     }
 
