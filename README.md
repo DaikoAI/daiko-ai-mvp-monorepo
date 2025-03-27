@@ -187,7 +187,7 @@ flowchart TB
 
 ### Agent Architecture
 
-![Agent Architecture](./packages/proposal-agent/docs/graph.png)
+![Agent Architecture](./docs/graph.png)
 
 ## セットアップ手順
 

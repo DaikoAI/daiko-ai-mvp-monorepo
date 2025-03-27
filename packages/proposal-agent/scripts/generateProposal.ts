@@ -1,7 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { config } from "dotenv";
-
 // Load environment variables
+import { config } from "dotenv";
 config();
 
 const main = async () => {

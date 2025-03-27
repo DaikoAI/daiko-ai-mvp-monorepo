@@ -17,7 +17,7 @@ const main = async () => {
   });
 
   const stream = graphBlob.stream();
-  const writeStream = fs.createWriteStream("docs/graph.png");
+  const writeStream = fs.createWriteStream("../../docs/graph.png");
   await stream.pipeTo(Writable.toWeb(writeStream));
 };
 
