@@ -10,6 +10,7 @@
 - dataはmockであってもまず`type`か`interface`を定義してから後からapi fetchする場合でもreplaceがしやすいように実装して下さい
 - use Tailwind v4
 - サイト内で使用する文言はdescriptiveになり過ぎないように、なるべく短い単語で簡潔にuserが分かりやすいようなword choiceを必ず心がけて下さい！
+- Keep `page.tsx` as Server Component as much as possible
 
 ## React Components
 

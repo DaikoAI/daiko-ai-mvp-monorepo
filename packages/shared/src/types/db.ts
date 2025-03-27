@@ -31,13 +31,18 @@ export const userSchema = z.object({
   // FirestoreのTimestamp型を厳密に表すなら z.any() を使う方法もあります。
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-
+  age: z.number().optional(),
+  tradeStyle: z.enum(["swing", "day", "long"]).optional(),
+  totalAssetUsd: z.number().optional(),
+  cryptoInvestmentUsd: z.number().optional(),
+  riskTolerance: z.enum(["low", "medium", "high"]).optional(),
   // 監視アカウントをシンプルに配列で持つパターン
   watchedAccounts: z.array(z.string()).optional(),
 });
 export type User = z.infer<typeof userSchema>;
 
 export const tradeProposalSchema = z.object({
+  id: z.string().optional(),
   // triggerEvents/{triggerId} のID
   triggerEventId: z.string().optional(),
 
@@ -65,8 +70,7 @@ export const tradeProposalSchema = z.object({
       riskLevel: z.enum(["low", "medium", "high"]),
     })
     .optional(),
-  expires_at: z.string().optional(),
-  recommendedAction: z.string(), // "BUY", "SELL", "HOLD"など
+  expires_at: z.string().transform((val) => new Date(val)),
   status: z.string().optional(),
   // Solanaコントラクトコール用のパラメータをマップで持つ例
   contractCall: z.record(z.any()).optional(),

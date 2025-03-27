@@ -1,4 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
+import { ProposalRepository } from "../src/repositories/proposalRepository";
 // Load environment variables
 import { config } from "dotenv";
 config();
@@ -18,7 +19,14 @@ const main = async () => {
     config,
   );
 
-  console.log(result);
+  console.log(result.proposal);
+
+  const proposalRepository = new ProposalRepository();
+  if (result.proposal) {
+    await proposalRepository.createProposal(result.proposal);
+  } else {
+    console.error("提案が生成されませんでした");
+  }
 };
 
 main();

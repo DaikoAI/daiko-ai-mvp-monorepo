@@ -1,45 +1,20 @@
-import {
-  COLLECTIONS,
-  getFirebaseAuth,
-  getFirebaseConfig,
-  getFirebaseFirestore,
-  initializeFirebase,
-  User,
-} from "@daiko-ai/shared";
-import { FirebaseApp } from "firebase/app";
-import { Auth } from "firebase/auth";
-import { doc, Firestore, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { COLLECTIONS, getAdminFirestore, TradeProposal, User } from "@daiko-ai/shared";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
-// Firebaseの初期化
-let app: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let firestore: Firestore | undefined;
+const db = getAdminFirestore();
 
-// Firebaseの初期化関数
-export const initFirebase = () => {
-  if (typeof window !== "undefined" && !app) {
-    try {
-      const config = getFirebaseConfig();
-      app = initializeFirebase(config);
-      auth = getFirebaseAuth(app);
-      firestore = getFirebaseFirestore(app);
-    } catch (error) {
-      console.error("Firebase initialization error:", error);
-    }
-  }
-  return { app, auth, firestore };
+export const getProposals = async () => {
+  const proposalCollection = db.collection(COLLECTIONS.TRADE_PROPOSALS);
+  const snapshot = await proposalCollection.get();
+  return snapshot.docs.map((doc) => doc.data()) as TradeProposal[];
 };
 
 // ユーザープロファイルの取得
 export const getUser = async (uid: string): Promise<User | null> => {
-  const { firestore } = initFirebase();
-  if (!firestore) return null;
-
   try {
-    const userDocRef = doc(firestore, COLLECTIONS.USER_PROFILES, uid);
-    const userDoc = await getDoc(userDocRef);
+    const userDoc = await db.collection(COLLECTIONS.USER_PROFILES).doc(uid).get();
 
-    if (userDoc.exists()) {
+    if (userDoc.exists) {
       return userDoc.data() as User;
     }
     return null;
@@ -51,24 +26,22 @@ export const getUser = async (uid: string): Promise<User | null> => {
 
 // ユーザープロファイルの作成または更新
 export const saveUser = async (profile: User): Promise<boolean> => {
-  const { firestore } = initFirebase();
-  if (!firestore) return false;
-
   try {
-    const userDocRef = doc(firestore, COLLECTIONS.USER_PROFILES, profile.walletAddress);
+    const userCollection = db.collection(COLLECTIONS.USER_PROFILES);
+    const userDocRef = userCollection.doc(profile.walletAddress);
 
     // 既存のプロファイルをチェック
-    const userDoc = await getDoc(userDocRef);
+    const userDoc = await userDocRef.get();
 
-    if (userDoc.exists()) {
+    if (userDoc.exists) {
       // 既存のプロファイルを更新
-      await updateDoc(userDocRef, {
+      await userDocRef.update({
         ...profile,
         updatedAt: new Date(),
       });
     } else {
       // 新しいプロファイルを作成
-      await setDoc(userDocRef, {
+      await userDocRef.set({
         ...profile,
         createdAt: new Date(),
         updatedAt: new Date(),
