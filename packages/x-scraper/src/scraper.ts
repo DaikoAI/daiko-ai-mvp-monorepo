@@ -1,4 +1,4 @@
-import { ChangeLog, createLogger, CryptoAnalysis, Tweet } from "@daiko-ai/shared";
+import { ChangeLog, CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
 import { OpenAI } from "openai";
 import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
@@ -7,7 +7,9 @@ import { getAllXAccounts, saveChangeLog, saveSystemLog, saveXAccount } from "./d
 export class XScraper {
   private openai: OpenAI;
   private driver: WebDriver | null = null;
-  private logger = createLogger("XScraper");
+  private logger = new Logger({
+    level: LogLevel.INFO,
+  });
 
   constructor() {
     // OpenAI APIクライアントを初期化
@@ -24,7 +26,7 @@ export class XScraper {
       return this.driver;
     }
 
-    this.logger.info("Initializing Selenium WebDriver");
+    this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
       const options = new chrome.Options();
@@ -49,7 +51,7 @@ export class XScraper {
       return this.driver;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error("Failed to initialize WebDriver", {
+      this.logger.error("XScraper", "Failed to initialize WebDriver", {
         error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined,
       });
@@ -58,30 +60,15 @@ export class XScraper {
   }
 
   /**
-   * エラーオブジェクトを文字列に変換
-   */
-  private formatError(error: unknown): { message: string; stack?: string } {
-    if (error instanceof Error) {
-      return {
-        message: error.message,
-        stack: error.stack,
-      };
-    }
-    return {
-      message: String(error),
-    };
-  }
-
-  /**
    * ドライバーをクローズ
    */
   public async closeDriver(): Promise<void> {
     if (this.driver) {
-      this.logger.info("Closing WebDriver");
+      this.logger.info("XScraper", "Closing WebDriver");
       try {
         await this.driver.quit();
       } catch (error) {
-        this.logger.error("Error closing WebDriver", this.formatError(error));
+        this.logger.error("XScraper", "Error closing WebDriver", error);
       } finally {
         this.driver = null;
       }
@@ -93,13 +80,13 @@ export class XScraper {
    */
   public async checkXAccounts(): Promise<void> {
     try {
-      this.logger.info("Starting to check all X accounts");
+      this.logger.info("XScraper", "Starting to check all X accounts");
 
       const accounts = await getAllXAccounts();
-      this.logger.info(`Found ${accounts.length} accounts to check`);
+      this.logger.info("XScraper", `Found ${accounts.length} accounts to check`);
 
       if (accounts.length === 0) {
-        this.logger.warn("No accounts to check");
+        this.logger.warn("XScraper", "No accounts to check");
         return;
       }
 
@@ -111,14 +98,14 @@ export class XScraper {
           // アカウント間で少し間隔を空ける（レート制限対策）
           await new Promise((resolve) => setTimeout(resolve, 20000));
         } catch (error) {
-          this.logger.error(`Error checking account ${account.id}:`, this.formatError(error));
+          this.logger.error("XScraper", `Error checking account ${account.id}:`, error);
         }
       }
 
       await saveSystemLog("Periodic X account check finished");
-      this.logger.info("Finished checking all X accounts");
+      this.logger.info("XScraper", "Finished checking all X accounts");
     } catch (error) {
-      this.logger.error("Error checking X accounts:", this.formatError(error));
+      this.logger.error("XScraper", "Error checking X accounts:", error);
       throw error;
     } finally {
       await this.closeDriver();
@@ -130,13 +117,13 @@ export class XScraper {
    */
   public async checkSingleAccount(xId: string): Promise<Tweet[] | null> {
     try {
-      this.logger.info(`Checking X account: ${xId}`);
+      this.logger.info("XScraper", `Checking X account: ${xId}`);
 
       const driver = await this.initDriver();
       const url = `https://x.com/${xId}`;
 
       // ページに移動
-      this.logger.debug(`Navigating to ${url}`);
+      this.logger.debug("XScraper", `Navigating to ${url}`);
       await driver.get(url);
 
       // Xのページが完全に読み込まれるのを十分な時間待つ
@@ -147,10 +134,10 @@ export class XScraper {
 
       // ツイートを抽出
       const tweets = await this.extractTweets(driver);
-      this.logger.info(`Extracted ${tweets.length} tweets from ${xId}`);
+      this.logger.info("XScraper", `Extracted ${tweets.length} tweets from ${xId}`);
 
       if (tweets.length === 0) {
-        this.logger.warn(`No tweets found for ${xId}`);
+        this.logger.warn("XScraper", `No tweets found for ${xId}`);
         return null;
       }
 
@@ -159,7 +146,7 @@ export class XScraper {
       const account = accounts.find((acc) => acc.id === xId);
 
       if (!account) {
-        this.logger.error(`Account ${xId} not found in database`);
+        this.logger.error("XScraper", `Account ${xId} not found in database`);
         return null;
       }
 
@@ -168,11 +155,11 @@ export class XScraper {
       // 更新データを設定して保存
       account.lastContent = tweets;
       await saveXAccount(account);
-      this.logger.info(`Updated account data for ${xId}`);
+      this.logger.info("XScraper", `Updated account data for ${xId}`);
 
       // 変更があるかチェック
       if (lastContent.length === 0 || lastContent[0].data !== tweets[0].data) {
-        this.logger.info(`Change detected for ${xId}`);
+        this.logger.info("XScraper", `Change detected for ${xId}`);
 
         // 変更ログを保存
         const changeLog: ChangeLog = {
@@ -184,11 +171,11 @@ export class XScraper {
 
         return tweets;
       } else {
-        this.logger.info(`No change for ${xId}`);
+        this.logger.info("XScraper", `No change for ${xId}`);
         return null;
       }
     } catch (error) {
-      this.logger.error(`Error checking account ${xId}:`, this.formatError(error));
+      this.logger.error("XScraper", `Error checking account ${xId}:`, error);
       return null;
     }
   }
@@ -202,7 +189,7 @@ export class XScraper {
     try {
       // ツイート要素を取得
       const tweetElements = await driver.findElements(By.css('article[data-testid="tweet"]'));
-      this.logger.debug(`Found ${tweetElements.length} tweet elements`);
+      this.logger.debug("XScraper", `Found ${tweetElements.length} tweet elements`);
 
       for (const element of tweetElements) {
         try {
@@ -229,11 +216,11 @@ export class XScraper {
             });
           }
         } catch (error) {
-          this.logger.error("Error extracting tweet data:", { error });
+          this.logger.error("XScraper", "Error extracting tweet data:", error);
         }
       }
     } catch (error) {
-      this.logger.error("Error finding tweet elements:", { error });
+      this.logger.error("XScraper", "Error finding tweet elements:", error);
     }
 
     return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -244,7 +231,7 @@ export class XScraper {
    */
   private async isCryptoRelated(content: string): Promise<CryptoAnalysis> {
     try {
-      this.logger.info("Analyzing content for crypto relevance");
+      this.logger.info("XScraper", "Analyzing content for crypto relevance");
 
       const prompt = `
       以下のコンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連しているかどうかを判断してください:
@@ -269,14 +256,14 @@ export class XScraper {
       });
 
       const result = response.choices[0].message.content || "";
-      this.logger.debug(`OpenAI analysis result: ${result}`);
+      this.logger.debug("XScraper", `OpenAI analysis result: ${result}`);
 
       return {
         isCryptoRelated: !result.includes("関連なし"),
         analysisResult: result,
       };
     } catch (error) {
-      this.logger.error("Error checking crypto relevance:", { error });
+      this.logger.error("XScraper", "Error checking crypto relevance:", error);
       return {
         isCryptoRelated: false,
         analysisResult: "Error analyzing content",
@@ -289,7 +276,7 @@ export class XScraper {
    */
   public async addAccount(xId: string, userId: string): Promise<boolean> {
     try {
-      this.logger.info(`Adding/updating account ${xId} for user ${userId}`);
+      this.logger.info("XScraper", `Adding/updating account ${xId} for user ${userId}`);
 
       // アカウントリストを取得
       const accounts = await getAllXAccounts();
@@ -303,9 +290,9 @@ export class XScraper {
 
         if (!account.userIds.includes(userId)) {
           account.userIds.push(userId);
-          this.logger.info(`Added user ${userId} to existing account ${xId}`);
+          this.logger.info("XScraper", `Added user ${userId} to existing account ${xId}`);
         } else {
-          this.logger.info(`User ${userId} already following account ${xId}`);
+          this.logger.info("XScraper", `User ${userId} already following account ${xId}`);
         }
       } else {
         // 新しいアカウントを作成
@@ -313,7 +300,7 @@ export class XScraper {
           id: xId,
           userIds: [userId],
         };
-        this.logger.info(`Created new account entry for ${xId}`);
+        this.logger.info("XScraper", `Created new account entry for ${xId}`);
       }
 
       // アカウントを保存
@@ -324,7 +311,7 @@ export class XScraper {
 
       return true;
     } catch (error) {
-      this.logger.error(`Error adding account ${xId}:`, { error });
+      this.logger.error("XScraper", `Error adding account ${xId}:`, error);
       return false;
     }
   }

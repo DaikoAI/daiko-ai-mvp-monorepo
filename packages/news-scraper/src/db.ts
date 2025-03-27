@@ -1,39 +1,39 @@
-import type { CollectionName, NewsSite, ScrapeResult } from "@daiko-ai/shared";
-import { COLLECTIONS, getAdminFirestore } from "@daiko-ai/shared";
+import type { NewsSite } from "@daiko-ai/shared";
+import { NewsSiteRepository } from "./repositories/NewsSiteRepository";
 
 export class NewsScraperDB {
-  private readonly NEWS_SITES_COLLECTION: CollectionName = COLLECTIONS.NEWS_SITES;
-  private readonly SCRAPE_RESULTS_COLLECTION: CollectionName = COLLECTIONS.SCRAPE_RESULTS;
-  private readonly db = getAdminFirestore();
+  private readonly repository = new NewsSiteRepository();
 
   async saveNewsSite(site: NewsSite): Promise<string> {
-    const docRef = await this.db.collection(this.NEWS_SITES_COLLECTION).add({
-      ...site,
-      createdAt: new Date(),
-    });
-    return docRef.id;
+    return this.repository.create(site);
   }
 
   async getNewsSites(userId?: string): Promise<NewsSite[]> {
-    const collectionRef = this.db.collection(this.NEWS_SITES_COLLECTION);
-
-    let query = userId ? collectionRef.where("userId", "==", userId) : collectionRef;
-
-    const snapshot = await query.get();
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          ...doc.data(),
-          id: doc.id,
-        }) as NewsSite,
-    );
+    if (userId) {
+      return this.repository.findByUserId(userId);
+    }
+    return this.repository.findAll();
   }
 
-  async saveScrapeResult(result: ScrapeResult): Promise<string> {
-    const docRef = await this.db.collection(this.SCRAPE_RESULTS_COLLECTION).add({
-      ...result,
-      createdAt: new Date(),
-    });
-    return docRef.id;
+  async updateSiteContent(siteId: string, content: string): Promise<void> {
+    await this.repository.updateContent(siteId, content);
+  }
+
+  async saveScrapeResult(result: NewsSite): Promise<string> {
+    if (result.id) {
+      await this.repository.updateContent(result.id, result.content || "");
+      return result.id;
+    } else {
+      throw new Error("Site ID is required to update content");
+    }
+  }
+
+  // 以下、新規メソッド
+  async findSiteByUrl(url: string): Promise<NewsSite | null> {
+    return this.repository.findByUrl(url);
+  }
+
+  async addUserToSite(siteId: string, userId: string): Promise<void> {
+    await this.repository.addUserToSite(siteId, userId);
   }
 }

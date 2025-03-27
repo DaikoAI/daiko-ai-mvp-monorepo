@@ -15,21 +15,13 @@ import { z } from "zod";
 export const newsSiteSchema = z.object({
   id: z.string().optional(),
   url: z.string(),
-  userId: z.string(),
-  lastCrawled: z.string().optional(),
+  userId: z.array(z.string()).optional(),
+  lastScraped: z.string().optional(),
+  content: z.string().optional(),
   title: z.string().optional(),
   description: z.string().optional(),
 });
 export type NewsSite = z.infer<typeof newsSiteSchema>;
-
-export const scrapeResultSchema = z.object({
-  id: z.string(),
-  siteId: z.string(),
-  url: z.string(),
-  content: z.string(),
-  timestamp: z.string(),
-});
-export type ScrapeResult = z.infer<typeof scrapeResultSchema>;
 
 export const userSchema = z.object({
   email: z.string().email().optional(),
@@ -86,7 +78,6 @@ export type TradeProposal = z.infer<typeof tradeProposalSchema>;
 export const COLLECTIONS = {
   USER_PROFILES: "userProfiles",
   NEWS_SITES: "newsSites",
-  SCRAPE_RESULTS: "scrapeResults",
   X_ACCOUNTS: "xAccounts",
   CHANGE_LOGS: "changeLogs",
   NOTIFICATION_LOGS: "notificationLogs",
@@ -97,7 +88,6 @@ export const COLLECTIONS = {
 export const collectionNameSchema = z.enum([
   COLLECTIONS.USER_PROFILES,
   COLLECTIONS.NEWS_SITES,
-  COLLECTIONS.SCRAPE_RESULTS,
   COLLECTIONS.X_ACCOUNTS,
   COLLECTIONS.CHANGE_LOGS,
   COLLECTIONS.NOTIFICATION_LOGS,

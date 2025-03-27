@@ -31,15 +31,22 @@ async function runNewsScraperJob() {
     for (const site of sites) {
       try {
         console.log(`Scraping site ${site.url}`);
-        const result = await scraper.scrapeSite(site);
+        const content = await scraper.scrapeSite(site);
 
-        // 結果を保存
-        await db.saveScrapeResult(result);
+        if (site.id) {
+          // saveScrapeResultメソッドを使用して既存のサイトを更新
+          await db.saveScrapeResult({
+            ...site,
+            content: content,
+            lastScraped: new Date().toISOString(),
+          });
 
-        results.push(result);
-        console.log(`Successfully scraped site: ${site.id}`);
+          results.push({ siteId: site.id, status: "success" });
+          console.log(`Successfully scraped site: ${site.id}`);
+        }
       } catch (error) {
         console.error(`Error scraping site ${site.id}:`, error);
+        results.push({ siteId: site.id, status: "error", message: String(error) });
       }
     }
 

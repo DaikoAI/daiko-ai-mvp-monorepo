@@ -1,60 +1,64 @@
-// ログレベルの定義
-export enum LogLevel {
-  ERROR = 0,
-  WARN = 1,
-  INFO = 2,
-  HTTP = 3,
-  DEBUG = 4,
-}
-
-// メタデータの型定義
-export interface LogMetadata {
-  [key: string]: any;
-}
-
-// ログエントリの型定義
-export interface LogEntry {
-  timestamp: Date;
-  level: LogLevel;
-  service: string;
-  message: string;
-  metadata?: LogMetadata;
-}
-
-// ロガーの設定
-export interface LoggerConfig {
-  level?: LogLevel;
-  service: string;
-  enableTimestamp?: boolean;
-  enableColors?: boolean;
-  logToFile?: boolean;
-  logPath?: string;
-}
+import type { LogEntry, LoggerConfig, LogWriter } from "../types";
+import { LogLevel } from "../types";
 
 export class Logger {
-  private config: Required<Omit<LoggerConfig, "logPath">>;
-  private logPath?: string;
+  private config: Omit<Required<LoggerConfig>, "logWriter">;
+  private logWriter?: LogWriter;
 
   constructor(config: LoggerConfig) {
     this.config = {
-      level: config.level ?? LogLevel.INFO,
-      service: config.service,
+      level: config.level,
       enableTimestamp: config.enableTimestamp ?? true,
       enableColors: config.enableColors ?? true,
       logToFile: config.logToFile ?? false,
+      logPath: config.logPath ?? "./logs",
     };
-    this.logPath = config.logPath;
+
+    if (this.config.logToFile && !config.logWriter) {
+      throw new Error("LogWriter must be provided when logToFile is enabled");
+    }
+
+    if (config.logWriter) {
+      this.logWriter = config.logWriter;
+    }
   }
 
-  private log(level: LogLevel, message: string, metadata?: LogMetadata): void {
+  // biome-ignore lint/suspicious/noExplicitAny: data could be anything
+  error(context: string, message: string, data?: any) {
+    this.log(LogLevel.ERROR, context, message, data);
+    console.error(data);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: data could be anything
+  warn(context: string, message: string, data?: any) {
+    this.log(LogLevel.WARN, context, message, data);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: data could be anything
+  info(context: string, message: string, data?: any) {
+    this.log(LogLevel.INFO, context, message, data);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: data could be anything
+  debug(context: string, message: string, data?: any) {
+    this.log(LogLevel.DEBUG, context, message, data);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: data could be anything
+  trace(context: string, message: string, data?: any) {
+    this.log(LogLevel.TRACE, context, message, data);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: data could be anything
+  private log(level: LogLevel, context: string, message: string, data?: any) {
     if (level > this.config.level) return;
 
     const entry: LogEntry = {
-      timestamp: new Date(),
       level,
-      service: this.config.service,
+      timestamp: new Date(),
+      context,
       message,
-      metadata,
+      data,
     };
 
     const formatted = this.formatLogEntry(entry);
@@ -66,7 +70,7 @@ export class Logger {
     }
 
     if (this.config.logToFile) {
-      this.writeToFile(formatted);
+      this.writeToFile(entry);
     }
   }
 
@@ -78,11 +82,11 @@ export class Logger {
     }
 
     parts.push(`[${LogLevel[entry.level]}]`);
-    parts.push(`[${entry.service}]`);
+    parts.push(`[${entry.context}]`);
     parts.push(entry.message);
 
-    if (entry.metadata) {
-      parts.push(JSON.stringify(entry.metadata, null, 2));
+    if (entry.data) {
+      parts.push(JSON.stringify(entry.data, null, 2));
     }
 
     return parts.join(" ");
@@ -93,61 +97,27 @@ export class Logger {
       [LogLevel.ERROR]: "\x1b[31m", // Red
       [LogLevel.WARN]: "\x1b[33m", // Yellow
       [LogLevel.INFO]: "\x1b[36m", // Cyan
-      [LogLevel.HTTP]: "\x1b[35m", // Magenta
       [LogLevel.DEBUG]: "\x1b[32m", // Green
+      [LogLevel.TRACE]: "\x1b[90m", // Gray
     };
 
     const reset = "\x1b[0m";
     return `${colors[level]}${message}${reset}`;
   }
 
-  private writeToFile(message: string): void {
-    if (!this.logPath) return;
-
-    try {
-      const fs = require("fs");
-      const path = require("path");
-      const logFile = path.join(this.logPath, `${this.config.service}.log`);
-
-      fs.appendFileSync(logFile, message + "\n");
-    } catch (error) {
-      console.error("Failed to write to log file:", error);
+  private initLogFile() {
+    if (!this.logWriter) {
+      throw new Error("LogWriter not configured");
     }
+    this.logWriter.init(this.config.logPath);
   }
 
-  error(message: string, metadata?: LogMetadata): void {
-    this.log(LogLevel.ERROR, message, metadata);
-  }
+  private writeToFile(entry: LogEntry) {
+    if (!this.logWriter) {
+      throw new Error("LogWriter not configured");
+    }
 
-  warn(message: string, metadata?: LogMetadata): void {
-    this.log(LogLevel.WARN, message, metadata);
-  }
-
-  info(message: string, metadata?: LogMetadata): void {
-    this.log(LogLevel.INFO, message, metadata);
-  }
-
-  http(message: string, metadata?: LogMetadata): void {
-    this.log(LogLevel.HTTP, message, metadata);
-  }
-
-  debug(message: string, metadata?: LogMetadata): void {
-    this.log(LogLevel.DEBUG, message, metadata);
+    const logLine = `${this.formatLogEntry(entry)}\n`;
+    this.logWriter.write(logLine);
   }
 }
-
-// シングルトンインスタンスを作成するファクトリ関数
-const loggers: { [key: string]: Logger } = {};
-
-export function createLogger(service: string, config?: Partial<Omit<LoggerConfig, "service">>): Logger {
-  if (!loggers[service]) {
-    loggers[service] = new Logger({
-      service,
-      ...config,
-    });
-  }
-  return loggers[service];
-}
-
-// デフォルトのロガーインスタンス
-export const defaultLogger = createLogger("default");

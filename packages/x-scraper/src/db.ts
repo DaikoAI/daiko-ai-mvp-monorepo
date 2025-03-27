@@ -1,5 +1,5 @@
 import type { ChangeLog, NotificationLog, XAccount } from "@daiko-ai/shared";
-import { COLLECTIONS, defaultLogger, getAdminFirestore } from "@daiko-ai/shared";
+import { COLLECTIONS, getAdminFirestore } from "@daiko-ai/shared";
 
 // Firestoreの参照を取得
 const db = getAdminFirestore();
@@ -18,7 +18,7 @@ export const getAllXAccounts = async (): Promise<XAccount[]> => {
         }) as XAccount,
     );
   } catch (error) {
-    defaultLogger.error("Error getting all X accounts:", { error });
+    console.error("Error getting all X accounts:", error);
     return [];
   }
 };
@@ -32,9 +32,9 @@ export const saveXAccount = async (account: XAccount): Promise<void> => {
       },
       { merge: true },
     );
-    defaultLogger.info(`Saved X account: ${account.id}`);
+    console.info(`Saved X account: ${account.id}`);
   } catch (error) {
-    defaultLogger.error(`Error saving X account ${account.id}:`, { error });
+    console.error(`Error saving X account ${account.id}:`, { error });
     throw error;
   }
 };
@@ -48,7 +48,7 @@ export const saveChangeLog = async (log: ChangeLog): Promise<void> => {
       ...log,
       createdAt: new Date(),
     });
-    defaultLogger.info(`Saved change log for ${log.xid} with ID: ${newLogRef.id}`);
+    console.info(`Saved change log for ${log.xid} with ID: ${newLogRef.id}`);
 
     // 古いログを削除（最新100件のみ保持）
     const snapshot = await changeLogsCollection.orderBy("timestamp", "asc").limit(1000).get();
@@ -64,10 +64,10 @@ export const saveChangeLog = async (log: ChangeLog): Promise<void> => {
       }
       await batch.commit();
 
-      defaultLogger.info(`Removed ${docsToDelete.length} old change logs`);
+      console.info(`Removed ${docsToDelete.length} old change logs`);
     }
   } catch (error) {
-    defaultLogger.error(`Error saving change log for ${log.xid}:`, { error });
+    console.error(`Error saving change log for ${log.xid}:`, { error });
     throw error;
   }
 };
@@ -81,7 +81,7 @@ export const saveNotificationLog = async (log: NotificationLog): Promise<void> =
       ...log,
       createdAt: new Date(),
     });
-    defaultLogger.info(`Saved notification log for ${log.accountId} with ID: ${newLogRef.id}`);
+    console.info(`Saved notification log for ${log.accountId} with ID: ${newLogRef.id}`);
 
     // 古いログを削除（最新100件のみ保持）
     const snapshot = await notificationLogsCollection.orderBy("timestamp", "asc").limit(1000).get();
@@ -97,10 +97,10 @@ export const saveNotificationLog = async (log: NotificationLog): Promise<void> =
       }
       await batch.commit();
 
-      defaultLogger.info(`Removed ${docsToDelete.length} old notification logs`);
+      console.info(`Removed ${docsToDelete.length} old notification logs`);
     }
   } catch (error) {
-    defaultLogger.error(`Error saving notification log for ${log.accountId}:`, { error });
+    console.error(`Error saving notification log for ${log.accountId}:`, { error });
     throw error;
   }
 };
@@ -117,8 +117,8 @@ export const saveSystemLog = async (action: string): Promise<void> => {
     };
 
     const newLogRef = await systemLogsCollection.add(log);
-    defaultLogger.info(`Saved system log: ${action} with ID: ${newLogRef.id}`);
+    console.info(`Saved system log: ${action} with ID: ${newLogRef.id}`);
   } catch (error) {
-    defaultLogger.error(`Error saving system log (${action}):`, { error });
+    console.error(`Error saving system log (${action}):`, { error });
   }
 };

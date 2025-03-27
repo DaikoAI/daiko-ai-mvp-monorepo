@@ -1,20 +1,20 @@
-import { defaultLogger } from "@daiko-ai/shared";
-import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { logger } from "hono/logger";
-import { saveSystemLog } from "./db";
-import { XScraper } from "./scraper";
-
 // 環境変数読み込み
 import * as dotenv from "dotenv";
 dotenv.config();
+
+import { Logger, LogLevel } from "@daiko-ai/shared";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger as honoLogger } from "hono/logger";
+import { saveSystemLog } from "./db";
+import { XScraper } from "./scraper";
 
 // サーバーのインスタンス作成
 const app = new Hono();
 
 // ミドルウェア
-app.use("*", logger());
+app.use("*", honoLogger());
 app.use("*", cors());
 
 // スクレイパーのインスタンスを作成
@@ -22,6 +22,10 @@ const scraper = new XScraper();
 
 // 定期スクレイピングのタイマー
 let scheduledTask: NodeJS.Timeout | null = null;
+
+const logger = new Logger({
+  level: LogLevel.INFO,
+});
 
 // ルートエンドポイント
 app.get("/", (c) => {
@@ -61,14 +65,14 @@ app.get("/health", (c) => {
 // すべてのアカウントをチェック
 app.get("/check", async (c) => {
   try {
-    defaultLogger.info("Manual check of all accounts triggered");
+    logger.info("Route:/check", "Manual check of all accounts triggered");
 
     // レスポンスを先に返す
     c.status(200);
 
     // スクレイピングを実行
     scraper.checkXAccounts().catch((error) => {
-      defaultLogger.error("Error in check operation:", { error });
+      logger.error("Route:/check", "Error in check operation:", error);
     });
 
     return c.json({
@@ -76,7 +80,7 @@ app.get("/check", async (c) => {
       success: true,
     });
   } catch (error) {
-    defaultLogger.error("Error in /check endpoint:", { error });
+    logger.error("Route:/check", "Error in /check endpoint:", error);
     return c.json(
       {
         success: false,
@@ -102,7 +106,7 @@ app.post("/check-account", async (c) => {
       );
     }
 
-    defaultLogger.info(`Manual check of account ${xId} triggered`);
+    logger.info("Route:/check-account", `Manual check of account ${xId} triggered`);
 
     // 特定のアカウントをチェック
     const result = await scraper.checkSingleAccount(xId);
@@ -113,7 +117,7 @@ app.post("/check-account", async (c) => {
       data: result,
     });
   } catch (error) {
-    defaultLogger.error("Error in /check-account endpoint:", { error });
+    logger.error("Route:/check-account", "Error in /check-account endpoint:", error);
     return c.json(
       {
         success: false,
@@ -139,7 +143,7 @@ app.post("/add-account", async (c) => {
       );
     }
 
-    defaultLogger.info(`Adding account ${xId} for user ${userId}`);
+    logger.info("Route:/add-account", `Adding account ${xId} for user ${userId}`);
 
     // アカウントを追加
     const success = await scraper.addAccount(xId, userId);
@@ -159,7 +163,8 @@ app.post("/add-account", async (c) => {
       );
     }
   } catch (error) {
-    defaultLogger.error("Error in /add-account endpoint:", { error });
+    console.error(error);
+    logger.error("Route:/add-account", "Error in /add-account endpoint:", error);
     return c.json(
       {
         success: false,
@@ -177,7 +182,7 @@ app.post("/crawl/scheduled", async (c) => {
     const securityKey = c.req.query("key");
 
     if (!securityKey || securityKey !== process.env.CRON_SECURITY_KEY) {
-      defaultLogger.warn("Unauthorized scheduled crawl attempt");
+      logger.warn("Route:/crawl/scheduled", "Unauthorized scheduled crawl attempt");
       return c.json(
         {
           success: false,
@@ -187,12 +192,12 @@ app.post("/crawl/scheduled", async (c) => {
       );
     }
 
-    defaultLogger.info("Scheduled crawl triggered via API");
+    logger.info("Route:/crawl/scheduled", "Scheduled crawl triggered via API");
     await saveSystemLog("Starting scheduled crawl via API");
 
     // スクレイピングを非同期で実行
     scraper.checkXAccounts().catch((error) => {
-      defaultLogger.error("Error in scheduled crawl:", { error });
+      logger.error("Route:/crawl/scheduled", "Error in scheduled crawl:", error);
     });
 
     return c.json({
@@ -200,7 +205,7 @@ app.post("/crawl/scheduled", async (c) => {
       message: "Scheduled crawl started",
     });
   } catch (error) {
-    defaultLogger.error("Error in scheduled crawl endpoint:", { error });
+    logger.error("Route:/crawl/scheduled", "Error in scheduled crawl endpoint:", error);
     return c.json(
       {
         success: false,
@@ -218,12 +223,12 @@ export const startServer = (port = 3000) => {
     port,
   });
 
-  defaultLogger.info(`X Scraper server running on port ${port}`);
+  logger.info("Route:/", `X Scraper server running on port ${port}`);
 };
 
 // プロセス終了時の処理
 process.on("SIGTERM", async () => {
-  defaultLogger.info("SIGTERM received, shutting down gracefully");
+  logger.info("Route:/", "SIGTERM received, shutting down gracefully");
   if (scheduledTask) {
     clearInterval(scheduledTask);
   }
@@ -232,7 +237,7 @@ process.on("SIGTERM", async () => {
 });
 
 process.on("SIGINT", async () => {
-  defaultLogger.info("SIGINT received, shutting down gracefully");
+  logger.info("Route:/", "SIGINT received, shutting down gracefully");
   if (scheduledTask) {
     clearInterval(scheduledTask);
   }
