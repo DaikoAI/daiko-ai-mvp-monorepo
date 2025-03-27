@@ -56,11 +56,11 @@ pnpm start
 ## API エンドポイント
 
 - **POST `/sites`**: ニュースサイトを追加
-  - リクエスト本文: `{ "url": "https://example.com", "userId": "user123" }`
+  - リクエスト本文: `{ "url": "https://coinpost.jp", "userId": "test-user" }`
 - **GET `/sites`**: ユーザーのニュースサイト一覧を取得
   - クエリパラメータ: `userId`
-- **POST `/sites/:siteId/crawl`**: 特定のサイトの手動クロールを実行
-- **POST `/crawl/scheduled`**: すべてのサイトのクロールを実行
+- **POST `/sites/:siteId/scrape`**: 特定のサイトの手動クロールを実行
+- **POST `/scrape/scheduled`**: すべてのサイトのクロールを実行
 
 ## API のテスト
 
@@ -68,16 +68,16 @@ pnpm start
 # サイトの追加
 curl -X POST http://localhost:3000/sites \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com", "userId": "user123"}'
+  -d '{"url": "https://coinpost.jp", "userId": "test-user"}'
 
 # ユーザーのサイト一覧取得
-curl "http://localhost:3000/sites?userId=user123"
+curl "http://localhost:3000/sites?userId=test-user"
 
 # 特定のサイトのクロール実行
-curl -X POST http://localhost:3000/sites/site123/crawl
+curl -X POST http://localhost:3000/sites/site123/scrape
 
 # スケジュールされたクロール実行
-curl -X POST http://localhost:3000/crawl/scheduled
+curl -X POST http://localhost:3000/scrape/scheduled
 ```
 
 ## Railway へのデプロイ

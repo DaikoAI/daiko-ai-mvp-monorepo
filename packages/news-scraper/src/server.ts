@@ -127,20 +127,6 @@ app.post("/sites/:siteId/scrape", async (c) => {
 // 定期クロール用エンドポイント
 app.post("/scrape/scheduled", async (c) => {
   try {
-    // セキュリティキーのチェック
-    const securityKey = c.req.query("key");
-
-    if (!securityKey || securityKey !== process.env.CRON_SECURITY_KEY) {
-      logger.warn("Route:/scrape/scheduled", "Unauthorized scheduled crawl attempt");
-      return c.json(
-        {
-          success: false,
-          message: "Unauthorized access",
-        },
-        401,
-      );
-    }
-
     const sites = await db.getNewsSites();
     const results = [];
 
@@ -172,3 +158,8 @@ export const startServer = (port = 3000) => {
 
   logger.info("Route:/", `News Scraper server running on port ${port}`);
 };
+
+// このファイルが直接実行された場合にサーバーを起動
+if (require.main === module) {
+  startServer();
+}
