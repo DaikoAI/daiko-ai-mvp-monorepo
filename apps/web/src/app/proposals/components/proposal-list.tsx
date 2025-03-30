@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import { TradeProposal } from "@daiko-ai/shared";
-import { ProposalCard } from "./proposal-card";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ProposalCard } from "./proposal-card";
 
 type ProposalListProps = {
   initialProposals: TradeProposal[];
@@ -22,9 +21,11 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
       // 期限切れが近いプロポーザルを特定（30秒以内）
       const aboutToExpire = proposals
         .filter(
-          (p) => p.expires_at && p.expires_at.getTime() - now.getTime() < 30000 && !expiringProposals.includes(p.id),
+          (p) =>
+            p.expires_at && p.expires_at.getTime() - now.getTime() < 30000 && p.id && !expiringProposals.includes(p.id),
         )
-        .map((p) => p.id);
+        .map((p) => p.id!)
+        .filter((id): id is string => id !== undefined);
 
       if (aboutToExpire.length > 0) {
         setExpiringProposals((prev) => [...prev, ...aboutToExpire]);
@@ -74,11 +75,13 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
     <>
       {proposals.length > 0 ? (
         <div className="space-y-4">
-          {proposals.map((proposal) => (
-            <div key={proposal.id} className="transition-all duration-1000">
-              <ProposalCard proposal={proposal} onRemove={handleRemoveProposal} />
-            </div>
-          ))}
+          {proposals
+            .filter((proposal) => proposal.id !== undefined)
+            .map((proposal) => (
+              <div key={proposal.id!} className="transition-all duration-1000">
+                <ProposalCard proposal={{ ...proposal, id: proposal.id! }} onRemove={handleRemoveProposal} />
+              </div>
+            ))}
         </div>
       ) : (
         <div className="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
