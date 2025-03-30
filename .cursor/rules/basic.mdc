@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
 # Basic Rules
 
 - `Turborepo`, `pnpm`を用いたmonorepo構成を効果的に使用し、packageの切り分けや、型の共通化などを考えながらコードを書いて下さい

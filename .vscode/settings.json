@@ -1,6 +1,7 @@
 {
   "files.associations": {
-    ".cursorrules": "markdown"
+    ".cursorrules": "markdown",
+    ".mdc": "markdown"
   },
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
