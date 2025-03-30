@@ -1,7 +1,7 @@
+import { getProposals } from "@/lib/firebase";
+import { TradeProposal } from "@daiko-ai/shared";
 import { NextPage } from "next";
 import { ProposalList } from "./components/proposal-list";
-import { TradeProposal } from "@daiko-ai/shared";
-import { getProposals } from "@/lib/firebase";
 
 const ProposalsPage: NextPage = async () => {
   const initialProposals: TradeProposal[] = [
@@ -63,33 +63,64 @@ const ProposalsPage: NextPage = async () => {
         riskLevel: "high",
       },
     },
+    // {
+    //   id: "3",
+    //   title: "Stake 15.8 SOL in Sanctum's Infinity LST Pool",
+    //   summary: "Earn 6.8% APY by depositing your idle 15.8 SOL ($3,243) into Sanctum's diversified LST staking pool",
+    //   reason: [
+    //     "You have 15.8 SOL ($3,243) sitting idle in your wallet",
+    //     "Sanctum's Infinity pool is the first diversified LST pool on Solana",
+    //     "Dual revenue streams: standard staking yields plus trading fees",
+    //     "Reduced validator risk through diversification",
+    //     "Maintains efficient liquidity through unbonding mechanisms",
+    //     "Current APY of 6.8% generates ~$220 over one year",
+    //     "Low risk rating due to diversified validator exposure",
+    //     "Supports Solana validator ecosystem decentralization",
+    //   ],
+    //   sources: [
+    //     { name: "Sanctum Protocol Documentation", url: "#" },
+    //     { name: "Solana LST Ecosystem Analysis", url: "#" },
+    //     { name: "Infinity Pool Performance Metrics", url: "#" },
+    //   ],
+    //   type: "stake",
+    //   proposedBy: "AI XBT",
+    //   // 新規追加フィールド
+    //   expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72), // 72時間後
+    //   financialImpact: {
+    //     currentValue: 3243,
+    //     projectedValue: 3463,
+    //     percentChange: 6.8,
+    //     timeFrame: "1 year",
+    //     riskLevel: "low",
+    //   },
+    // },
     {
-      id: "3",
-      title: "Stake 15.8 SOL in Sanctum's Infinity LST Pool",
-      summary: "Earn 6.8% APY by depositing your idle 15.8 SOL ($3,243) into Sanctum's diversified LST staking pool",
+      id: "4",
+      title: "Stake 15.8 SOL in Jupiter's JupSOL for Enhanced Yields",
+      summary:
+        "Earn 8.24% APY by converting your idle 15.8 SOL ($3,243) to JupSOL, Jupiter's high-yield liquid staking token",
       reason: [
         "You have 15.8 SOL ($3,243) sitting idle in your wallet",
-        "Sanctum's Infinity pool is the first diversified LST pool on Solana",
-        "Dual revenue streams: standard staking yields plus trading fees",
-        "Reduced validator risk through diversification",
-        "Maintains efficient liquidity through unbonding mechanisms",
-        "Current APY of 6.8% generates ~$220 over one year",
-        "Low risk rating due to diversified validator exposure",
-        "Supports Solana validator ecosystem decentralization",
+        "JupSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+        "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
+        "100% MEV kickback increases your staking rewards",
+        "Helps improve Jupiter's transaction success rates during congestion",
+        "Maintains liquidity - can be used across DeFi or redeemed for SOL anytime",
+        "Low risk with SPL stake pool security and multi-sig program authority",
+        "Validator run by Triton One, a trusted industry expert",
       ],
       sources: [
-        { name: "Sanctum Protocol Documentation", url: "#" },
-        { name: "Solana LST Ecosystem Analysis", url: "#" },
-        { name: "Infinity Pool Performance Metrics", url: "#" },
+        { name: "Jupiter JupSOL Documentation", url: "#" },
+        { name: "Solana LST Comparison Analysis", url: "#" },
+        { name: "JupSOL Performance Metrics", url: "#" },
       ],
       type: "stake",
-      proposedBy: "AI XBT",
-      // 新規追加フィールド
+      proposedBy: "Daiko AI",
       expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72), // 72時間後
       financialImpact: {
         currentValue: 3243,
-        projectedValue: 3463,
-        percentChange: 6.8,
+        projectedValue: 3510,
+        percentChange: 8.24,
         timeFrame: "1 year",
         riskLevel: "low",
       },
