@@ -4,6 +4,7 @@ import { InstallDrawer } from "@/components/install-drawer";
 import { Button } from "@/components/ui/button";
 import { useA2HS } from "@/hooks/useA2H";
 import { isPWA } from "@/utils/pwa";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -59,17 +60,8 @@ export const LandingPage: React.FC = () => {
 
       {/* Logo Section */}
       <div className="relative z-10 flex items-center justify-center pt-12 pb-6">
-        <div className="flex items-center">
-          <svg
-            className="w-8 h-8 mr-2 text-[oklch(0.65_0.15_27.5)]"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            stroke="currentColor"
-            strokeWidth="0.5"
-          >
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
+        <div className="flex items-center gap-2">
+          <Image src="/icon.jpg" alt="Daiko Logo" width={32} height={32} />
           <span className="text-2xl font-bold text-white">DAIKO</span>
         </div>
       </div>
@@ -80,7 +72,7 @@ export const LandingPage: React.FC = () => {
           <h1 className="text-4xl md:text-6xl font-bold mb-8 text-white leading-tight">
             The First
             <br />
-            <span className="text-[oklch(0.65_0.15_27.5)]">Exit Strategy Agent</span>
+            <span className="text-primary">Exit Strategy Agent</span>
             <br />
             For Your Portfolio
           </h1>
@@ -91,9 +83,9 @@ export const LandingPage: React.FC = () => {
 
           <div className="space-y-6 mb-8">
             <div className="flex items-start space-x-4 text-left">
-              <div className="w-10 h-10 rounded-full bg-[oklch(0.65_0.15_27.5)]/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
                 <svg
-                  className="w-5 h-5 text-[oklch(0.65_0.15_27.5)]"
+                  className="w-5 h-5 text-primary"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -114,9 +106,9 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="flex items-start space-x-4 text-left">
-              <div className="w-10 h-10 rounded-full bg-[oklch(0.65_0.15_27.5)]/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
                 <svg
-                  className="w-5 h-5 text-[oklch(0.65_0.15_27.5)]"
+                  className="w-5 h-5 text-primary"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -144,7 +136,7 @@ export const LandingPage: React.FC = () => {
         <InstallDrawer>
           <Button
             size="lg"
-            className="w-full py-6 text-lg rounded-xl bg-[oklch(0.65_0.15_27.5)] hover:bg-[oklch(0.65_0.15_27.5)]/90 flex items-center justify-center"
+            className="w-full py-6 text-lg rounded-xl bg-primary hover:bg-primary/90 flex items-center justify-center"
           >
             <svg
               className="w-6 h-6 mr-2"

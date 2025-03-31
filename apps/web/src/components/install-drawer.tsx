@@ -1,7 +1,8 @@
 "use client";
 
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useA2HS } from "@/hooks/useA2H";
+import Image from "next/image";
 import { useState } from "react";
 
 interface InstallDrawerProps {
@@ -38,19 +39,10 @@ export const InstallDrawer: React.FC<InstallDrawerProps> = ({ children }) => {
       <DrawerTrigger asChild>{children}</DrawerTrigger>
       <DrawerContent className="h-[50vh] rounded-t-xl">
         <div className="px-4 py-6 flex flex-col items-center justify-center h-full text-center">
+          <DrawerTitle className="sr-only">Install DAIKO App</DrawerTitle>
+          <DrawerDescription className="sr-only">Instructions to install DAIKO app on your device</DrawerDescription>
           <div className="w-16 h-16 mb-4 bg-black rounded-2xl flex items-center justify-center">
-            <svg
-              className="w-10 h-10 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+            <Image src="/icon.jpg" alt="Daiko Logo" width={50} height={50} />
           </div>
 
           <h2 className="text-2xl font-bold mb-1">Install DAIKO</h2>

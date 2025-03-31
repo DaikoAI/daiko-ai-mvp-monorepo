@@ -9,7 +9,7 @@ import { useHaptic } from "use-haptic";
 
 export const GlobalFooter: React.FC = () => {
   const pathname = usePathname();
-  const { vibe } = useHaptic();
+  const { triggerHaptic } = useHaptic();
   const { publicKey } = useWallet();
 
   const navItems = [
@@ -48,7 +48,7 @@ export const GlobalFooter: React.FC = () => {
                 "flex h-full w-full flex-col items-center justify-center space-y-1 px-2 text-muted-foreground transition-colors hover:text-primary",
                 isActive && "text-primary glow-text",
               )}
-              onClick={() => vibe()}
+              onClick={() => triggerHaptic()}
             >
               <item.icon size={24} className={cn(isActive && "text-primary icon-highlight")} />
               <span className={cn("text-xs", isActive && "font-medium text-primary")}>{item.name}</span>
