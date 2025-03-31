@@ -1,7 +1,7 @@
 "use client";
 
 import { TradeProposal } from "@daiko-ai/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { ProposalCard } from "./proposal-card";
 
@@ -12,11 +12,14 @@ type ProposalListProps = {
 export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) => {
   const [proposals, setProposals] = useState(initialProposals);
   const [expiringProposals, setExpiringProposals] = useState<string[]>([]);
+  // 通知済みの期限切れproposalを追跡するためのRef
+  const notifiedExpiredProposalsRef = useRef<Set<string>>(new Set());
 
   // 期限切れのプロポーザルを自動的に削除するエフェクト
   useEffect(() => {
     const checkExpiration = () => {
       const now = new Date();
+      const notifiedIds = notifiedExpiredProposalsRef.current;
 
       // 期限切れが近いプロポーザルを特定（30秒以内）
       const aboutToExpire = proposals
@@ -45,11 +48,14 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
         setTimeout(() => {
           setProposals(updatedProposals);
 
-          // 期限切れになったプロポーザルをトースト通知
+          // 期限切れになったプロポーザルをトースト通知 (まだ通知していないもののみ)
           expiredProposals.forEach((p) => {
-            toast.error(`Proposal expired`, {
-              description: `The proposal "${p.title}" has expired and been removed.`,
-            });
+            if (p.id && !notifiedIds.has(p.id)) {
+              toast.error(`Proposal expired`, {
+                description: `The proposal "${p.title}" has expired and been removed.`,
+              });
+              notifiedIds.add(p.id);
+            }
           });
 
           // 期限切れリストからも削除

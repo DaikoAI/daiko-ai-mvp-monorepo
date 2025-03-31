@@ -25,7 +25,7 @@ const ProposalsPage: NextPage = async () => {
       type: "trade",
       proposedBy: "Daiko AI",
       // 40秒後に期限切れになるように設定
-      expires_at: new Date(Date.now() + 1000 * 40),
+      expires_at: new Date(Date.now() + 1000 * 10),
       financialImpact: {
         currentValue: 5000,
         projectedValue: 5615,
