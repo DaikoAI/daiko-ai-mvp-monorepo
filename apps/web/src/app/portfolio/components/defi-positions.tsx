@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { cn } from "@/utils";
+import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { useState } from "react";
 
 // Mock data for DeFi positions with real logos
 const defiPositions = [
@@ -13,7 +13,7 @@ const defiPositions = [
     type: "Liquid Staking",
     asset: "SOL",
     stakedAmount: 25.5,
-    valueUSD: 5227.5,
+    valueUSD: 52.5,
     apy: 6.8,
     rewards: "INF",
     iconUrl: "https://sonarwatch.github.io/portfolio/assets/images/platforms/marinade.webp",
@@ -24,7 +24,7 @@ const defiPositions = [
     type: "Liquid Staking",
     asset: "SOL",
     stakedAmount: 12.0,
-    valueUSD: 2460.0,
+    valueUSD: 24.6,
     apy: 7.2,
     rewards: "jitoSOL + JTO",
     iconUrl: "https://wsrv.nl/?w=48&h=48&url=https://metadata.jito.network/token/jto/image",
@@ -35,7 +35,7 @@ const defiPositions = [
     type: "Liquidity Provision",
     asset: "SOL-USDC",
     stakedAmount: 5.0,
-    valueUSD: 1025.0,
+    valueUSD: 10.25,
     apy: 12.5,
     rewards: "KMNO",
     iconUrl: "https://sonar.watch/img/platforms/kamino.webp",

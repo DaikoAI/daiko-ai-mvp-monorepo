@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -60,10 +59,7 @@ const ProposalPnLVisualization: React.FC<{ financialImpact?: FinancialImpact; pr
 
   return (
     <div className="mt-3 p-3 rounded-lg bg-card/50">
-      <div className="text-xs text-muted-foreground mb-1">
-        {isStaking ? "Potential Earnings" : isPositive ? "Potential Profit" : "Risk Prevention"} (
-        {financialImpact.timeFrame || "1 year"})
-      </div>
+      <div className="text-xs text-muted-foreground mb-1">Price Prediction</div>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -99,23 +95,6 @@ const ProposalPnLVisualization: React.FC<{ financialImpact?: FinancialImpact; pr
           {financialImpact.percentChange}% (${diffValue.toLocaleString()})
         </div>
       </div>
-
-      {financialImpact.riskLevel && (
-        <div className="mt-2 flex items-center">
-          <span className="text-xs text-muted-foreground mr-2">Risk:</span>
-          <div
-            className={`px-2 py-0.5 rounded-full text-xs ${
-              financialImpact.riskLevel === "low"
-                ? "bg-green-500/20 text-green-500"
-                : financialImpact.riskLevel === "medium"
-                  ? "bg-yellow-500/20 text-yellow-500"
-                  : "bg-red-500/20 text-red-500"
-            }`}
-          >
-            {financialImpact.riskLevel}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -263,7 +242,7 @@ export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string
             </div>
           </div>
           <CardTitle className="text-lg mt-2">{proposal.title}</CardTitle>
-          <p className="text-sm text-muted-foreground">{proposal.summary}</p>
+          {/* <p className="text-sm text-muted-foreground">{proposal.summary}</p> */}
 
           {/* 損益ビジュアライゼーション */}
           {proposal.financialImpact && (
@@ -325,17 +304,8 @@ export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Checkbox
-                      id={`hold-${proposal.id}`}
-                      checked={userPreferences.holdToken}
-                      onCheckedChange={(checked) => {
-                        if (typeof checked === "boolean") {
-                          saveUserPreferences({ ...userPreferences, holdToken: checked });
-                        }
-                      }}
-                    />
                     <Label htmlFor={`hold-${proposal.id}`} className="text-xs text-muted-foreground">
-                      Hold this investment for at least
+                      Hold this asset for at least
                     </Label>
                     <select
                       className="h-7 text-xs rounded-md border border-input bg-transparent px-2"
