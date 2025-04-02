@@ -69,14 +69,6 @@ const ProposalPnLVisualization: React.FC<{ financialImpact?: FinancialImpact; pr
             {isStaking && <span className="text-xs text-muted-foreground">(No earnings)</span>}
           </div>
 
-          <div className="h-0.5 w-12 bg-muted relative">
-            <div
-              className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isPositive ? "bg-green-500" : "bg-red-500"}`}
-            >
-              <div className="animate-ping absolute inset-0 rounded-full bg-green-400 opacity-50"></div>
-            </div>
-          </div>
-
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Expected</span>
             <span className="font-medium">${projectedValue.toLocaleString()}</span>
