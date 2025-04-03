@@ -1,10 +1,9 @@
-import { getProposals } from "@/lib/firebase";
-import { TradeProposal } from "@daiko-ai/shared";
+import { ProposalSelect } from "@daiko-ai/shared";
 import { NextPage } from "next";
 import { ProposalList } from "./components/proposal-list";
 
 const ProposalsPage: NextPage = async () => {
-  const initialProposals: TradeProposal[] = [
+  const initialProposals: ProposalSelect[] = [
     {
       id: "1",
       title: "Take Profit SOL 5x Long Position on Jupiter",
@@ -25,7 +24,7 @@ const ProposalsPage: NextPage = async () => {
       type: "trade",
       proposedBy: "Daiko AI",
       // 40秒後に期限切れになるように設定
-      expires_at: new Date(Date.now() + 1000 * 10),
+      expires_at: new Date(Date.now() + 1000 * 40),
       financialImpact: {
         currentValue: 5000,
         projectedValue: 5615,
@@ -33,6 +32,12 @@ const ProposalsPage: NextPage = async () => {
         timeFrame: "immediate",
         riskLevel: "medium",
       },
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      userId: "1",
+      triggerEventId: "1",
+      status: "active",
+      contractCall: null,
     },
     {
       id: "2",
@@ -62,6 +67,12 @@ const ProposalsPage: NextPage = async () => {
         timeFrame: "7 days",
         riskLevel: "high",
       },
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      userId: "1",
+      triggerEventId: "2",
+      status: "active",
+      contractCall: null,
     },
     // {
     //   id: "3",
@@ -124,11 +135,14 @@ const ProposalsPage: NextPage = async () => {
         timeFrame: "1 year",
         riskLevel: "low",
       },
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      userId: "1",
+      triggerEventId: "3",
+      status: "active",
+      contractCall: null,
     },
   ];
-
-  const proposals = await getProposals();
-  console.log("proposals fetched from firebase", proposals);
 
   return (
     <main className="safe-main-container px-4 pt-6">

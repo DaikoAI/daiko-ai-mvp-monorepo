@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { FinancialImpact, Proposal, ProposalUserPreference } from "@/types/proposal";
 import { cn } from "@/utils";
 import { getTimeRemaining, isWithin24Hours } from "@/utils/date";
+import { ProposalSelect } from "@daiko-ai/shared";
 import { Bot, Check, ChevronDown, ChevronUp, Clock, ExternalLink, Loader2, Twitter, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -37,10 +37,14 @@ const typeLabels = {
 };
 
 // PnLビジュアライゼーションコンポーネント
-const ProposalPnLVisualization: React.FC<{ financialImpact?: FinancialImpact; proposalType?: string }> = ({
-  financialImpact,
-  proposalType,
-}) => {
+const ProposalPnLVisualization: React.FC<{
+  financialImpact?: {
+    currentValue: number;
+    projectedValue: number;
+    percentChange: number;
+  };
+  proposalType?: string | null;
+}> = ({ financialImpact, proposalType }) => {
   if (!financialImpact) return null;
 
   const isPositive = financialImpact.percentChange > 0;
@@ -120,7 +124,7 @@ const TimeRemaining: React.FC<{ expiresAt: Date }> = ({ expiresAt }) => {
   );
 };
 
-export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string) => void }> = ({
+export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: string) => void }> = ({
   proposal,
   onRemove,
 }) => {
@@ -132,7 +136,11 @@ export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string
   const [showShareDialog, setShowShareDialog] = useState(false);
 
   // ユーザー設定
-  const [userPreferences, setUserPreferences] = useState<ProposalUserPreference>({
+  const [userPreferences, setUserPreferences] = useState<{
+    hideProposal: boolean;
+    holdToken: boolean;
+    holdUntil: string;
+  }>({
     hideProposal: false,
     holdToken: false,
     holdUntil: "1month",
@@ -147,7 +155,7 @@ export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string
   }, [proposal.id]);
 
   // ユーザー設定を保存する
-  const saveUserPreferences = (prefs: ProposalUserPreference) => {
+  const saveUserPreferences = (prefs: { hideProposal: boolean; holdToken: boolean; holdUntil: string }) => {
     setUserPreferences(prefs);
     localStorage.setItem(`proposal_prefs_${proposal.id}`, JSON.stringify(prefs));
   };
@@ -218,10 +226,10 @@ export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string
             <div
               className={cn(
                 "px-2 py-1 text-xs font-medium rounded-full border",
-                typeColors[proposal.type || "opportunity"],
+                typeColors[(proposal.type as keyof typeof typeColors) || "opportunity"],
               )}
             >
-              {typeLabels[proposal.type || "opportunity"]}
+              {typeLabels[(proposal.type as keyof typeof typeLabels) || "opportunity"]}
             </div>
 
             <div className="flex items-center gap-2">
@@ -396,7 +404,7 @@ export const ProposalCard: React.FC<{ proposal: Proposal; onRemove?: (id: string
 };
 
 // 追加する関数
-function getTypeColor(type?: "trade" | "stake" | "risk" | "opportunity"): string {
+function getTypeColor(type?: string | null): string {
   switch (type) {
     case "trade":
       return "var(--blue-500, #3b82f6)";

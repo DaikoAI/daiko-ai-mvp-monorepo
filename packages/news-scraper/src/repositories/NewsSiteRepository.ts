@@ -1,70 +1,104 @@
-import { BaseRepository, COLLECTIONS, type NewsSite } from "@daiko-ai/shared";
+import { NewsSiteInsert, NewsSiteRepository, NewsSiteSelect, db, newsSiteTable } from "@daiko-ai/shared";
+import { eq, sql } from "drizzle-orm";
 
-export class NewsSiteRepository extends BaseRepository<NewsSite> {
-  constructor() {
-    super(COLLECTIONS.NEWS_SITES);
+export class PostgresNewsSiteRepository implements NewsSiteRepository {
+  constructor() {}
+
+  async findAll(): Promise<NewsSiteSelect[]> {
+    return await db.select().from(newsSiteTable);
   }
 
-  /**
-   * URLでサイトを検索
-   * @param url - 検索するURL
-   */
-  async findByUrl(url: string): Promise<NewsSite | null> {
+  async findById(id: string): Promise<NewsSiteSelect | null> {
+    const [site] = await db.select().from(newsSiteTable).where(eq(newsSiteTable.id, id)).limit(1);
+    return site || null;
+  }
+
+  async findOneByField(field: "url", value: string): Promise<NewsSiteSelect | null> {
+    const [site] = await db.select().from(newsSiteTable).where(eq(newsSiteTable[field], value)).limit(1);
+    return site || null;
+  }
+
+  async findByUrl(url: string): Promise<NewsSiteSelect | null> {
     return this.findOneByField("url", url);
   }
 
-  /**
-   * ユーザーIDに基づいてサイトリストを取得
-   * @param userId - ユーザーID
-   */
-  async findByUserId(userId: string): Promise<NewsSite[]> {
-    return this.findWhere("userId", "array-contains", userId);
+  async findWhere<K extends keyof NewsSiteSelect>(
+    field: K,
+    operator: string,
+    value: NewsSiteSelect[K],
+  ): Promise<NewsSiteSelect[]> {
+    // JSONフィールド内の配列に特定の値が含まれているかを検索する場合
+    if (field === "userIds" && operator === "array-contains") {
+      // 文字列SQLクエリを使用
+      const jsonValue = JSON.stringify([value]);
+      const sites = await db.execute(sql`SELECT * FROM news_sites WHERE user_ids::jsonb @> ${jsonValue}`);
+      return sites.rows as NewsSiteSelect[];
+    }
+
+    throw new Error(`Unsupported query operation: ${String(field)} ${operator} ${String(value)}`);
   }
 
-  /**
-   * サイトコンテンツを更新
-   * @param siteId - サイトID
-   * @param content - 更新するコンテンツ
-   */
+  async findByUserId(userId: string): Promise<NewsSiteSelect[]> {
+    return this.findWhere("userIds" as keyof NewsSiteSelect, "array-contains", userId as any);
+  }
+
+  async create(data: NewsSiteInsert): Promise<NewsSiteSelect> {
+    const [site] = await db
+      .insert(newsSiteTable)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    return site;
+  }
+
+  async update(id: string, data: Partial<NewsSiteSelect>): Promise<void> {
+    const updateData: any = { ...data };
+
+    // updatedAtフィールドが指定されていなければ現在時刻を設定
+    if (!updateData.updatedAt) {
+      updateData.updatedAt = new Date();
+    }
+
+    await db.update(newsSiteTable).set(updateData).where(eq(newsSiteTable.id, id));
+  }
+
   async updateContent(siteId: string, content: string): Promise<void> {
     await this.update(siteId, {
       content,
-      lastScraped: new Date().toISOString(),
+      lastScraped: new Date(),
     });
   }
 
-  /**
-   * ユーザーをサイトに追加（もし既に存在していなければ）
-   * @param siteId - サイトID
-   * @param userId - 追加するユーザーID
-   */
+  async delete(id: string): Promise<void> {
+    await db.delete(newsSiteTable).where(eq(newsSiteTable.id, id));
+  }
+
   async addUserToSite(siteId: string, userId: string): Promise<void> {
     const site = await this.findById(siteId);
     if (!site) {
       throw new Error(`Site with ID ${siteId} not found`);
     }
 
-    const userIds = site.userId || [];
+    const userIds = site.userIds || [];
     if (!userIds.includes(userId)) {
       await this.update(siteId, {
-        userId: [...userIds, userId],
+        userIds: [...userIds, userId],
       });
     }
   }
 
-  /**
-   * ユーザーをサイトから削除
-   * @param siteId - サイトID
-   * @param userId - 削除するユーザーID
-   */
   async removeUserFromSite(siteId: string, userId: string): Promise<void> {
     const site = await this.findById(siteId);
-    if (!site || !site.userId) {
+    if (!site || !site.userIds) {
       return;
     }
 
     await this.update(siteId, {
-      userId: site.userId.filter((id: string) => id !== userId),
+      userIds: site.userIds.filter((id) => id !== userId),
     });
   }
 }

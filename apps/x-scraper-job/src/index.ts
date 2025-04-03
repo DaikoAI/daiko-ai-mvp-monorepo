@@ -4,20 +4,23 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 async function runXScraperJob() {
-  try {
-    console.log("Starting X (Twitter) scraping cron job...");
+  console.log("Starting X (Twitter) scraping cron job...");
 
-    // スクレイパーのインスタンスを作成
-    const scraper = new XScraper();
+  // スクレイパーのインスタンスを作成
+  const scraper = new XScraper();
 
-    // 登録されているXアカウントをスクレイピング
-    await scraper.checkXAccounts();
+  // 登録されているXアカウントをスクレイピング
+  await scraper.checkXAccounts();
 
-    console.log("X (Twitter) scraping completed successfully");
-  } catch (error) {
-    console.error("Error in X scraper cron job:", error);
-    process.exit(1);
-  }
+  console.log("X (Twitter) scraping completed successfully");
 }
 
-runXScraperJob();
+runXScraperJob()
+  .then(() => {
+    console.log("X scraping cron job completed");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Error in X scraping cron job:", error);
+    process.exit(1);
+  });

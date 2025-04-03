@@ -1,4 +1,4 @@
-import type { NewsSite } from "@daiko-ai/shared";
+import type { NewsSiteSelect } from "@daiko-ai/shared";
 import FirecrawlApp from "@mendable/firecrawl-js";
 
 export class NewsScraper {
@@ -8,9 +8,8 @@ export class NewsScraper {
     this.app = new FirecrawlApp({ apiKey });
   }
 
-  async scrapeSite(urlOrSite: string | NewsSite): Promise<string> {
+  async scrapeSite(urlOrSite: string | NewsSiteSelect): Promise<string> {
     const url = typeof urlOrSite === "string" ? urlOrSite : urlOrSite.url;
-    console.log(`Scraping site ${url}`);
     try {
       const response = await this.app.scrapeUrl(url, {
         formats: ["markdown", "html"],

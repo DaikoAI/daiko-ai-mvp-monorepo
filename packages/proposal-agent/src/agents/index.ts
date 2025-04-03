@@ -3,7 +3,7 @@ import { managerRouter } from "../utils/route";
 import { proposalAgentState } from "../utils/state";
 import { analyzerNode } from "./analyzer";
 import { dataFetchOperatorNode } from "./dataFetchOperator";
-import { firebaseNode } from "./firebase";
+import { postgresNode } from "./database";
 import { generalistNode } from "./general";
 import { managerNode } from "./manager";
 import { onchainNode } from "./onchain";
@@ -18,13 +18,13 @@ export async function initProposalAgentGraph(userId: string) {
       .addNode("onchain", onchainNode)
       .addNode("manager", managerNode)
       .addNode("dataFetchOperator", dataFetchOperatorNode)
-      .addNode("firebase", firebaseNode)
+      .addNode("database", postgresNode)
       .addEdge(START, "manager")
       .addConditionalEdges("manager", managerRouter)
       .addEdge("dataFetchOperator", "onchain")
-      .addEdge("dataFetchOperator", "firebase")
+      .addEdge("dataFetchOperator", "database")
       .addEdge("onchain", "analyzer")
-      .addEdge("firebase", "analyzer")
+      .addEdge("database", "analyzer")
       .addEdge("analyzer", END)
       .addEdge("generalist", END);
 

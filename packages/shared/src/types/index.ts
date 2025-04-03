@@ -1,5 +1,3 @@
-export * from "./db";
-
 /** Enum defining available log levels */
 export enum LogLevel {
   ERROR = 0,
@@ -33,4 +31,16 @@ export interface LogEntry {
   message: string;
   // biome-ignore lint/suspicious/noExplicitAny: data could be anything
   data?: any;
+}
+
+/** Structure of a tweet */
+export interface Tweet {
+  time: string;
+  data: string;
+}
+
+/** Structure of crypto analysis result */
+export interface CryptoAnalysis {
+  isCryptoRelated: boolean;
+  analysisResult: string;
 }

@@ -1,34 +1,86 @@
-import { BaseRepository, COLLECTIONS, type XAccount } from "@daiko-ai/shared";
+import { XAccountInsert, XAccountRepository, XAccountSelect, db, xAccountTable } from "@daiko-ai/shared";
+import { eq, sql } from "drizzle-orm";
 
-export class XAccountRepository extends BaseRepository<XAccount> {
-  constructor() {
-    super(COLLECTIONS.X_ACCOUNTS);
+export class PostgresXAccountRepository implements XAccountRepository {
+  async findAll(): Promise<XAccountSelect[]> {
+    const accounts = await db.select().from(xAccountTable);
+    return accounts;
   }
 
-  /**
-   * 特定のユーザーが監視しているアカウントを取得
-   * @param userId - ユーザーID
-   */
-  async findByUserId(userId: string): Promise<XAccount[]> {
-    return this.findWhere("userIds", "array-contains", userId);
+  async findById(id: string): Promise<XAccountSelect | null> {
+    const [account] = await db.select().from(xAccountTable).where(eq(xAccountTable.id, id)).limit(1);
+    if (!account) return null;
+    return account;
   }
 
-  /**
-   * アカウントの最新コンテンツを更新
-   * @param accountId - アカウントID
-   * @param content - 新しいツイートコンテンツ
-   */
-  async updateLastContent(accountId: string, content: any[]): Promise<void> {
-    await this.update(accountId, {
-      lastContent: content,
-    });
+  async findWhere<K extends keyof XAccountSelect>(
+    field: K,
+    operator: string,
+    value: XAccountSelect[K],
+  ): Promise<XAccountSelect[]> {
+    // 特定のユースケースのみ対応
+    if (field === "userIds" && operator === "array-contains") {
+      const accounts = await db
+        .select()
+        .from(xAccountTable)
+        .where(sql`${xAccountTable.userIds} @> ${JSON.stringify([value])}::jsonb`);
+      return accounts;
+    }
+
+    throw new Error(`Unsupported query operation: ${String(field)} ${operator} ${String(value)}`);
   }
 
-  /**
-   * ユーザーをアカウント監視者として追加
-   * @param accountId - アカウントID
-   * @param userId - 追加するユーザーID
-   */
+  async create(data: XAccountInsert): Promise<XAccountSelect> {
+    const [account] = await db
+      .insert(xAccountTable)
+      .values({
+        id: data.id,
+        displayName: data.displayName,
+        profileImageUrl: data.profileImageUrl,
+        lastTweetId: data.lastTweetId,
+        userIds: (data.userIds as string[]) || [],
+        createdAt: data.createdAt || new Date(),
+        updatedAt: data.updatedAt || new Date(),
+      })
+      .returning();
+
+    return account;
+  }
+
+  async update(id: string, data: Partial<XAccountSelect>): Promise<void> {
+    const updateData: any = { ...data };
+
+    // updatedAtフィールドが指定されていなければ現在時刻を設定
+    if (!updateData.updatedAt) {
+      updateData.updatedAt = new Date();
+    }
+
+    await db.update(xAccountTable).set(updateData).where(eq(xAccountTable.id, id));
+  }
+
+  async delete(id: string): Promise<void> {
+    await db.delete(xAccountTable).where(eq(xAccountTable.id, id));
+  }
+
+  async findByUserId(userId: string): Promise<XAccountSelect[]> {
+    const accounts = await db
+      .select()
+      .from(xAccountTable)
+      .where(sql`${xAccountTable.userIds} @> ${JSON.stringify([userId])}::jsonb`);
+
+    return accounts;
+  }
+
+  async updateLastTweetId(accountId: string, tweetId: string): Promise<void> {
+    await db
+      .update(xAccountTable)
+      .set({
+        lastTweetId: tweetId,
+        updatedAt: new Date(),
+      })
+      .where(eq(xAccountTable.id, accountId));
+  }
+
   async addUser(accountId: string, userId: string): Promise<void> {
     const account = await this.findById(accountId);
     if (!account) {
@@ -37,25 +89,28 @@ export class XAccountRepository extends BaseRepository<XAccount> {
 
     const userIds = account.userIds || [];
     if (!userIds.includes(userId)) {
-      await this.update(accountId, {
-        userIds: [...userIds, userId],
-      });
+      await db
+        .update(xAccountTable)
+        .set({
+          userIds: [...userIds, userId],
+          updatedAt: new Date(),
+        })
+        .where(eq(xAccountTable.id, accountId));
     }
   }
 
-  /**
-   * アカウント監視者からユーザーを削除
-   * @param accountId - アカウントID
-   * @param userId - 削除するユーザーID
-   */
   async removeUser(accountId: string, userId: string): Promise<void> {
     const account = await this.findById(accountId);
     if (!account || !account.userIds) {
       return;
     }
 
-    await this.update(accountId, {
-      userIds: account.userIds.filter((id: string) => id !== userId),
-    });
+    await db
+      .update(xAccountTable)
+      .set({
+        userIds: account.userIds.filter((id: string) => id !== userId),
+        updatedAt: new Date(),
+      })
+      .where(eq(xAccountTable.id, accountId));
   }
 }

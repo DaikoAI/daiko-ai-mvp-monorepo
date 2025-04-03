@@ -1,8 +1,8 @@
-import { ChangeLog, CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
+import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
 import { OpenAI } from "openai";
 import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
-import { getAllXAccounts, saveChangeLog, saveSystemLog, saveXAccount } from "./db";
+import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
 
 export class XScraper {
   private openai: OpenAI;
@@ -102,7 +102,6 @@ export class XScraper {
         }
       }
 
-      await saveSystemLog("Periodic X account check finished");
       this.logger.info("XScraper", "Finished checking all X accounts");
     } catch (error) {
       this.logger.error("XScraper", "Error checking X accounts:", error);
@@ -150,25 +149,11 @@ export class XScraper {
         return null;
       }
 
-      const lastContent = account.lastContent || [];
+      // 最新のツイートを保存し、アカウントを更新
+      const latestTweetId = await saveTweets(xId, tweets);
 
-      // 更新データを設定して保存
-      account.lastContent = tweets;
-      await saveXAccount(account);
-      this.logger.info("XScraper", `Updated account data for ${xId}`);
-
-      // 変更があるかチェック
-      if (lastContent.length === 0 || lastContent[0].data !== tweets[0].data) {
+      if (latestTweetId && latestTweetId !== account.lastTweetId) {
         this.logger.info("XScraper", `Change detected for ${xId}`);
-
-        // 変更ログを保存
-        const changeLog: ChangeLog = {
-          timestamp: new Date().toISOString(),
-          xid: xId,
-          content: tweets,
-        };
-        await saveChangeLog(changeLog);
-
         return tweets;
       } else {
         this.logger.info("XScraper", `No change for ${xId}`);
@@ -298,7 +283,12 @@ export class XScraper {
         // 新しいアカウントを作成
         account = {
           id: xId,
+          displayName: null,
+          profileImageUrl: null,
+          lastTweetId: null,
           userIds: [userId],
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
         this.logger.info("XScraper", `Created new account entry for ${xId}`);
       }
