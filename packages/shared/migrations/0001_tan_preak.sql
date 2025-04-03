@@ -1,1 +1,0 @@
-ALTER TABLE "x_accounts" ADD PRIMARY KEY ("id");

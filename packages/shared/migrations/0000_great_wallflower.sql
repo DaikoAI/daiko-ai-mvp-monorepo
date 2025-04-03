@@ -1,3 +1,32 @@
+CREATE TABLE "news_sites" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"url" text NOT NULL,
+	"title" text,
+	"content" text,
+	"user_ids" json DEFAULT '[]',
+	"last_scraped" timestamp,
+	"created_at" timestamp DEFAULT NOW() NOT NULL,
+	"updated_at" timestamp DEFAULT NOW() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "proposals" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"trigger_event_id" varchar,
+	"user_id" varchar,
+	"title" text NOT NULL,
+	"summary" text NOT NULL,
+	"reason" json NOT NULL,
+	"sources" json NOT NULL,
+	"type" varchar,
+	"proposed_by" varchar,
+	"financial_impact" json,
+	"expires_at" timestamp NOT NULL,
+	"status" varchar DEFAULT 'active',
+	"contract_call" json,
+	"created_at" timestamp DEFAULT NOW() NOT NULL,
+	"updated_at" timestamp DEFAULT NOW() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "tweets" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"x_account_id" varchar NOT NULL,
@@ -17,7 +46,7 @@ CREATE TABLE "users_table" (
 );
 --> statement-breakpoint
 CREATE TABLE "x_accounts" (
-	"id" varchar NOT NULL,
+	"id" varchar PRIMARY KEY NOT NULL,
 	"display_name" text,
 	"profile_image_url" text,
 	"last_tweet_id" varchar,

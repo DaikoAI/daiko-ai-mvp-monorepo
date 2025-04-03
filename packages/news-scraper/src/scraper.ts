@@ -10,7 +10,6 @@ export class NewsScraper {
 
   async scrapeSite(urlOrSite: string | NewsSiteSelect): Promise<string> {
     const url = typeof urlOrSite === "string" ? urlOrSite : urlOrSite.url;
-    console.log(`Scraping site ${url}`);
     try {
       const response = await this.app.scrapeUrl(url, {
         formats: ["markdown", "html"],
