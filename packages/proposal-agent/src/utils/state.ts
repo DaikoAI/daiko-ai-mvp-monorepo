@@ -1,4 +1,4 @@
-import type { NewsSite, TradeProposal, Tweet, User } from "@daiko-ai/shared";
+import type { NewsSiteSelect, ProposalSelect, Tweet, UserSelect } from "@daiko-ai/shared";
 import type { BaseMessage } from "@langchain/core/messages";
 import { Annotation, MemorySaver, messagesStateReducer } from "@langchain/langgraph";
 
@@ -10,17 +10,17 @@ export const proposalAgentState = Annotation.Root({
     default: () => [],
   }),
 
-  proposal: Annotation<TradeProposal | null>({
+  proposal: Annotation<ProposalSelect | null>({
     reducer: (oldValue, newValue) => newValue ?? oldValue,
     default: () => null,
   }),
 
-  user: Annotation<User | null>({
+  user: Annotation<UserSelect | null>({
     reducer: (oldValue, newValue) => newValue ?? oldValue,
     default: () => null,
   }),
 
-  newsSites: Annotation<NewsSite[]>({
+  newsSites: Annotation<NewsSiteSelect[]>({
     reducer: (oldValue, newValue) => newValue ?? oldValue,
     default: () => [],
   }),

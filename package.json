@@ -14,9 +14,16 @@
     "build:shared": "turbo run build --filter=@daiko-ai/shared",
     "clean": "sh scripts/clean-packages.sh"
   },
+  "dependencies": {
+    "drizzle-orm": "^0.41.0"
+  },
   "devDependencies": {
+    "@types/uuid": "^9.0.7",
+    "dotenv": "^16.4.5",
     "prettier": "^3.5.3",
-    "turbo": "^2.4.4"
+    "turbo": "^2.4.4",
+    "uuid": "^9.0.1",
+    "drizzle-kit": "^0.30.6"
   },
   "prettier": {
     "printWidth": 120,

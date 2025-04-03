@@ -7,7 +7,6 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
-import { saveSystemLog } from "./db";
 import { XScraper } from "./scraper";
 
 // サーバーのインスタンス作成
@@ -193,7 +192,6 @@ app.post("/crawl/scheduled", async (c) => {
     }
 
     logger.info("Route:/crawl/scheduled", "Scheduled crawl triggered via API");
-    await saveSystemLog("Starting scheduled crawl via API");
 
     // スクレイピングを非同期で実行
     scraper.checkXAccounts().catch((error) => {

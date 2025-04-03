@@ -1,14 +1,15 @@
-import type { NewsSite } from "@daiko-ai/shared";
-import { NewsSiteRepository } from "./repositories/NewsSiteRepository";
+import type { NewsSiteInsert, NewsSiteSelect } from "@daiko-ai/shared";
+import { PostgresNewsSiteRepository } from "./repositories/NewsSiteRepository";
 
 export class NewsScraperDB {
-  private readonly repository = new NewsSiteRepository();
+  private readonly repository = new PostgresNewsSiteRepository();
 
-  async saveNewsSite(site: NewsSite): Promise<string> {
-    return this.repository.create(site);
+  async saveNewsSite(site: NewsSiteInsert): Promise<string> {
+    const newSite = await this.repository.create(site);
+    return newSite.id;
   }
 
-  async getNewsSites(userId?: string): Promise<NewsSite[]> {
+  async getNewsSites(userId?: string): Promise<NewsSiteSelect[]> {
     if (userId) {
       return this.repository.findByUserId(userId);
     }
@@ -19,7 +20,7 @@ export class NewsScraperDB {
     await this.repository.updateContent(siteId, content);
   }
 
-  async saveScrapeResult(result: NewsSite): Promise<string> {
+  async saveScrapeResult(result: NewsSiteSelect): Promise<string> {
     if (result.id) {
       await this.repository.updateContent(result.id, result.content || "");
       return result.id;
@@ -29,7 +30,7 @@ export class NewsScraperDB {
   }
 
   // 以下、新規メソッド
-  async findSiteByUrl(url: string): Promise<NewsSite | null> {
+  async findSiteByUrl(url: string): Promise<NewsSiteSelect | null> {
     return this.repository.findByUrl(url);
   }
 

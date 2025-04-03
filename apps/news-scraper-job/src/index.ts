@@ -38,7 +38,7 @@ async function runNewsScraperJob() {
           await db.saveScrapeResult({
             ...site,
             content: content,
-            lastScraped: new Date().toISOString(),
+            lastScraped: new Date(),
           });
 
           results.push({ siteId: site.id, status: "success" });

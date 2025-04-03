@@ -1,124 +1,85 @@
-import type { ChangeLog, NotificationLog, XAccount } from "@daiko-ai/shared";
-import { COLLECTIONS, getAdminFirestore } from "@daiko-ai/shared";
+import { Logger, LogLevel, Tweet, XAccountInsert, XAccountSelect } from "@daiko-ai/shared";
+import { repositoryFactory } from "./repositories/factory";
 
-// Firestoreの参照を取得
-const db = getAdminFirestore();
+// リポジトリインスタンスを取得
+export const xAccountRepository = repositoryFactory.getXAccountRepository();
+export const tweetRepository = repositoryFactory.getTweetRepository();
 
-// XAccounts関連の操作
-export const xAccountsCollection = db.collection(COLLECTIONS.X_ACCOUNTS);
+// ロガーインスタンス
+const log = new Logger({
+  level: LogLevel.INFO,
+});
 
-export const getAllXAccounts = async (): Promise<XAccount[]> => {
+/**
+ * すべてのXアカウントを取得
+ */
+export const getAllXAccounts = async (): Promise<XAccountSelect[]> => {
   try {
-    const snapshot = await xAccountsCollection.get();
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        }) as XAccount,
-    );
+    return await xAccountRepository.findAll();
   } catch (error) {
-    console.error("Error getting all X accounts:", error);
+    log.error("x-scraper:db", "Error getting all X accounts:", error);
     return [];
   }
 };
 
-export const saveXAccount = async (account: XAccount): Promise<void> => {
+/**
+ * Xアカウントを保存
+ */
+export const saveXAccount = async (account: XAccountInsert): Promise<void> => {
   try {
-    await xAccountsCollection.doc(account.id).set(
-      {
+    if (account.id) {
+      await xAccountRepository.update(account.id, {
         ...account,
         updatedAt: new Date(),
-      },
-      { merge: true },
-    );
-    console.info(`Saved X account: ${account.id}`);
-  } catch (error) {
-    console.error(`Error saving X account ${account.id}:`, { error });
-    throw error;
-  }
-};
-
-// 変更ログの操作
-export const changeLogsCollection = db.collection(COLLECTIONS.CHANGE_LOGS);
-
-export const saveChangeLog = async (log: ChangeLog): Promise<void> => {
-  try {
-    const newLogRef = await changeLogsCollection.add({
-      ...log,
-      createdAt: new Date(),
-    });
-    console.info(`Saved change log for ${log.xid} with ID: ${newLogRef.id}`);
-
-    // 古いログを削除（最新100件のみ保持）
-    const snapshot = await changeLogsCollection.orderBy("timestamp", "asc").limit(1000).get();
-
-    if (snapshot.docs.length > 100) {
-      // 古いものから削除
-      const docsToDelete = snapshot.docs.slice(0, snapshot.docs.length - 100);
-
-      // バッチ処理で一度に削除
-      const batch = db.batch();
-      for (const doc of docsToDelete) {
-        batch.delete(doc.ref);
-      }
-      await batch.commit();
-
-      console.info(`Removed ${docsToDelete.length} old change logs`);
+      });
+    } else {
+      await xAccountRepository.create({
+        ...account,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     }
+    log.info("x-scraper:db", `Saved X account: ${account.id}`);
   } catch (error) {
-    console.error(`Error saving change log for ${log.xid}:`, { error });
+    log.error("x-scraper:db", `Error saving X account ${account.id}:`, error);
     throw error;
   }
 };
 
-// 通知ログの操作
-export const notificationLogsCollection = db.collection("notificationLogs");
-
-export const saveNotificationLog = async (log: NotificationLog): Promise<void> => {
+/**
+ * ツイートを保存し、アカウントの最新ツイートIDを更新
+ */
+export const saveTweets = async (accountId: string, tweets: Tweet[]): Promise<string | null> => {
   try {
-    const newLogRef = await notificationLogsCollection.add({
-      ...log,
-      createdAt: new Date(),
-    });
-    console.info(`Saved notification log for ${log.accountId} with ID: ${newLogRef.id}`);
-
-    // 古いログを削除（最新100件のみ保持）
-    const snapshot = await notificationLogsCollection.orderBy("timestamp", "asc").limit(1000).get();
-
-    if (snapshot.docs.length > 100) {
-      // 古いものから削除
-      const docsToDelete = snapshot.docs.slice(0, snapshot.docs.length - 100);
-
-      // バッチ処理で一度に削除
-      const batch = db.batch();
-      for (const doc of docsToDelete) {
-        batch.delete(doc.ref);
-      }
-      await batch.commit();
-
-      console.info(`Removed ${docsToDelete.length} old notification logs`);
+    if (!tweets.length) {
+      return null;
     }
+
+    // 最新のツイートから保存
+    let latestTweetId = null;
+
+    for (const tweet of tweets) {
+      const newTweet = await tweetRepository.create({
+        xAccountId: accountId,
+        content: tweet.data,
+        tweetTime: new Date(tweet.time),
+      });
+
+      // 最初のツイート（最新）のIDを記録
+      if (!latestTweetId) {
+        latestTweetId = newTweet.id;
+      }
+    }
+
+    // アカウントの最新ツイートIDを更新
+    if (latestTweetId) {
+      await xAccountRepository.updateLastTweetId(accountId, latestTweetId);
+      log.info("x-scraper:db", `Updated latest tweet ID for account ${accountId}: ${latestTweetId}`);
+    }
+
+    return latestTweetId;
   } catch (error) {
-    console.error(`Error saving notification log for ${log.accountId}:`, { error });
-    throw error;
-  }
-};
-
-// システムログの操作
-export const systemLogsCollection = db.collection("systemLogs");
-
-export const saveSystemLog = async (action: string): Promise<void> => {
-  try {
-    const log = {
-      timestamp: new Date().toISOString(),
-      action,
-      createdAt: new Date(),
-    };
-
-    const newLogRef = await systemLogsCollection.add(log);
-    console.info(`Saved system log: ${action} with ID: ${newLogRef.id}`);
-  } catch (error) {
-    console.error(`Error saving system log (${action}):`, { error });
+    log.error("x-scraper:db", `Error saving tweets for account ${accountId}:`, error);
+    return null;
   }
 };

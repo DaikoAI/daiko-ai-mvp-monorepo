@@ -1,4 +1,4 @@
-import { tradeProposalSchema } from "@daiko-ai/shared";
+import { proposalSelectSchema } from "@daiko-ai/shared";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 
@@ -6,7 +6,7 @@ import z from "zod";
 
 export const parser = StructuredOutputParser.fromZodSchema(
   z.object({
-    proposal: tradeProposalSchema,
+    proposal: proposalSelectSchema,
   }),
 );
 

@@ -236,3 +236,124 @@ pnpm dev:x-scraper
 # ニューススクレイパー
 pnpm dev:news-scraper
 ```
+
+## データベース操作 (Drizzle ORM + Neon Postgres)
+
+このプロジェクトでは、データベースアクセスに [Drizzle ORM](https://orm.drizzle.team) と [Neon Postgres](https://neon.tech) を使用しています。データベーススキーマと共通クエリは `packages/shared` パッケージで一元管理されています。
+
+### セットアップ
+
+1. `.env` ファイルを作成し、Neon データベースの接続情報を設定:
+
+```
+DATABASE_URL=postgres://username:password@ep-xxx-xxx-xxx.region.aws.neon.tech/neondb
+```
+
+2. 必要なパッケージをインストール:
+
+```bash
+pnpm add -F @daiko-ai/shared @neondatabase/serverless dotenv drizzle-orm
+pnpm add -D drizzle-kit
+```
+
+### スキーマ定義
+
+スキーマは `packages/shared/src/db/schema` ディレクトリに定義されています。新しいテーブルを追加する場合は、このディレクトリに新しいファイルを作成し、`index.ts` からエクスポートしてください。
+
+```typescript
+// packages/shared/src/db/schema/example.ts
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+export const exampleTable = pgTable("example_table", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Example = typeof exampleTable.$inferSelect;
+export type NewExample = typeof exampleTable.$inferInsert;
+```
+
+### マイグレーション
+
+#### マイグレーションファイルの生成
+
+スキーマの変更を行った後、以下のコマンドでマイグレーションファイルを生成します：
+
+```bash
+pnpm db:generate
+```
+
+生成されたマイグレーションファイルは `migrations` ディレクトリに保存されます。
+
+#### データベースへの反映
+
+マイグレーションをデータベースに適用するには、以下のコマンドを実行します：
+
+```bash
+# マイグレーションファイルを使用してDBを更新
+pnpm run -F @daiko-ai/shared migrate
+
+# または直接スキーマを反映（開発時のみ推奨）
+pnpm db:push
+```
+
+### データベース操作
+
+#### 接続
+
+`packages/shared/src/db/connection.ts` からデータベース接続をインポートして使用します：
+
+```typescript
+import { db } from "@daiko-ai/shared/src/db/connection";
+```
+
+#### 共通クエリ
+
+共通クエリ関数は `packages/shared/src/db/queries` に定義されています。
+
+```typescript
+import { getUserById, createUser } from "@daiko-ai/shared/src/db/queries/users";
+
+// ユーザー取得
+const user = await getUserById(1);
+
+// ユーザー作成
+await createUser({
+  name: "ユーザー名",
+  age: 30,
+  email: "user@example.com",
+});
+```
+
+#### カスタムクエリ
+
+パッケージ固有のクエリロジックは、各パッケージ内で定義してください：
+
+```typescript
+import { db } from "@daiko-ai/shared/src/db/connection";
+import { eq } from "drizzle-orm";
+import { usersTable } from "@daiko-ai/shared/src/db/schema/users";
+
+// カスタムクエリ
+export async function findUsersByAge(age: number) {
+  return db.select().from(usersTable).where(eq(usersTable.age, age));
+}
+```
+
+### 開発ツール
+
+Drizzle Studio を使ってデータベースを視覚的に操作できます：
+
+```bash
+pnpm db:studio
+```
+
+ブラウザで `http://localhost:4983` を開くと、テーブルやデータを確認・編集できます。
+
+### 推奨プラクティス
+
+1. **スキーマ設計**: アプリケーション全体で共通のスキーマを `shared` パッケージで管理
+2. **クエリ分離**: 共通クエリは `shared` パッケージに、パッケージ固有のクエリは各パッケージに配置
+3. **マイグレーション管理**: スキーマの変更は必ずマイグレーションを通して行う
+4. **型安全性**: 常にDrizzleの型定義（`$inferSelect`、`$inferInsert`）を活用する

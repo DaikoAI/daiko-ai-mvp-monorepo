@@ -80,7 +80,7 @@ app.post("/sites", async (c) => {
       // 新規作成
       siteId = await db.saveNewsSite({
         url: request.url,
-        userId: [request.userId],
+        userIds: [request.userId],
       });
     }
 

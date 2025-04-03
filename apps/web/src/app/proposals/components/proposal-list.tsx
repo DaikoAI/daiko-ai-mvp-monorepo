@@ -1,12 +1,12 @@
 "use client";
 
-import { TradeProposal } from "@daiko-ai/shared";
-import { useEffect, useState, useRef } from "react";
+import { ProposalSelect } from "@daiko-ai/shared";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProposalCard } from "./proposal-card";
 
 type ProposalListProps = {
-  initialProposals: TradeProposal[];
+  initialProposals: ProposalSelect[];
 };
 
 export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) => {
@@ -85,7 +85,7 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
             .filter((proposal) => proposal.id !== undefined)
             .map((proposal) => (
               <div key={proposal.id!} className="transition-all duration-1000">
-                <ProposalCard proposal={{ ...proposal, id: proposal.id! }} onRemove={handleRemoveProposal} />
+                <ProposalCard proposal={proposal} onRemove={handleRemoveProposal} />
               </div>
             ))}
         </div>
