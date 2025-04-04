@@ -1,5 +1,5 @@
-import { ProposalSelect } from "@daiko-ai/shared";
-import { NextPage } from "next";
+import type { ProposalSelect } from "@daiko-ai/shared";
+import type { NextPage } from "next";
 import { ProposalList } from "./components/proposal-list";
 
 const ProposalsPage: NextPage = async () => {

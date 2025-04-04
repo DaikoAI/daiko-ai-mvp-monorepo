@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useOnboarding } from "@/lib/onboarding-context";
-import { TradeStyle } from "@/types/onboarding";
+import type { TradeStyle } from "@/types/onboarding";
 import { useState } from "react";
 import { toast } from "sonner";
 

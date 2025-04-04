@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { integer, pgTable, text, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
+
 export const usersTable = pgTable("users_table", {
   id: varchar("id")
     .primaryKey()

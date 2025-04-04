@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/utils";
 import { getTimeRemaining, isWithin24Hours } from "@/utils/date";
-import { ProposalSelect } from "@daiko-ai/shared";
+import type { ProposalSelect } from "@daiko-ai/shared";
 import { Bot, Check, ChevronDown, ChevronUp, Clock, ExternalLink, Loader2, Twitter, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";

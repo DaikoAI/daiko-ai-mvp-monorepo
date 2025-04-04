@@ -1,4 +1,4 @@
-import { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const METADATA: Metadata = {
   title: "Daiko AI",

@@ -1,4 +1,4 @@
-import { NextPage } from "next";
+import type { NextPage } from "next";
 import { ChatInterface } from "./components/chat-interface";
 
 interface ChatPageProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ApiChatMessage, ChatMessage } from "@/types/chat";
+import type { ApiChatMessage, ChatMessage } from "@/types/chat";
 import { cn, createNoScrollbarStyle } from "@/utils";
 import { Send } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";

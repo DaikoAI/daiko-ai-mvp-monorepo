@@ -1,9 +1,9 @@
 "use server";
 
 import { env } from "@/env";
-import { ApiChatMessage } from "@/types/chat";
+import type { ApiChatMessage } from "@/types/chat";
 import OpenAI from "openai";
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 // OpenAIクライアントインスタンスを作成
 const openai = new OpenAI({

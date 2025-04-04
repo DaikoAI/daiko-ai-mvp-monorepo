@@ -1,6 +1,6 @@
 "use client";
 
-import { ProposalSelect } from "@daiko-ai/shared";
+import type { ProposalSelect } from "@daiko-ai/shared";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProposalCard } from "./proposal-card";

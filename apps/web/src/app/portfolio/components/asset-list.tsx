@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Asset } from "@/types";
+import type { Asset } from "@/types";
 import { cn } from "@/utils";
 
 type AssetListProps = {

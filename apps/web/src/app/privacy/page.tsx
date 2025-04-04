@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { NextPage } from "next";
+import type { NextPage } from "next";
 import Link from "next/link";
 
 const PrivacyPage: NextPage = () => {

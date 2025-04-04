@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { OnboardingState, OnboardingStep, UserProfile } from "@/types/onboarding";
+import type { ReactNode } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import type { OnboardingState, OnboardingStep, UserProfile } from "@/types/onboarding";
 
 const defaultOnboardingState: OnboardingState = {
   walletConnected: false,

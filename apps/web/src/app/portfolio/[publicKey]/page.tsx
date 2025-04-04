@@ -1,6 +1,6 @@
 import { CopyButton } from "@/components/copy-button";
 
-import { NextPage } from "next";
+import type { NextPage } from "next";
 
 import { getAssetsByOwner } from "@/lib/helius";
 import { AssetList } from "../components/asset-list";

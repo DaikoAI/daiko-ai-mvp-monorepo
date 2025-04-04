@@ -1,5 +1,5 @@
 import { env } from "@/env";
-import { Asset } from "@/types";
+import type { Asset } from "@/types";
 
 export const getAssetsByOwner = async (address: string): Promise<Asset[]> => {
   const apiKey = env.HELIUS_API_KEY;

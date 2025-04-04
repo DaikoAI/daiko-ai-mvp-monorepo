@@ -42,7 +42,7 @@ export const PnLChart: React.FC = () => {
   const [displayUnit, setDisplayUnit] = useState<"SOL" | "USD">("USD");
 
   const data = pnlData[timeRange];
-  const currentValue = data[data.length - 1].value;
+  const currentValue = data[data.length - 1]?.value ?? 0;
   const isPositive = currentValue >= 0;
 
   const formatValue = (value: number) => {

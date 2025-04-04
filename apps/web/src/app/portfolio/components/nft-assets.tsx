@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Asset } from "@/types";
+import type { Asset } from "@/types";
 
 type NFTAssetsProps = {
   nfts: Asset[];
