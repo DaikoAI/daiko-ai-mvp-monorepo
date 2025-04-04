@@ -3,7 +3,7 @@ import { integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core"
 import { createSelectSchema } from "drizzle-zod";
 import { accountsTable } from "./accounts";
 
-export const usersTable = pgTable("users_table", {
+export const usersTable = pgTable("users", {
   id: varchar("id")
     .notNull()
     .primaryKey()

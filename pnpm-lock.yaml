@@ -386,6 +386,9 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
+      drizzle-dbml-generator:
+        specifier: ^0.10.0
+        version: 0.10.0(drizzle-orm@0.41.0(@neondatabase/serverless@0.9.5)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(gel@2.0.1)(postgres@3.4.5))
       drizzle-zod:
         specifier: ^0.7.1
         version: 0.7.1(drizzle-orm@0.41.0(@neondatabase/serverless@0.9.5)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(gel@2.0.1)(postgres@3.4.5))(zod@3.24.2)
@@ -7539,6 +7542,11 @@ packages:
 
   draggabilly@3.0.0:
     resolution: {integrity: sha512-aEs+B6prbMZQMxc9lgTpCBfyCUhRur/VFucHhIOvlvvdARTj7TcDmX/cdOUtqbjJJUh7+agyJXR5Z6IFe1MxwQ==}
+
+  drizzle-dbml-generator@0.10.0:
+    resolution: {integrity: sha512-cMZq9E3U3RlmE0uBeXyc6oWJ0royOkC6HiTlc9LDeMe+W87poZTzKoNYUyAxZrs4Q1RQtob+cGKiefV4ZoI8HA==}
+    peerDependencies:
+      drizzle-orm: '>=0.36.0'
 
   drizzle-kit@0.30.6:
     resolution: {integrity: sha512-U4wWit0fyZuGuP7iNmRleQyK2V8wCuv57vf5l3MnG4z4fzNTjY/U13M8owyQ5RavqvqxBifWORaR3wIUzlN64g==}
@@ -22791,6 +22799,10 @@ snapshots:
     dependencies:
       get-size: 3.0.0
       unidragger: 3.0.1
+
+  drizzle-dbml-generator@0.10.0(drizzle-orm@0.41.0(@neondatabase/serverless@0.9.5)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(gel@2.0.1)(postgres@3.4.5)):
+    dependencies:
+      drizzle-orm: 0.41.0(@neondatabase/serverless@0.9.5)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(gel@2.0.1)(postgres@3.4.5)
 
   drizzle-kit@0.30.6:
     dependencies:

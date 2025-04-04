@@ -14,11 +14,13 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "db:visualize": "tsx scripts/visualizeSchema.ts && dbml-renderer -i ../../docs/db/schema.dbml -o ../../docs/db/erd.svg"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
     "dotenv": "^16.4.7",
+    "drizzle-dbml-generator": "^0.10.0",
     "drizzle-zod": "^0.7.1"
   },
   "devDependencies": {
