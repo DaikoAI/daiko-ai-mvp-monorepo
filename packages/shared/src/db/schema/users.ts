@@ -8,6 +8,9 @@ export const usersTable = pgTable("users_table", {
   name: text("name").notNull(),
   age: integer("age").notNull(),
   email: text("email").notNull().unique(),
+  tradeStyle: text("tradeStyle").notNull(),
+  totalAssetUsd: integer("totalAssetUsd").notNull(),
+  cryptoInvestmentUsd: integer("cryptoInvestmentUsd").notNull(),
 });
 
 export const userSelectSchema = createSelectSchema(usersTable);

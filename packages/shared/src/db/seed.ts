@@ -11,16 +11,25 @@ const seedUsers = async () => {
         name: "山田太郎",
         age: 30,
         email: "yamada@example.com",
+        tradeStyle: "conservative",
+        totalAssetUsd: 1000000,
+        cryptoInvestmentUsd: 100000,
       },
       {
         name: "佐藤花子",
         age: 25,
         email: "sato@example.com",
+        tradeStyle: "moderate",
+        totalAssetUsd: 1000000,
+        cryptoInvestmentUsd: 100000,
       },
       {
         name: "鈴木一郎",
         age: 35,
         email: "suzuki@example.com",
+        tradeStyle: "aggressive",
+        totalAssetUsd: 1000000,
+        cryptoInvestmentUsd: 100000,
       },
     ];
 
