@@ -6,10 +6,9 @@ export const env = createEnv({
     HELIUS_API_KEY: z.string(),
     OPENAI_API_KEY: z.string(),
     FIRECRAWL_API_KEY: z.string(),
-    FIREBASE_PROJECT_ID: z.string(),
-    FIREBASE_PRIVATE_KEY: z.string(),
-    FIREBASE_CLIENT_EMAIL: z.string(),
-    FIREBASE_DATABASE_URL: z.string(),
+    DATABASE_URL: z.string(),
+    AUTH_SECRET: z.string(),
+    NODE_ENV: z.enum(["development", "production"]),
   },
   client: {
     NEXT_PUBLIC_DEBUG: z.string().transform((s) => s !== "false" && s !== "0"),
@@ -20,10 +19,9 @@ export const env = createEnv({
     HELIUS_API_KEY: process.env.HELIUS_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
-    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-    FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
-    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
-    FIREBASE_DATABASE_URL: process.env.FIREBASE_DATABASE_URL,
+    DATABASE_URL: process.env.DATABASE_URL,
+    AUTH_SECRET: process.env.AUTH_SECRET,
+    NODE_ENV: process.env.NODE_ENV,
   },
   // For Next.js >= 13.4.4, you only need to destructure client variables:
   // experimental__runtimeEnv: {

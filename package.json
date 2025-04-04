@@ -20,10 +20,10 @@
   "devDependencies": {
     "@types/uuid": "^9.0.7",
     "dotenv": "^16.4.5",
+    "drizzle-kit": "^0.30.6",
     "prettier": "^3.5.3",
     "turbo": "^2.4.4",
-    "uuid": "^9.0.1",
-    "drizzle-kit": "^0.30.6"
+    "uuid": "^9.0.1"
   },
   "prettier": {
     "printWidth": 120,
@@ -36,5 +36,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@10.7.1"
 }

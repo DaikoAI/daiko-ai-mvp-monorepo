@@ -1,7 +1,7 @@
 "use client";
 
 import { PwaFooter } from "@/components/pwa-footer";
-import { Toaster } from "@/components/ui/sonner";
+import { TRPCReactProvider } from "@/trpc/react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
@@ -24,24 +24,25 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
     <AnimatePresence mode="wait">
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-        <ConnectionProvider endpoint={endpoint}>
-          <WalletProvider wallets={wallets} autoConnect>
-            <WalletModalProvider>
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="h-full"
-              >
-                {children}
-              </motion.div>
-              <PwaFooter />
-            </WalletModalProvider>
-          </WalletProvider>
-        </ConnectionProvider>
-        <Toaster position="top-center" richColors />
+        <TRPCReactProvider>
+          <ConnectionProvider endpoint={endpoint}>
+            <WalletProvider wallets={wallets} autoConnect>
+              <WalletModalProvider>
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="h-full"
+                >
+                  {children}
+                </motion.div>
+                <PwaFooter />
+              </WalletModalProvider>
+            </WalletProvider>
+          </ConnectionProvider>
+        </TRPCReactProvider>
       </ThemeProvider>
     </AnimatePresence>
   );
