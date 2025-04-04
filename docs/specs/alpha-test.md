@@ -94,7 +94,7 @@ type InvestmentStatus = "active" | "withdrawn";
 interface Investment {
   id: string;
   user_id: string; // usersテーブルへの外部キー
-  token_id: string; // 投資対象のトークン
+  token_address: string; // 投資対象のトークン
   action_type: InvestmentActionType;
   principal: string; // 投資元本
   accrued_interest: string; // 累積利息
@@ -114,7 +114,7 @@ type PositionStatus = "open" | "closed" | "liquidated";
 interface PerpPosition {
   id: string;
   user_id: string; // usersテーブルへの外部キー
-  token_id: string; // 対象トークン
+  token_address: string; // 対象トークン
   position_direction: PositionDirection; // ポジション方向
   leverage: number; // 例: 5 (5倍レバレッジ)
   entry_price: string; // エントリー時の価格
@@ -135,7 +135,7 @@ interface PerpPosition {
 ```typescript
 interface InterestRate {
   id: string;
-  token_id: string; // tokensテーブルへの外部キー
+  token_address: string; // tokensテーブルへの外部キー
   action_type: InvestmentActionType;
   interest_rate: number; // 利率
   effective_date: Date; // 適用開始日時
@@ -147,7 +147,7 @@ interface InterestRate {
 ```typescript
 interface FundingRate {
   id: string;
-  token_id: string; // 対象トークン
+  token_address: string; // 対象トークン
   rate: number; // Funding Rate値
   timestamp: Date; // 適用時刻
 }
