@@ -1,4 +1,4 @@
-import { decimal, index, jsonb, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
+import { decimal, index, jsonb, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { usersTable } from "./users";
 
@@ -6,7 +6,7 @@ export const portfolioSnapshots = pgTable(
   "portfolio_snapshots",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: varchar("user_id", { length: 255 })
       .notNull()
       .references(() => usersTable.id),
     timestamp: timestamp("timestamp").notNull(),
