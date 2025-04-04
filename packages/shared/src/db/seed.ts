@@ -18,6 +18,7 @@ const seedUsers = async () => {
         tradeStyle: "conservative",
         totalAssetUsd: 1000000,
         cryptoInvestmentUsd: 100000,
+        walletAddress: "Fgkki5sVbKpdLF28nvahDyrYeUQ5Cn7VJ8WTXHzLWEB5",
       },
       {
         name: "佐藤花子",
@@ -26,6 +27,7 @@ const seedUsers = async () => {
         tradeStyle: "moderate",
         totalAssetUsd: 1000000,
         cryptoInvestmentUsd: 100000,
+        walletAddress: "6R57iMy4cxpMBWu6wNP8648HoTEbim8fDK2ZWFdYPJ5D",
       },
       {
         name: "鈴木一郎",
@@ -34,6 +36,7 @@ const seedUsers = async () => {
         tradeStyle: "aggressive",
         totalAssetUsd: 1000000,
         cryptoInvestmentUsd: 100000,
+        walletAddress: "6yVF82TqGTwvix2tCGzxUhWGKkBB185sTU7A2bvACnF2",
       },
     ];
 

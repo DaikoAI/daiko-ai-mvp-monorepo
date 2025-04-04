@@ -33,8 +33,12 @@
 interface User {
   id: string; // UUIDまたは自動採番
   username: string;
-  email: string;
   // その他ユーザー情報
+  email: string;
+  wallet_address: string;
+  total_asset_usd: number;
+  crypto_investment_usd: number;
+  trade_style: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -44,12 +48,12 @@ interface User {
 
 ```typescript
 interface Token {
-  id: string; // トークン識別子
+  address: string; // contract address
   symbol: string; // 例: "SOL", "USDC"
   name: string; // 例: "Solana", "USD Coin"
   decimals: number; // 小数点以下の桁数
-  contract_address: string; // トークンのコントラクトアドレス
   icon_url: string; // トークンのアイコンURL
+  type: string; // トークンのタイプ "normal" | "lending" | "perp" | "liquid_staking"
   // 必要に応じて追加フィールド
 }
 ```
@@ -60,7 +64,7 @@ interface Token {
 interface UserBalance {
   id: string;
   user_id: string; // usersテーブルへの外部キー
-  token_id: string; // tokensテーブルへの外部キー
+  token_address: string; // tokensテーブルへの外部キー
   balance: string; // 精度の高い数値型（文字列として保存）
   updated_at: Date;
 }
@@ -75,8 +79,8 @@ interface Transaction {
   id: string;
   user_id: string; // usersテーブルへの外部キー
   transaction_type: TransactionType;
-  from_token_id?: string; // スワップ元トークン（該当する場合）
-  to_token_id?: string; // スワップ先トークン（該当する場合）
+  from_token_address?: string; // スワップ元トークン（該当する場合）
+  to_token_address?: string; // スワップ先トークン（該当する場合）
   amount_from?: string; // スワップ元数量
   amount_to?: string; // スワップ先数量
   fee?: string; // 取引手数料
@@ -293,8 +297,180 @@ function getUserPortfolio(userId: string) {
 - 将来的なDEXインテグレーションやより複雑な取引戦略にも対応できる設計
 - ステーキング、レンディング、Perp取引など各機能が独立して拡張可能なモジュール設計
 
-## 8. 課題と制限事項
+## 8. トークン価格管理
+
+### 価格取得ソース
+
+- Jupiter APIを使用: `https://api.jup.ag/price/v2?ids=${token_address}`
+- 定期的（10分間隔を推奨）に価格データを取得しキャッシュ
+
+### `token_prices` テーブル
+
+```typescript
+interface TokenPrice {
+  id: string;
+  token_id: string; // tokensテーブルへの外部キー
+  price_usd: string; // USD価格（文字列として保存）
+  last_updated: Date; // 価格更新時刻
+  source: string; // 価格取得ソース（"jupiter"など）
+}
+```
+
+### 価格更新処理
+
+```typescript
+// 定期的な価格更新バッチ処理
+async function updateTokenPrices() {
+  // すべてのトークンアドレスを取得
+  const tokens = await db.tokens.findMany();
+
+  // Jupiter APIから価格を取得
+  const tokenAddresses = tokens.map((token) => token.contract_address);
+  const pricesResponse = await fetch(`https://api.jup.ag/price/v2?ids=${tokenAddresses.join(",")}`);
+  const pricesData = await pricesResponse.json();
+
+  // 各トークンの価格を更新
+  for (const token of tokens) {
+    await db.tokenPrices.upsert({
+      where: { token_id: token.id },
+      update: {
+        price_usd: pricesData[token.contract_address]?.toString() || "0",
+        last_updated: new Date(),
+        source: "jupiter",
+      },
+      create: {
+        token_id: token.id,
+        price_usd: pricesData[token.contract_address]?.toString() || "0",
+        last_updated: new Date(),
+        source: "jupiter",
+      },
+    });
+  }
+}
+```
+
+## 9. API設計
+
+### ユーザーポートフォリオAPI
+
+```typescript
+// GET /api/portfolio/:wallet_address
+async function getUserPortfolio(walletAddress: string) {
+  // ウォレットアドレスからユーザーを特定
+  const user = await db.users.findFirst({
+    where: { wallet_address: walletAddress },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  // ユーザーの全トークン残高を取得
+  const balances = await db.userBalances.findMany({
+    where: { user_id: user.id },
+    include: { token: true },
+  });
+
+  // 最新のトークン価格を取得
+  const tokenIds = balances.map((balance) => balance.token_id);
+  const prices = await db.tokenPrices.findMany({
+    where: { token_id: { in: tokenIds } },
+  });
+
+  // 価格マップを作成
+  const priceMap = prices.reduce((map, price) => {
+    map[price.token_id] = price.price_usd;
+    return map;
+  }, {});
+
+  // ポートフォリオデータを構築
+  const portfolio = balances.map((balance) => {
+    const tokenPrice = priceMap[balance.token_id] || "0";
+    const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
+
+    return {
+      token: balance.token.symbol,
+      token_address: balance.token.contract_address,
+      balance: balance.balance,
+      price_usd: tokenPrice,
+      value_usd: valueUsd,
+    };
+  });
+
+  // Perp ポジションがある場合はそれも含める
+  const perpPositions = await db.perpPositions.findMany({
+    where: {
+      user_id: user.id,
+      status: "open",
+    },
+    include: { token: true },
+  });
+
+  // Perpポジションの評価額を計算
+  for (const position of perpPositions) {
+    const currentPrice = priceMap[position.token_id] || "0";
+    // PnL計算ロジック...
+    // portfolioに追加
+  }
+
+  // 合計額計算
+  const totalValue = portfolio
+    .reduce((sum, item) => {
+      return sum.plus(item.value_usd);
+    }, new BigNumber(0))
+    .toString();
+
+  return {
+    wallet_address: walletAddress,
+    total_value_usd: totalValue,
+    tokens: portfolio,
+    perp_positions: perpPositionsData || [],
+  };
+}
+```
+
+### トークン価格API
+
+```typescript
+// GET /api/prices?tokens=token1,token2,...
+async function getTokenPrices(tokenAddresses: string[]) {
+  // DBからキャッシュされた価格を取得
+  const prices = await db.tokenPrices.findMany({
+    where: {
+      token: {
+        contract_address: { in: tokenAddresses },
+      },
+    },
+    include: { token: true },
+  });
+
+  // 各トークンの価格データを構築
+  const priceData = prices.map((price) => ({
+    token_address: price.token.contract_address,
+    symbol: price.token.symbol,
+    price_usd: price.price_usd,
+    last_updated: price.last_updated,
+  }));
+
+  return {
+    prices: priceData,
+    timestamp: new Date(),
+  };
+}
+```
+
+## 10. フロントエンド連携
+
+フロントエンドでは以下の方法でデータを取得・表示します：
+
+1. ユーザーのウォレット接続時に、ウォレットアドレスをバックエンドに送信
+2. `/api/portfolio/:wallet_address` エンドポイントから完全なポートフォリオデータを取得
+3. ポートフォリオ画面で各トークンの残高、USD価値、合計価値を表示
+4. 定期的（30秒〜1分間隔）に最新データを取得し表示を更新
+
+リアルタイム性が重要な場合は、WebSocketを使用したpush通知も検討可能です。
+
+## 11. 課題と制限事項
 
 - αテスト環境では実際のオンチェーンデータとの連携は最小限とし、主にDB内シミュレーションに注力
-- 市場価格データは外部APIから定期的に取得し、実際の市場状況を反映
+- 市場価格データはJupiter APIから定期的に取得し、実際の市場状況を反映
 - 高度なトレーディング機能（指値注文、複雑なポジション管理など）は初期フェーズでは実装しない
+- Jupiter APIの利用制限に注意し、適切なエラーハンドリングとフォールバック戦略を実装する

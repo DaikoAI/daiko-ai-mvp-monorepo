@@ -10,15 +10,16 @@ export const usersTable = pgTable("users", {
     .$defaultFn(() => crypto.randomUUID()),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("emailVerified", {
+  emailVerified: timestamp("email_verified", {
     mode: "date",
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
   age: integer("age").notNull(),
   image: varchar("image", { length: 255 }),
-  tradeStyle: text("tradeStyle").notNull(),
-  totalAssetUsd: integer("totalAssetUsd").notNull(),
-  cryptoInvestmentUsd: integer("cryptoInvestmentUsd").notNull(),
+  tradeStyle: text("trade_style").notNull(),
+  totalAssetUsd: integer("total_asset_usd").notNull(),
+  cryptoInvestmentUsd: integer("crypto_investment_usd").notNull(),
+  walletAddress: varchar("wallet_address", { length: 255 }).notNull(),
 });
 
 export const userSelectSchema = createSelectSchema(usersTable);
