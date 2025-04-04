@@ -1,4 +1,4 @@
-import { XAccountInsert, XAccountSelect } from "../../db/schema/xAccounts";
+import { XAccountInsert, XAccountSelect } from "../../db/schema/x_accounts";
 import { Repository } from "./Repository";
 
 export interface XAccountRepository extends Repository<XAccountSelect, XAccountInsert> {

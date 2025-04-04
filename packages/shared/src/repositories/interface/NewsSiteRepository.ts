@@ -1,4 +1,4 @@
-import { NewsSiteInsert, NewsSiteSelect } from "../../db/schema/newsSites";
+import { NewsSiteInsert, NewsSiteSelect } from "../../db/schema/news_sites";
 import { Repository } from "./Repository";
 
 export interface NewsSiteRepository extends Repository<NewsSiteSelect, NewsSiteInsert> {
