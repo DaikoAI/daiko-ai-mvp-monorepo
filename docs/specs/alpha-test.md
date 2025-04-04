@@ -11,7 +11,24 @@
 - **API**: Next.js API Routes with [tRPC](https://trpc.io/)
 - **フロントエンド**: [Next.js](https://nextjs.org/)
 
-## 3. ユースケース
+## 3. 実装スケジュール
+
+### Phase 1（初期リリース）
+
+- 基本DB設計と実装
+- トークン管理機能の実装
+- ステーキング、1:1スワップ、Liquid Staking機能の実装
+- ポートフォリオ表示と時価評価の基本機能実装
+- 日次バッチ処理の設定
+
+### Phase 2（1週間後）
+
+- Perp Tradeの実装（成り行き注文、レバレッジ設定）
+- Funding Rateの取得と適用ロジックの実装
+- 清算処理の自動化と通知システム実装
+- ポートフォリオ表示の拡張（Perp Trading含む全体PnL計算）
+
+## 4. ユースケース
 
 ### 初期フェーズ（リリース時）
 
@@ -25,123 +42,136 @@
 - Funding Rateの適用と日次調整
 - ポジションの清算ロジックと処理の実装
 
-## 4. データベース設計
+## 5. データベース設計
 
 ### `users` テーブル
 
-| カラム名              | データ型      | 制約                  | 説明                  |
-| --------------------- | ------------- | --------------------- | --------------------- |
-| id                    | UUID          | PRIMARY KEY           | ユーザーID            |
-| username              | VARCHAR(255)  | NOT NULL              | ユーザー名            |
-| email                 | VARCHAR(255)  | UNIQUE                | メールアドレス        |
-| wallet_address        | VARCHAR(255)  | UNIQUE, NOT NULL      | ウォレットアドレス    |
-| total_asset_usd       | DECIMAL(20,8) | DEFAULT 0             | 総資産額（USD）       |
-| crypto_investment_usd | DECIMAL(20,8) | DEFAULT 0             | 仮想通貨投資額（USD） |
-| trade_style           | VARCHAR(50)   |                       | トレードスタイル      |
-| created_at            | TIMESTAMP     | NOT NULL, DEFAULT NOW | 作成日時              |
-| updated_at            | TIMESTAMP     | NOT NULL, DEFAULT NOW | 更新日時              |
+| カラム名              | データ型      | 制約                                                   | 説明                  |
+| --------------------- | ------------- | ------------------------------------------------------ | --------------------- |
+| id                    | UUID          | PRIMARY KEY                                            | ユーザーID            |
+| username              | VARCHAR(255)  | NOT NULL                                               | ユーザー名            |
+| email                 | VARCHAR(255)  | UNIQUE, **INDEX** `idx_users_email`                    | メールアドレス        |
+| wallet_address        | VARCHAR(255)  | UNIQUE, NOT NULL, **INDEX** `idx_users_wallet_address` | ウォレットアドレス    |
+| total_asset_usd       | DECIMAL(20,8) | DEFAULT 0                                              | 総資産額（USD）       |
+| crypto_investment_usd | DECIMAL(20,8) | DEFAULT 0                                              | 仮想通貨投資額（USD） |
+| trade_style           | VARCHAR(50)   |                                                        | トレードスタイル      |
+| created_at            | TIMESTAMP     | NOT NULL, DEFAULT NOW                                  | 作成日時              |
+| updated_at            | TIMESTAMP     | NOT NULL, DEFAULT NOW                                  | 更新日時              |
 
 ### `tokens` テーブル
 
-| カラム名 | データ型     | 制約        | 説明                                                 |
-| -------- | ------------ | ----------- | ---------------------------------------------------- |
-| address  | VARCHAR(255) | PRIMARY KEY | コントラクトアドレス                                 |
-| symbol   | VARCHAR(20)  | NOT NULL    | トークンシンボル                                     |
-| name     | VARCHAR(255) | NOT NULL    | トークン名                                           |
-| decimals | INTEGER      | NOT NULL    | 小数点以下の桁数                                     |
-| icon_url | VARCHAR(512) |             | アイコンURL                                          |
-| type     | VARCHAR(50)  | NOT NULL    | トークンタイプ（normal/lending/perp/liquid_staking） |
+| カラム名 | データ型     | 制約                                    | 説明                                                 |
+| -------- | ------------ | --------------------------------------- | ---------------------------------------------------- |
+| address  | VARCHAR(255) | PRIMARY KEY                             | コントラクトアドレス                                 |
+| symbol   | VARCHAR(20)  | NOT NULL, **INDEX** `idx_tokens_symbol` | トークンシンボル                                     |
+| name     | VARCHAR(255) | NOT NULL                                | トークン名                                           |
+| decimals | INTEGER      | NOT NULL                                | 小数点以下の桁数                                     |
+| icon_url | VARCHAR(512) |                                         | アイコンURL                                          |
+| type     | VARCHAR(50)  | NOT NULL, **INDEX** `idx_tokens_type`   | トークンタイプ（normal/lending/perp/liquid_staking） |
 
 ### `user_balances` テーブル
 
-| カラム名      | データ型     | 制約                                             | 説明             |
-| ------------- | ------------ | ------------------------------------------------ | ---------------- |
-| id            | UUID         | PRIMARY KEY                                      | ID               |
-| user_id       | UUID         | NOT NULL, FOREIGN KEY REFERENCES users(id)       | ユーザーID       |
-| token_address | VARCHAR(255) | NOT NULL, FOREIGN KEY REFERENCES tokens(address) | トークンアドレス |
-| balance       | VARCHAR(78)  | NOT NULL, DEFAULT '0'                            | 残高（文字列型） |
-| updated_at    | TIMESTAMP    | NOT NULL, DEFAULT NOW                            | 更新日時         |
+| カラム名      | データ型     | 制約                                                                                                                                               | 説明             |
+| ------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| id            | UUID         | PRIMARY KEY                                                                                                                                        | ID               |
+| user_id       | UUID         | NOT NULL, FOREIGN KEY REFERENCES users(id), **複合UNIQUE INDEX** `idx_user_balances_user_token`                                                    | ユーザーID       |
+| token_address | VARCHAR(255) | NOT NULL, FOREIGN KEY REFERENCES tokens(address), **INDEX** `idx_user_balances_token_address`, **複合UNIQUE INDEX** `idx_user_balances_user_token` | トークンアドレス |
+| balance       | VARCHAR(78)  | NOT NULL, DEFAULT '0'                                                                                                                              | 残高（文字列型） |
+| updated_at    | TIMESTAMP    | NOT NULL, DEFAULT NOW                                                                                                                              | 更新日時         |
 
 ### `transactions` テーブル
 
-| カラム名           | データ型     | 制約                                       | 説明               |
-| ------------------ | ------------ | ------------------------------------------ | ------------------ |
-| id                 | UUID         | PRIMARY KEY                                | トランザクションID |
-| user_id            | UUID         | NOT NULL, FOREIGN KEY REFERENCES users(id) | ユーザーID         |
-| transaction_type   | VARCHAR(50)  | NOT NULL                                   | 取引タイプ         |
-| from_token_address | VARCHAR(255) | FOREIGN KEY REFERENCES tokens(address)     | 送信元トークン     |
-| to_token_address   | VARCHAR(255) | FOREIGN KEY REFERENCES tokens(address)     | 送信先トークン     |
-| amount_from        | VARCHAR(78)  |                                            | 送信元数量         |
-| amount_to          | VARCHAR(78)  |                                            | 送信先数量         |
-| fee                | VARCHAR(78)  |                                            | 手数料             |
-| details            | JSONB        |                                            | 詳細情報（JSON）   |
-| created_at         | TIMESTAMP    | NOT NULL, DEFAULT NOW                      | 作成日時           |
+| カラム名           | データ型     | 制約                                                                                                                         | 説明               |
+| ------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| id                 | UUID         | PRIMARY KEY                                                                                                                  | トランザクションID |
+| user_id            | UUID         | NOT NULL, FOREIGN KEY REFERENCES users(id), **INDEX** `idx_transactions_user_id`, **複合INDEX** `idx_transactions_type_user` | ユーザーID         |
+| transaction_type   | VARCHAR(50)  | NOT NULL, **複合INDEX** `idx_transactions_type_user`                                                                         | 取引タイプ         |
+| from_token_address | VARCHAR(255) | FOREIGN KEY REFERENCES tokens(address), **INDEX** `idx_transactions_from_token`                                              | 送信元トークン     |
+| to_token_address   | VARCHAR(255) | FOREIGN KEY REFERENCES tokens(address), **INDEX** `idx_transactions_to_token`                                                | 送信先トークン     |
+| amount_from        | VARCHAR(78)  |                                                                                                                              | 送信元数量         |
+| amount_to          | VARCHAR(78)  |                                                                                                                              | 送信先数量         |
+| fee                | VARCHAR(78)  |                                                                                                                              | 手数料             |
+| details            | JSONB        |                                                                                                                              | 詳細情報（JSON）   |
+| created_at         | TIMESTAMP    | NOT NULL, DEFAULT NOW, **INDEX** `idx_transactions_created_at`                                                               | 作成日時           |
+
+### `portfolio_snapshots` テーブル
+
+| カラム名          | データ型      | 制約                                                                           | 説明                             |
+| ----------------- | ------------- | ------------------------------------------------------------------------------ | -------------------------------- |
+| id                | UUID          | PRIMARY KEY                                                                    | スナップショットID               |
+| user_id           | UUID          | NOT NULL, FOREIGN KEY REFERENCES users(id), **複合INDEX** `user_timestamp_idx` | ユーザーID                       |
+| timestamp         | TIMESTAMP     | NOT NULL, **INDEX** `timestamp_idx`, **複合INDEX** `user_timestamp_idx`        | スナップショット時刻             |
+| total_value_usd   | DECIMAL(20,8) | NOT NULL                                                                       | ポートフォリオ総額（USD）        |
+| pnl_from_previous | DECIMAL(20,8) |                                                                                | 前回スナップショットからのPnL    |
+| pnl_from_start    | DECIMAL(20,8) |                                                                                | 初期ポートフォリオからのPnL      |
+| snapshot_details  | JSONB         |                                                                                | 詳細なポートフォリオ構成（JSON） |
+| created_at        | TIMESTAMP     | NOT NULL, DEFAULT NOW                                                          | 作成日時                         |
 
 ### `investments` テーブル
 
-| カラム名         | データ型      | 制約                                             | 説明                                         |
-| ---------------- | ------------- | ------------------------------------------------ | -------------------------------------------- |
-| id               | UUID          | PRIMARY KEY                                      | 投資ID                                       |
-| user_id          | UUID          | NOT NULL, FOREIGN KEY REFERENCES users(id)       | ユーザーID                                   |
-| token_address    | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address) | トークンアドレス                             |
-| action_type      | VARCHAR(50)   | NOT NULL                                         | 投資タイプ（staking/liquid_staking/lending） |
-| principal        | VARCHAR(78)   | NOT NULL                                         | 元本                                         |
-| accrued_interest | VARCHAR(78)   | NOT NULL, DEFAULT '0'                            | 累積利息                                     |
-| start_date       | TIMESTAMP     | NOT NULL                                         | 開始日時                                     |
-| last_update      | TIMESTAMP     | NOT NULL                                         | 最終更新日時                                 |
-| interest_rate    | DECIMAL(10,5) | NOT NULL                                         | 利率（%）                                    |
-| status           | VARCHAR(20)   | NOT NULL                                         | ステータス（active/withdrawn）               |
+| カラム名         | データ型      | 制約                                                                                        | 説明                                         |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| id               | UUID          | PRIMARY KEY                                                                                 | 投資ID                                       |
+| user_id          | UUID          | NOT NULL, FOREIGN KEY REFERENCES users(id), **INDEX** `idx_investments_user_id`             | ユーザーID                                   |
+| token_address    | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address), **INDEX** `idx_investments_token_address` | トークンアドレス                             |
+| action_type      | VARCHAR(50)   | NOT NULL, **INDEX** `idx_investments_action_type`                                           | 投資タイプ（staking/liquid_staking/lending） |
+| principal        | VARCHAR(78)   | NOT NULL                                                                                    | 元本                                         |
+| accrued_interest | VARCHAR(78)   | NOT NULL, DEFAULT '0'                                                                       | 累積利息                                     |
+| start_date       | TIMESTAMP     | NOT NULL                                                                                    | 開始日時                                     |
+| last_update      | TIMESTAMP     | NOT NULL                                                                                    | 最終更新日時                                 |
+| interest_rate    | DECIMAL(10,5) | NOT NULL                                                                                    | 利率（%）                                    |
+| status           | VARCHAR(20)   | NOT NULL, **INDEX** `idx_investments_status`                                                | ステータス（active/withdrawn）               |
 
 ### `perp_positions` テーブル
 
-| カラム名                  | データ型      | 制約                                             | 説明                                 |
-| ------------------------- | ------------- | ------------------------------------------------ | ------------------------------------ |
-| id                        | UUID          | PRIMARY KEY                                      | ポジションID                         |
-| user_id                   | UUID          | NOT NULL, FOREIGN KEY REFERENCES users(id)       | ユーザーID                           |
-| token_address             | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address) | トークンアドレス                     |
-| position_direction        | VARCHAR(10)   | NOT NULL                                         | ポジション方向（long/short）         |
-| leverage                  | INTEGER       | NOT NULL                                         | レバレッジ倍率                       |
-| entry_price               | VARCHAR(78)   | NOT NULL                                         | エントリー価格                       |
-| position_size             | VARCHAR(78)   | NOT NULL                                         | ポジションサイズ                     |
-| collateral_amount         | VARCHAR(78)   | NOT NULL                                         | 証拠金額                             |
-| liquidation_price         | VARCHAR(78)   | NOT NULL                                         | 清算価格                             |
-| entry_funding_rate        | DECIMAL(10,5) | NOT NULL                                         | エントリー時Funding Rate             |
-| accumulated_funding       | VARCHAR(78)   | NOT NULL, DEFAULT '0'                            | 累積Funding調整額                    |
-| funding_rate_last_applied | TIMESTAMP     | NOT NULL                                         | Funding Rate最終適用時刻             |
-| status                    | VARCHAR(20)   | NOT NULL                                         | ステータス（open/closed/liquidated） |
-| created_at                | TIMESTAMP     | NOT NULL, DEFAULT NOW                            | 作成日時                             |
-| updated_at                | TIMESTAMP     | NOT NULL, DEFAULT NOW                            | 更新日時                             |
+| カラム名                  | データ型      | 制約                                                                                 | 説明                                 |
+| ------------------------- | ------------- | ------------------------------------------------------------------------------------ | ------------------------------------ |
+| id                        | UUID          | PRIMARY KEY                                                                          | ポジションID                         |
+| user_id                   | UUID          | NOT NULL, FOREIGN KEY REFERENCES users(id), **複合INDEX** `idx_perp_user_status`     | ユーザーID                           |
+| token_address             | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address), **INDEX** `idx_perp_token_address` | トークンアドレス                     |
+| position_direction        | VARCHAR(10)   | NOT NULL                                                                             | ポジション方向（long/short）         |
+| leverage                  | INTEGER       | NOT NULL                                                                             | レバレッジ倍率                       |
+| entry_price               | VARCHAR(78)   | NOT NULL                                                                             | エントリー価格                       |
+| position_size             | VARCHAR(78)   | NOT NULL                                                                             | ポジションサイズ                     |
+| collateral_amount         | VARCHAR(78)   | NOT NULL                                                                             | 証拠金額                             |
+| liquidation_price         | VARCHAR(78)   | NOT NULL, **複合INDEX** `idx_perp_liquidation`                                       | 清算価格                             |
+| entry_funding_rate        | DECIMAL(10,5) | NOT NULL                                                                             | エントリー時Funding Rate             |
+| accumulated_funding       | VARCHAR(78)   | NOT NULL, DEFAULT '0'                                                                | 累積Funding調整額                    |
+| funding_rate_last_applied | TIMESTAMP     | NOT NULL                                                                             | Funding Rate最終適用時刻             |
+| status                    | VARCHAR(20)   | NOT NULL, **複合INDEX** `idx_perp_user_status`, **複合INDEX** `idx_perp_liquidation` | ステータス（open/closed/liquidated） |
+| created_at                | TIMESTAMP     | NOT NULL, DEFAULT NOW                                                                | 作成日時                             |
+| updated_at                | TIMESTAMP     | NOT NULL, DEFAULT NOW                                                                | 更新日時                             |
 
 ### `token_prices` テーブル
 
-| カラム名      | データ型     | 制約                                             | 説明             |
-| ------------- | ------------ | ------------------------------------------------ | ---------------- |
-| id            | UUID         | PRIMARY KEY                                      | ID               |
-| token_address | VARCHAR(255) | NOT NULL, FOREIGN KEY REFERENCES tokens(address) | トークンアドレス |
-| price_usd     | VARCHAR(78)  | NOT NULL                                         | USD価格          |
-| last_updated  | TIMESTAMP    | NOT NULL                                         | 最終更新時刻     |
-| source        | VARCHAR(50)  | NOT NULL                                         | 価格取得ソース   |
+| カラム名      | データ型     | 制約                                                                                          | 説明             |
+| ------------- | ------------ | --------------------------------------------------------------------------------------------- | ---------------- |
+| id            | UUID         | PRIMARY KEY                                                                                   | ID               |
+| token_address | VARCHAR(255) | NOT NULL, FOREIGN KEY REFERENCES tokens(address), **UNIQUE INDEX** `idx_token_prices_address` | トークンアドレス |
+| price_usd     | VARCHAR(78)  | NOT NULL                                                                                      | USD価格          |
+| last_updated  | TIMESTAMP    | NOT NULL, **INDEX** `idx_token_prices_updated`                                                | 最終更新時刻     |
+| source        | VARCHAR(50)  | NOT NULL                                                                                      | 価格取得ソース   |
 
-### (オプション) `interest_rates` テーブル
+### `interest_rates` テーブル
 
-| カラム名       | データ型      | 制約                                             | 説明             |
-| -------------- | ------------- | ------------------------------------------------ | ---------------- |
-| id             | UUID          | PRIMARY KEY                                      | ID               |
-| token_address  | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address) | トークンアドレス |
-| action_type    | VARCHAR(50)   | NOT NULL                                         | アクションタイプ |
-| interest_rate  | DECIMAL(10,5) | NOT NULL                                         | 利率（%）        |
-| effective_date | TIMESTAMP     | NOT NULL                                         | 有効日           |
+| カラム名       | データ型      | 制約                                                                                       | 説明             |
+| -------------- | ------------- | ------------------------------------------------------------------------------------------ | ---------------- |
+| id             | UUID          | PRIMARY KEY                                                                                | ID               |
+| token_address  | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address), **複合INDEX** `idx_interest_rates_token` | トークンアドレス |
+| action_type    | VARCHAR(50)   | NOT NULL, **複合INDEX** `idx_interest_rates_token`                                         | アクションタイプ |
+| interest_rate  | DECIMAL(10,5) | NOT NULL                                                                                   | 利率（%）        |
+| effective_date | TIMESTAMP     | NOT NULL, **INDEX** `idx_interest_rates_effective`                                         | 有効日           |
 
-### (オプション) `funding_rates` テーブル
+### `funding_rates` テーブル
 
-| カラム名      | データ型      | 制約                                             | 説明             |
-| ------------- | ------------- | ------------------------------------------------ | ---------------- |
-| id            | UUID          | PRIMARY KEY                                      | ID               |
-| token_address | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address) | トークンアドレス |
-| rate          | DECIMAL(10,5) | NOT NULL                                         | Funding Rate     |
-| timestamp     | TIMESTAMP     | NOT NULL                                         | 適用時刻         |
+| カラム名      | データ型      | 制約                                                                                  | 説明             |
+| ------------- | ------------- | ------------------------------------------------------------------------------------- | ---------------- |
+| id            | UUID          | PRIMARY KEY                                                                           | ID               |
+| token_address | VARCHAR(255)  | NOT NULL, FOREIGN KEY REFERENCES tokens(address), **INDEX** `idx_funding_rates_token` | トークンアドレス |
+| rate          | DECIMAL(10,5) | NOT NULL                                                                              | Funding Rate     |
+| timestamp     | TIMESTAMP     | NOT NULL, **INDEX** `idx_funding_rates_timestamp`                                     | 適用時刻         |
 
-## 5. API設計
+## 6. API設計
 
 ### API一覧
 
@@ -177,6 +207,7 @@ async function createUser(userData: Partial<User>) {
 | エンドポイント                   | メソッド | パラメータ                                                                        | リクエストボディ | 説明                               |
 | -------------------------------- | -------- | --------------------------------------------------------------------------------- | ---------------- | ---------------------------------- |
 | `/api/portfolio/:wallet_address` | GET      | `wallet_address`: ウォレットアドレス<br>`force_refresh`(optional): 価格更新フラグ | -                | ユーザーのポートフォリオ情報を取得 |
+| `/api/pnl/:wallet_address`       | GET      | `wallet_address`: ウォレットアドレス<br>`period`: 期間(1d/7d/30d/90d/1y)          | -                | 指定期間のPnL時系列データを取得    |
 
 <details>
 <summary>実装コード例</summary>
@@ -268,6 +299,123 @@ async function getUserPortfolio(walletAddress: string, forceRefresh = false) {
     // セッション終了時にカウントを減らす（タイムアウトベース）
     scheduleSessionEnd(walletAddress);
   }
+}
+
+// GET /api/pnl/:wallet_address
+async function getUserPnLTimeseries(walletAddress: string, period = "1d") {
+  // ユーザー取得
+  const user = await db.users.findFirst({
+    where: { wallet_address: walletAddress },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  // 期間に応じた日時計算
+  const now = new Date();
+  let startDate = new Date();
+  let dataPointCount: number;
+
+  switch (period) {
+    case "1d":
+      startDate.setDate(now.getDate() - 1);
+      dataPointCount = 24; // 1時間おき
+      break;
+    case "7d":
+      startDate.setDate(now.getDate() - 7);
+      dataPointCount = 42; // 4時間おき
+      break;
+    case "30d":
+      startDate.setDate(now.getDate() - 30);
+      dataPointCount = 60; // 12時間おき
+      break;
+    case "90d":
+      startDate.setDate(now.getDate() - 90);
+      dataPointCount = 45; // 2日おき
+      break;
+    case "1y":
+      startDate.setFullYear(now.getFullYear() - 1);
+      dataPointCount = 52; // 1週間おき
+      break;
+    default:
+      startDate.setDate(now.getDate() - 1);
+      dataPointCount = 24;
+  }
+
+  // データ取得（期間や粒度に応じて最適化されたクエリ）
+  const snapshots = await db.$queryRaw`
+    WITH numbered_snapshots AS (
+      SELECT 
+        id, 
+        timestamp, 
+        total_value_usd,
+        pnl_from_start,
+        ROW_NUMBER() OVER (ORDER BY timestamp) as row_num,
+        COUNT(*) OVER () as total_count
+      FROM portfolio_snapshots
+      WHERE 
+        user_id = ${user.id}
+        AND timestamp >= ${startDate}
+        AND timestamp <= ${now}
+      ORDER BY timestamp
+    )
+    SELECT *
+    FROM numbered_snapshots
+    WHERE 
+      row_num = 1 
+      OR row_num = total_count 
+      OR row_num % GREATEST(1, CEIL(total_count::float / ${dataPointCount})) = 0
+    ORDER BY timestamp;
+  `;
+
+  // 結果がない場合は現在のポートフォリオ価値のみ返す
+  if (snapshots.length === 0) {
+    const currentValue = await calculateUserPortfolioValue(user.id);
+    return {
+      wallet_address: walletAddress,
+      period,
+      data_points: 1,
+      pnl_data: [
+        {
+          timestamp: now,
+          value: currentValue,
+          pnl_absolute: "0",
+          pnl_percentage: "0",
+        },
+      ],
+    };
+  }
+
+  // 最初のスナップショット値（基準値）
+  const initialValue = snapshots[0].total_value_usd;
+
+  // PnLデータの整形
+  const pnlData = snapshots.map((snapshot) => {
+    const value = snapshot.total_value_usd;
+    const pnlAbsolute = new BigNumber(value).minus(initialValue).toString();
+    const pnlPercentage =
+      initialValue !== "0" ? new BigNumber(pnlAbsolute).dividedBy(initialValue).multipliedBy(100).toString() : "0";
+
+    return {
+      timestamp: snapshot.timestamp,
+      value: value,
+      pnl_absolute: pnlAbsolute,
+      pnl_percentage: pnlPercentage,
+    };
+  });
+
+  return {
+    wallet_address: walletAddress,
+    period,
+    data_points: pnlData.length,
+    pnl_data: pnlData,
+    // サマリー情報
+    summary: {
+      initial_value: initialValue,
+      current_value: pnlData[pnlData.length - 1].value,
+      pnl_absolute: pnlData[pnlData.length - 1].pnl_absolute,
+      pnl_percentage: pnlData[pnlData.length - 1].pnl_percentage,
+    },
+  };
 }
 ```
 
@@ -528,9 +676,9 @@ function scheduleSessionEnd(walletAddress: string) {
 
 </details>
 
-## 6. バッチジョブと処理フロー
+## 7. バッチジョブと処理フロー
 
-### 1. 初期ポートフォリオ配布
+### a. 初期ポートフォリオ配布
 
 <details>
 <summary>実装コード例</summary>
@@ -586,7 +734,7 @@ async function distributeInitialPortfolios() {
 
 </details>
 
-### 2. トークン価格更新処理
+### b. トークン価格更新処理
 
 <details>
 <summary>実装コード例</summary>
@@ -669,7 +817,7 @@ async function refreshTokenPrices(tokenAddresses: string[]) {
 
 </details>
 
-### 3. 日次利息適用処理
+### c. 日次利息適用処理
 
 <details>
 <summary>実装コード例</summary>
@@ -736,7 +884,7 @@ async function applyDailyInterest() {
 
 </details>
 
-### 4. Funding Rate適用処理
+### d. Funding Rate適用処理
 
 <details>
 <summary>実装コード例</summary>
@@ -799,7 +947,7 @@ async function applyFundingRates() {
 
 </details>
 
-### 5. ポジション清算チェック処理
+### e. ポジション清算チェック処理
 
 <details>
 <summary>実装コード例</summary>
@@ -884,7 +1032,141 @@ async function liquidatePosition(positionId: string, currentPrice: string) {
 
 </details>
 
-## 7. フロントエンド連携
+### f. ポートフォリオスナップショット処理
+
+ユーザーのPnLを時系列で追跡し、様々な期間（1日、1週間、1ヶ月など）での表示を可能にするため、ポートフォリオスナップショットを定期的に取得・保存します。
+
+#### スナップショット取得処理の概要
+
+- **実行頻度**: 1時間ごと
+- **処理内容**: 全ユーザーのポートフォリオ価値を計算し、スナップショットとして保存
+- **価格データ**: 常に最新の市場価格を使用してPnLを計算（token_pricesテーブルから取得）
+- **ストレージ最適化**: 古いデータは段階的に間引いて保存
+
+<details>
+<summary>実装コード例</summary>
+
+```typescript
+// 1時間ごとに実行するスナップショットバッチ処理
+async function capturePortfolioSnapshots() {
+  console.log("Starting portfolio snapshot capture at", new Date());
+
+  // 全ユーザー取得
+  const users = await db.users.findMany();
+
+  for (const user of users) {
+    try {
+      // 最新の市場価格を取得
+      const userTokens = await db.userBalances.findMany({
+        where: { user_id: user.id },
+        include: { token: true },
+      });
+
+      const tokenAddresses = userTokens.map((balance) => balance.token_address);
+
+      // 最新の市場価格を使用するため、強制更新
+      await refreshTokenPrices(tokenAddresses);
+
+      // 現在のポートフォリオ価値計算
+      const portfolio = await calculateUserPortfolio(user.id);
+
+      // 前回のスナップショット取得
+      const previousSnapshot = await db.portfolioSnapshots.findFirst({
+        where: { user_id: user.id },
+        orderBy: { timestamp: "desc" },
+      });
+
+      // 初回スナップショット取得（PnL計算用）
+      const initialSnapshot = await db.portfolioSnapshots.findFirst({
+        where: { user_id: user.id },
+        orderBy: { timestamp: "asc" },
+      });
+
+      // PnL計算
+      const pnlFromPrevious = previousSnapshot
+        ? new BigNumber(portfolio.total_value_usd).minus(previousSnapshot.total_value_usd).toString()
+        : "0";
+
+      const pnlFromStart = initialSnapshot
+        ? new BigNumber(portfolio.total_value_usd).minus(initialSnapshot.total_value_usd).toString()
+        : "0";
+
+      // スナップショット保存
+      await db.portfolioSnapshots.create({
+        data: {
+          user_id: user.id,
+          timestamp: new Date(),
+          total_value_usd: portfolio.total_value_usd,
+          pnl_from_previous: pnlFromPrevious,
+          pnl_from_start: pnlFromStart,
+          snapshot_details: {
+            tokens: portfolio.tokens,
+            perp_positions: portfolio.perp_positions || [],
+            investments: portfolio.investments || [],
+          },
+        },
+      });
+    } catch (error) {
+      console.error(`Error capturing snapshot for user ${user.id}:`, error);
+    }
+  }
+
+  // データ間引き処理を実行（週に1回、日曜の深夜など）
+  const now = new Date();
+  if (now.getDay() === 0 && now.getHours() === 1) {
+    await pruneOldSnapshots();
+  }
+
+  console.log("Completed portfolio snapshot capture at", new Date());
+}
+
+// 古いスナップショットデータを間引く処理
+async function pruneOldSnapshots() {
+  console.log("Starting pruning of old snapshots");
+
+  // 1〜3ヶ月前のデータを3時間おきに間引く
+  await db.$executeRaw`
+    WITH samples AS (
+      SELECT 
+        id,
+        user_id,
+        timestamp,
+        ROW_NUMBER() OVER (PARTITION BY user_id, DATE_TRUNC('day', timestamp) ORDER BY timestamp) as row_num
+      FROM portfolio_snapshots
+      WHERE 
+        timestamp < NOW() - INTERVAL '1 month' AND
+        timestamp >= NOW() - INTERVAL '3 months'
+    )
+    DELETE FROM portfolio_snapshots
+    WHERE id IN (
+      SELECT id FROM samples
+      WHERE row_num % 3 != 0  -- 3時間おきのデータを残す
+    );
+  `;
+
+  // 3ヶ月以上前のデータを日次データのみに間引く
+  await db.$executeRaw`
+    WITH daily_samples AS (
+      SELECT 
+        id,
+        ROW_NUMBER() OVER (PARTITION BY user_id, DATE_TRUNC('day', timestamp) ORDER BY timestamp DESC) as row_num
+      FROM portfolio_snapshots
+      WHERE timestamp < NOW() - INTERVAL '3 months'
+    )
+    DELETE FROM portfolio_snapshots
+    WHERE id IN (
+      SELECT id FROM daily_samples
+      WHERE row_num > 1  -- 各日の最新スナップショットのみ残す
+    );
+  `;
+
+  console.log("Completed pruning of old snapshots");
+}
+```
+
+</details>
+
+## 8. フロントエンド連携
 
 フロントエンドでは以下の方法でデータを取得・表示します：
 
@@ -955,23 +1237,6 @@ function usePortfolio(walletAddress: string) {
 
 </details>
 
-## 8. 実装スケジュール
-
-### Phase 1（初期リリース）
-
-- 基本DB設計と実装
-- トークン管理機能の実装
-- ステーキング、1:1スワップ、Liquid Staking機能の実装
-- ポートフォリオ表示と時価評価の基本機能実装
-- 日次バッチ処理の設定
-
-### Phase 2（1週間後）
-
-- Perp Tradeの実装（成り行き注文、レバレッジ設定）
-- Funding Rateの取得と適用ロジックの実装
-- 清算処理の自動化と通知システム実装
-- ポートフォリオ表示の拡張（Perp Trading含む全体PnL計算）
-
 ## 9. 技術的考慮事項
 
 ### データ整合性
@@ -1020,3 +1285,13 @@ APIのレート制限を考慮しつつ、ユーザーが閲覧中はリアル�
    - 最後の更新から30秒以内のデータは再取得しない
    - 複数ユーザーが同じトークンを閲覧している場合は一度の更新を共有
    - 価格の変動が大きいトークンを優先的に更新
+
+#### データ保持ポリシー
+
+ストレージ効率化と十分な精度のバランスを取るため、以下のデータ保持ポリシーを採用します：
+
+| 期間       | データ保持粒度                     | 目的                                      |
+| ---------- | ---------------------------------- | ----------------------------------------- |
+| 直近30日間 | 1時間ごとのスナップショット        | 詳細な短期PnL分析、日次・週次グラフ表示用 |
+| 1〜3ヶ月   | 3時間ごとに間引いたデータ          | 中期トレンド分析用                        |
+| 3ヶ月以上  | 日次データ（1日1スナップショット） | 長期トレンド分析用                        |

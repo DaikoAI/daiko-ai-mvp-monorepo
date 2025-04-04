@@ -1,26 +1,33 @@
 import { relations, sql } from "drizzle-orm";
-import { pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { tokensTable } from "./tokens";
 import { usersTable } from "./users";
 
-export const userBalancesTable = pgTable("user_balances", {
-  id: varchar("id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: varchar("user_id", { length: 255 })
-    .notNull()
-    .references(() => usersTable.id),
-  tokenAddress: varchar("token_address", { length: 255 })
-    .notNull()
-    .references(() => tokensTable.address),
-  balance: text("balance").notNull(), // 精度の高い数値型を文字列で保存
-  updatedAt: timestamp("updated_at", {
-    mode: "date",
-    withTimezone: true,
-  }).default(sql`CURRENT_TIMESTAMP`),
-});
+export const userBalancesTable = pgTable(
+  "user_balances",
+  {
+    id: varchar("id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => usersTable.id),
+    tokenAddress: varchar("token_address", { length: 255 })
+      .notNull()
+      .references(() => tokensTable.address),
+    balance: text("balance").notNull(), // 精度の高い数値型を文字列で保存
+    updatedAt: timestamp("updated_at", {
+      mode: "date",
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("idx_user_balances_user_token").on(table.userId, table.tokenAddress),
+    index("idx_user_balances_token_address").on(table.tokenAddress),
+  ],
+);
 
 export const userBalanceSelectSchema = createSelectSchema(userBalancesTable);
 

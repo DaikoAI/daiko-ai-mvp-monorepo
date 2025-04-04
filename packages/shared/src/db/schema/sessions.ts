@@ -11,7 +11,7 @@ export const sessionsTable = pgTable(
       .references(() => usersTable.id),
     expires: timestamp("expires", { mode: "date", withTimezone: true }).notNull(),
   },
-  (t) => [index("sessions_user_id_idx").on(t.userId)],
+  (table) => [index("idx_sessions_user_id").on(table.userId)],
 );
 
 export const sessionsRelations = relations(sessionsTable, ({ one }) => ({

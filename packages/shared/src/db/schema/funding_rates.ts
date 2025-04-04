@@ -1,22 +1,29 @@
 import { relations, sql } from "drizzle-orm";
-import { doublePrecision, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { doublePrecision, index, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { tokensTable } from "./tokens";
 
-export const fundingRatesTable = pgTable("funding_rates", {
-  id: varchar("id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  tokenAddress: varchar("token_address", { length: 255 })
-    .notNull()
-    .references(() => tokensTable.address),
-  rate: doublePrecision("rate").notNull(), // Funding Rate値
-  timestamp: timestamp("timestamp", {
-    mode: "date",
-    withTimezone: true,
-  }).default(sql`CURRENT_TIMESTAMP`),
-});
+export const fundingRatesTable = pgTable(
+  "funding_rates",
+  {
+    id: varchar("id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    tokenAddress: varchar("token_address", { length: 255 })
+      .notNull()
+      .references(() => tokensTable.address),
+    rate: doublePrecision("rate").notNull(), // Funding Rate値
+    timestamp: timestamp("timestamp", {
+      mode: "date",
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_funding_rates_token").on(table.tokenAddress),
+    index("idx_funding_rates_timestamp").on(table.timestamp),
+  ],
+);
 
 export const fundingRateSelectSchema = createSelectSchema(fundingRatesTable);
 
