@@ -2,7 +2,7 @@
 
 import { cn } from "@/utils";
 // import { useWallet } from "@solana/wallet-adapter-react";
-import { BarChart3, MessageSquare, ScrollText, User } from "lucide-react";
+import { FileText, MessageSquare, Wallet } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,42 +18,38 @@ export const GlobalFooter: React.FC = () => {
     {
       name: "Portfolio",
       href: `/portfolio/${session?.user.walletAddress}`,
-      icon: BarChart3,
+      icon: Wallet,
     },
     {
-      name: "Proposals",
+      name: "News",
       href: "/proposals",
-      icon: ScrollText,
+      icon: FileText,
     },
     {
       name: "Chat",
       href: "/chat",
       icon: MessageSquare,
     },
-    {
-      name: "Profile",
-      href: "/profile",
-      icon: User,
-    },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/60 border-t border-white/5 pb-safe">
-      <nav className="flex h-16 items-center justify-around">
+    <div className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/10 border-t border-white/20 pb-safe">
+      <nav className="flex h-18 items-center justify-around px-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            (item.href.includes("/portfolio") && pathname.includes("/portfolio")) || item.href === pathname;
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex h-full w-full flex-col items-center justify-center space-y-1 px-2 text-muted-foreground transition-colors hover:text-primary",
-                isActive && "text-primary glow-text",
+                "flex h-full w-full flex-col items-center justify-center space-y-1",
+                isActive ? "text-white" : "text-white/50",
               )}
               onClick={() => triggerHaptic()}
             >
-              <item.icon size={24} className={cn(isActive && "text-primary icon-highlight")} />
-              <span className={cn("text-xs", isActive && "font-medium text-primary")}>{item.name}</span>
+              <item.icon size={24} className={cn("transition-opacity", isActive ? "opacity-100" : "opacity-50")} />
             </Link>
           );
         })}
