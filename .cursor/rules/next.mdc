@@ -3,11 +3,13 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Nextjsでのコーディング
+# Nextjs Coding Rules
 
 ## 1. コンポーネントの命名規則
 
 ### Pageコンポーネント
+
+target: `src/app/**/page.tsx`
 
 `default expor`tしなきゃいけないので`NextPage`の型を使いparamsはawaitで受け取る
 
