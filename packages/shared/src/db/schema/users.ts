@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { index, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { accountsTable } from "./accounts";
 
@@ -16,12 +16,19 @@ export const usersTable = pgTable(
       mode: "date",
       withTimezone: true,
     }).default(sql`CURRENT_TIMESTAMP`),
-    age: integer("age").notNull(),
+    age: integer("age"),
     image: varchar("image", { length: 255 }),
-    tradeStyle: text("trade_style").notNull(),
-    totalAssetUsd: integer("total_asset_usd").notNull(),
-    cryptoInvestmentUsd: integer("crypto_investment_usd").notNull(),
-    walletAddress: varchar("wallet_address", { length: 255 }).notNull(),
+    tradeStyle: text("trade_style"),
+    totalAssetUsd: integer("total_asset_usd"),
+    cryptoInvestmentUsd: integer("crypto_investment_usd"),
+    walletAddress: varchar("wallet_address", { length: 255 })
+      .default("1nc1nerator11111111111111111111111111111111")
+      .notNull(),
+    riskTolerance: varchar("risk_tolerance", { length: 20 }).default("medium"),
+    stakingEnabled: boolean("staking_enabled").default(true),
+    birthday: timestamp("birthday"),
+    twitterConnected: boolean("twitter_connected").default(false),
+    twitterUsername: varchar("twitter_username", { length: 255 }),
   },
   (table) => [index("idx_users_email").on(table.email), index("idx_users_wallet_address").on(table.walletAddress)],
 );

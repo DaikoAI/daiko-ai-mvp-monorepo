@@ -6,10 +6,10 @@ import { isPWA } from "@/utils/pwa";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AuthStep } from "./auth-step";
 import { CompleteStep } from "./complete-step";
 import { NotificationStep } from "./notification-step";
 import { ProfileStep } from "./profile-step";
-import { WalletStep } from "./wallet-step";
 import { WelcomeStep } from "./welcome-step";
 
 export const OnboardingFlow: React.FC = () => {
@@ -32,7 +32,8 @@ export const OnboardingFlow: React.FC = () => {
     if (state.isComplete && state.currentStep === "complete") {
       // Wait briefly before redirecting (to show completion screen)
       const timer = setTimeout(() => {
-        router.replace("/proposals");
+        // alphaテストモードならポートフォリオページへ、そうでなければプロポーザルページへ
+        router.replace("/portfolio");
       }, 2000);
 
       return () => clearTimeout(timer);
@@ -64,7 +65,8 @@ export const OnboardingFlow: React.FC = () => {
       case "welcome":
         return <WelcomeStep />;
       case "wallet":
-        return <WalletStep />;
+        // alphaテストモードならAuthStep、そうでなければWalletStep
+        return <AuthStep />;
       case "notification":
         return <NotificationStep />;
       case "profile":
@@ -81,8 +83,8 @@ export const OnboardingFlow: React.FC = () => {
       <div className="w-full max-w-md mx-auto mb-8">
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-          <span>Start</span>
-          <span>Complete</span>
+          <span>開始</span>
+          <span>完了</span>
         </div>
       </div>
 

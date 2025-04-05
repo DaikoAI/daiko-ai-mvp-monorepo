@@ -1,4 +1,8 @@
+import { portfolioRouter } from "@/server/api/routers/portfolio";
 import { proposalRouter } from "@/server/api/routers/proposal";
+import { tokensRouter } from "@/server/api/routers/tokens";
+import { transactionsRouter } from "@/server/api/routers/transactions";
+import { usersRouter } from "@/server/api/routers/users";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -8,6 +12,10 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   proposal: proposalRouter,
+  users: usersRouter,
+  portfolio: portfolioRouter,
+  tokens: tokensRouter,
+  transactions: transactionsRouter,
 });
 
 // export type definition of API

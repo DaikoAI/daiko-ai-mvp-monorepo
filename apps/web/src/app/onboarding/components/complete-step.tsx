@@ -17,8 +17,8 @@ export const CompleteStep: React.FC = () => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">All Set!</CardTitle>
-        <CardDescription>Start your investment journey with DAIKO</CardDescription>
+        <CardTitle className="text-2xl">Setup Complete!</CardTitle>
+        <CardDescription>Start your trading experience in alpha test</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center">
@@ -39,21 +39,21 @@ export const CompleteStep: React.FC = () => {
           </div>
         </div>
         <div className="text-center space-y-2">
-          <h3 className="font-medium">Configured Features</h3>
+          <h3 className="font-medium">Completed Setup</h3>
           <ul className="text-sm text-muted-foreground space-y-1">
-            {state.walletConnected && <li>✓ Wallet connected</li>}
-            {state.notificationEnabled && <li>✓ Notifications enabled</li>}
-            {state.userProfile && <li>✓ Investment profile set up</li>}
+            {state.walletConnected && <li>✓ Account login completed</li>}
+            {state.notificationEnabled && <li>✓ Notification settings completed</li>}
+            {state.userProfile && <li>✓ Profile setup completed</li>}
           </ul>
         </div>
         <div className="rounded-lg bg-primary/10 p-3 text-sm">
-          <p className="font-medium">Next Step:</p>
-          <p>Check out the optimal investment proposal and start building your investment portfolio.</p>
+          <p className="font-medium">Next Steps:</p>
+          <p>Check your initial portfolio for alpha test on the portfolio page and start trading.</p>
         </div>
       </CardContent>
       <CardFooter>
         <Button onClick={handleGetStarted} className="w-full">
-          Get Started
+          Start Trading
         </Button>
       </CardFooter>
     </Card>

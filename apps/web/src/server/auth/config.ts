@@ -1,8 +1,12 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { Keypair } from "@solana/web3.js";
+import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
+import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
+import { env } from "process";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -14,15 +18,29 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      walletAddress: string;
+      email: string;
+      name: string;
+      image: string;
+      totalAssetUsd: string;
+      cryptoInvestmentUsd: string;
+      tradeStyle: string;
+      age: number;
       // ...other properties
       // role: UserRole;
     } & DefaultSession["user"];
   }
+}
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+/**
+ * Solanaのウォレットアドレスを生成する関数
+ * @returns ランダムに生成されたSolanaウォレットアドレス
+ */
+function generateSolanaWalletAddress(): string {
+  // 新しいKeypairを生成
+  const keypair = Keypair.generate();
+  // 公開鍵（ウォレットアドレス）を文字列として返す
+  return keypair.publicKey.toString();
 }
 
 /**
@@ -32,7 +50,10 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    GoogleProvider,
+    GoogleProvider({
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+    }),
     /**
      * ...add more providers here.
      *
@@ -57,5 +78,33 @@ export const authConfig = {
         id: user.id,
       },
     }),
+  },
+  events: {
+    // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
+    createUser: async ({ user }) => {
+      console.log("createUser", user);
+      if (user.id) {
+        try {
+          // Solanaウォレットアドレスを生成
+          const walletAddress = generateSolanaWalletAddress();
+
+          // ユーザー情報をウォレットアドレスで更新
+          await db
+            .update(usersTable)
+            .set({ walletAddress })
+            .where(sql`${usersTable.id} = ${user.id}`);
+
+          console.log(`Solanaウォレットアドレスを生成しました: ${walletAddress}`);
+
+          // 共通の初期ポートフォリオ設定関数を使用
+          // 新規ユーザーには基本的なトークンのみを設定
+          await setupInitialPortfolio(user.id, {
+            specificSymbols: ["SOL", "USDC", "BONK"],
+          });
+        } catch (error) {
+          console.error("ユーザー情報の更新に失敗しました:", error);
+        }
+      }
+    },
   },
 } satisfies NextAuthConfig;
