@@ -36,6 +36,20 @@
       "when": 1743792676066,
       "tag": "0004_flat_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1743870294268,
+      "tag": "0005_silly_tomorrow_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1743871270085,
+      "tag": "0006_vengeful_red_wolf",
+      "breakpoints": true
     }
   ]
 }

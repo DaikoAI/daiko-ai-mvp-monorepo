@@ -1,4 +1,5 @@
 export * from "./accounts";
+export * from "./authenticators";
 export * from "./funding_rates";
 export * from "./interest_rates";
 export * from "./investments";

@@ -9,6 +9,8 @@ export const env = createEnv({
     DATABASE_URL: z.string(),
     AUTH_SECRET: z.string(),
     NODE_ENV: z.enum(["development", "production"]),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
   },
   client: {
     NEXT_PUBLIC_DEBUG: z.string().transform((s) => s !== "false" && s !== "0"),
@@ -22,6 +24,8 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     AUTH_SECRET: process.env.AUTH_SECRET,
     NODE_ENV: process.env.NODE_ENV,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   },
   // For Next.js >= 13.4.4, you only need to destructure client variables:
   // experimental__runtimeEnv: {

@@ -22,7 +22,10 @@ export const accountsTable = pgTable(
     id_token: text("id_token"),
     session_state: varchar("session_state", { length: 255 }),
   },
-  (t) => [primaryKey({ columns: [t.provider, t.providerAccountId] }), index("account_user_id_idx").on(t.userId)],
+  (table) => [
+    primaryKey({ columns: [table.provider, table.providerAccountId] }),
+    index("account_user_id_idx").on(table.userId),
+  ],
 );
 
 export const accountsRelations = relations(accountsTable, ({ one }) => ({

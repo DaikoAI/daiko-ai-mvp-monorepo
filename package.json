@@ -15,6 +15,7 @@
     "clean": "sh scripts/clean-packages.sh"
   },
   "dependencies": {
+    "bignumber.js": "^9.2.0",
     "drizzle-orm": "^0.41.0"
   },
   "devDependencies": {

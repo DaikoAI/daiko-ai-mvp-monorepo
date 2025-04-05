@@ -6,15 +6,7 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": [
-        "HELIUS_API_KEY",
-        "OPENAI_API_KEY",
-        "FIRECRAWL_API_KEY",
-        "FIREBASE_PROJECT_ID",
-        "FIREBASE_PRIVATE_KEY",
-        "FIREBASE_CLIENT_EMAIL",
-        "FIREBASE_DATABASE_URL"
-      ],
+      "env": ["HELIUS_API_KEY", "OPENAI_API_KEY", "FIRECRAWL_API_KEY", "DATABASE_URL"],
       "cache": true
     },
     "dev": {

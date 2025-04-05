@@ -1,8 +1,9 @@
 "use client";
 
 import { cn } from "@/utils";
-import { useWallet } from "@solana/wallet-adapter-react";
+// import { useWallet } from "@solana/wallet-adapter-react";
 import { BarChart3, MessageSquare, ScrollText, User } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useHaptic } from "use-haptic";
@@ -10,12 +11,13 @@ import { useHaptic } from "use-haptic";
 export const GlobalFooter: React.FC = () => {
   const pathname = usePathname();
   const { triggerHaptic } = useHaptic();
-  const { publicKey } = useWallet();
+  // const { publicKey } = useWallet();
+  const { data: session } = useSession();
 
   const navItems = [
     {
       name: "Portfolio",
-      href: `/portfolio/${publicKey}`,
+      href: `/portfolio/${session?.user.walletAddress}`,
       icon: BarChart3,
     },
     {
