@@ -3,47 +3,47 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "@/components/ui/chart";
+import type { RouterOutputs } from "@/trpc/react";
+import { api } from "@/trpc/react";
 import { cn } from "@/utils";
 import { useState } from "react";
 
-// Mock data for PnL chart
-const pnlData = {
-  "24h": [
-    { time: "00:00", value: 0 },
-    { time: "04:00", value: -120 },
-    { time: "08:00", value: -80 },
-    { time: "12:00", value: 50 },
-    { time: "16:00", value: 180 },
-    { time: "20:00", value: 120 },
-    { time: "24:00", value: 200 },
-  ],
-  "7d": [
-    { time: "Mon", value: 0 },
-    { time: "Tue", value: 150 },
-    { time: "Wed", value: 80 },
-    { time: "Thu", value: 200 },
-    { time: "Fri", value: 120 },
-    { time: "Sat", value: 300 },
-    { time: "Sun", value: 450 },
-  ],
-  "30d": [
-    { time: "Week 1", value: 0 },
-    { time: "Week 2", value: 300 },
-    { time: "Week 3", value: 150 },
-    { time: "Week 4", value: 600 },
-    { time: "Week 5", value: 450 },
-  ],
+type TimeRange = "1d" | "7d" | "30d" | "90d" | "1y";
+
+type PnLChartProps = {
+  initialData?: RouterOutputs["portfolio"]["getUserPnl"];
 };
 
-type TimeRange = "24h" | "7d" | "30d";
-
-export const PnLChart: React.FC = () => {
-  const [timeRange, setTimeRange] = useState<TimeRange>("24h");
+export const PnLChart: React.FC<PnLChartProps> = ({ initialData }) => {
+  const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [displayUnit, setDisplayUnit] = useState<"SOL" | "USD">("USD");
 
-  const data = pnlData[timeRange];
-  const currentValue = data[data.length - 1]?.value ?? 0;
+  // クライアントサイドでPnLデータを再取得
+  const { data: pnlData } = api.portfolio.getUserPnl.useQuery(
+    {
+      walletAddress: initialData?.wallet_address || "",
+      period: timeRange,
+    },
+    {
+      initialData: initialData && timeRange === initialData.period ? initialData : undefined,
+      enabled: !!initialData?.wallet_address,
+    },
+  );
+
+  const currentValue = pnlData?.summary?.pnl_absolute ? parseFloat(pnlData.summary.pnl_absolute) : 0;
   const isPositive = currentValue >= 0;
+
+  // PnLデータをチャート用のフォーマットに変換
+  const chartData =
+    pnlData?.pnl_data.map((item) => ({
+      time: new Date(item.timestamp).toLocaleString("ja-JP", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      value: parseFloat(item.pnl_absolute),
+    })) || [];
 
   const formatValue = (value: number) => {
     if (displayUnit === "USD") {
@@ -90,10 +90,10 @@ export const PnLChart: React.FC = () => {
 
           <div className="flex space-x-1">
             <Button
-              variant={timeRange === "24h" ? "glass" : "outline"}
+              variant={timeRange === "1d" ? "glass" : "outline"}
               size="sm"
-              className={cn("h-8 px-3", timeRange === "24h" && "border-primary/30 bg-primary/10 text-primary")}
-              onClick={() => setTimeRange("24h")}
+              className={cn("h-8 px-3", timeRange === "1d" && "border-primary/30 bg-primary/10 text-primary")}
+              onClick={() => setTimeRange("1d")}
             >
               24H
             </Button>
@@ -113,12 +113,20 @@ export const PnLChart: React.FC = () => {
             >
               30D
             </Button>
+            <Button
+              variant={timeRange === "90d" ? "glass" : "outline"}
+              size="sm"
+              className={cn("h-8 px-3", timeRange === "90d" && "border-primary/30 bg-primary/10 text-primary")}
+              onClick={() => setTimeRange("90d")}
+            >
+              90D
+            </Button>
           </div>
         </div>
 
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity={0.8} />
