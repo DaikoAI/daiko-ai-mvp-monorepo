@@ -1,6 +1,8 @@
-import "dotenv/config";
+import * as dotenv from "dotenv";
 import cron from "node-cron";
 import { processXScraping } from "./process";
+
+dotenv.config();
 
 /**
  * ローカル環境で実行するためのスクリプト

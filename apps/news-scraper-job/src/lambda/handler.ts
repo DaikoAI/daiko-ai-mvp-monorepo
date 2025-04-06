@@ -1,5 +1,8 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
+import * as dotenv from "dotenv";
 import { processNewsScraping } from "../process";
+
+dotenv.config();
 
 /**
  * AWS Lambda用のハンドラー関数

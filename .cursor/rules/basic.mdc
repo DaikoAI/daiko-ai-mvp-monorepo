@@ -7,6 +7,7 @@ alwaysApply: true
 
 - **絶対に**コードを書き始める前に、実装方針をこちらに伝えてOKをもらってから実装を始めて下さい
 - `npm`ではなく**必ず**`pnpm`を使って下さい！！
+- `node`はv22以降defaultでtsファイルを実行できます、`package.json`でtsファイルを実行する場合は`node --experimental-strip-types --experimental-transform-types --experimental-detect-module --no-warnings=ExperimentalWarning`で実行して下さい
 - `Turborepo`, `pnpm`を用いた monorepo 構成を効果的に使用し、package の切り分けや、型の共通化などを考えながらコードを書いて下さい
 - build errorの解決などは勝手に`tsup`などの依存をいれるのではなく根本原因を考え、`pnpm build`が通るようにして下さい、
 - errorを直す時はどういう意図・仮説でどういう処理を施すのかをちゃんと考えながら対処して下さい。

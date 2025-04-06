@@ -1,5 +1,4 @@
 import { NewsScraper, NewsScraperDB } from "@daiko-ai/news-scraper";
-import "dotenv/config";
 
 /**
  * ニュースサイトスクレイピング処理を実行するコア関数

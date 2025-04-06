@@ -12,7 +12,16 @@
     "build:news-scraper": "turbo run build --filter=@daiko-ai/news-scraper",
     "build:web": "turbo run build --filter=@daiko-ai/web",
     "build:shared": "turbo run build --filter=@daiko-ai/shared",
-    "clean": "sh scripts/clean-packages.sh"
+    "clean": "sh scripts/clean-packages.sh",
+    "job:token-price": "turbo run dev --filter=@daiko-ai/token-price-job",
+    "job:token-price:cron": "turbo run dev:cron --filter=@daiko-ai/token-price-job",
+    "job:news-scraper": "turbo run dev --filter=@daiko-ai/news-scraper-job",
+    "job:news-scraper:cron": "turbo run dev:cron --filter=@daiko-ai/news-scraper-job",
+    "job:x-scraper": "turbo run dev --filter=@daiko-ai/x-scraper-job",
+    "job:x-scraper:cron": "turbo run dev:cron --filter=@daiko-ai/x-scraper-job",
+    "n": "node --experimental-strip-types --experimental-transform-types --experimental-detect-module --no-warnings=ExperimentalWarning",
+    "jobs:cron": "turbo run dev:cron --filter=\"@daiko-ai/*-job\"",
+    "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\""
   },
   "dependencies": {
     "bignumber.js": "^9.2.0",
@@ -21,8 +30,8 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.148",
     "@types/node-cron": "^3.0.11",
-    "@types/uuid": "^9.0.7",
-    "dotenv": "^16.4.5",
+    "@types/uuid": "^9.0.8",
+    "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.6",
     "node-cron": "^3.0.3",
     "prettier": "^3.5.3",

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/trpc/react";
-import { Session } from "next-auth";
+import type { Session } from "next-auth";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

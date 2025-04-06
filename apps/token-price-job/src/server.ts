@@ -23,7 +23,6 @@ async function main() {
     const result = await processTokenPrices({ specificTokenAddress });
     console.log(result);
     process.exit(result.success ? 0 : 1);
-    return;
   }
 
   // CRONモード

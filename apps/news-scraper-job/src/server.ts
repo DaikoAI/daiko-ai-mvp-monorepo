@@ -1,6 +1,8 @@
-import "dotenv/config";
+import * as dotenv from "dotenv";
 import cron from "node-cron";
 import { processNewsScraping } from "./process";
+
+dotenv.config();
 
 /**
  * ローカル環境で実行するためのスクリプト
@@ -21,9 +23,7 @@ async function main() {
   if (specificSiteId) {
     console.log(`特定のサイトスクレイピングモード: ${specificSiteId}`);
     const result = await processNewsScraping({ specificSiteId });
-    console.log(result);
     process.exit(result.success ? 0 : 1);
-    return;
   }
 
   // CRONモード

@@ -9,6 +9,41 @@ Jupiterの価格APIを使用して、DBに登録されているトークンの�
 - 定期的な実行（デフォルト：10分ごと）またはワンタイム実行
 - 特定のトークンの価格だけを取得することも可能
 
+## 実行方法
+
+### ローカル開発環境での実行 (monorepo利用)
+
+```bash
+# ワンタイム実行モード（すべてのトークン価格を1回更新）
+pnpm run job:token-price
+
+# CRON実行モード（バックグラウンドで定期的に実行）
+pnpm run job:token-price:cron
+
+# 特定のトークンの価格のみを取得
+cd apps/token-price-job
+pnpm run dev -- --token=<トークンアドレス>
+```
+
+### 個別実行（アプリディレクトリ内）
+
+```bash
+# ディレクトリに移動
+cd apps/token-price-job
+
+# 依存関係をインストール
+pnpm install
+
+# 開発モード（ワンタイム実行）
+pnpm run dev
+
+# CRONモード（バックグラウンドで定期実行）
+pnpm run dev:cron
+
+# 特定のトークンの価格のみを取得
+pnpm run dev -- --token=<トークンアドレス>
+```
+
 ## 使い方
 
 ### 環境変数の設定
@@ -24,41 +59,6 @@ JUPITER_API_URL="https://api.jup.ag/price/v2"
 - `DATABASE_URL`: データベース接続文字列
 - `PRICE_UPDATE_CRON`: 価格更新の実行スケジュール（cron形式）
 - `JUPITER_API_URL`: JupiterのAPI URL
-
-### ローカルでの実行
-
-**ワンタイム実行：**
-
-```bash
-# 開発モード
-pnpm dev
-
-# ビルド後の実行
-pnpm build
-pnpm start
-```
-
-**CRON実行モード：**
-
-```bash
-# 開発モード
-pnpm dev -- --cron
-
-# ビルド後の実行
-pnpm build
-pnpm start -- --cron
-```
-
-**特定のトークンの価格のみを取得：**
-
-```bash
-# 開発モード
-pnpm dev -- --token=6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN
-
-# ビルド後の実行
-pnpm build
-pnpm start -- --token=6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN
-```
 
 ## デプロイ方法
 

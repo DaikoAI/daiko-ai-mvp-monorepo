@@ -6,10 +6,18 @@ import {
   userBalancesTable,
   usersTable,
 } from "@daiko-ai/shared";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 // Import BigNumber from local installation
 import BigNumber from "bignumber.js";
+
+// Define a type for the token price data (adjust based on your actual schema)
+type TokenPrice = {
+  tokenAddress: string;
+  priceUsd: string; // Based on usage below
+  // Include other relevant fields from your tokenPricesTable schema
+  timestamp?: Date; // Example: if you need timestamp
+};
 
 export const portfolioRouter = createTRPCRouter({
   /**
@@ -46,11 +54,13 @@ export const portfolioRouter = createTRPCRouter({
 
       // TODO: If forceRefresh is true, update token prices from external API
 
-      let prices: any[] = [];
+      let prices: TokenPrice[] = [];
       if (tokenAddresses.length > 0) {
-        // Get price for the first token as an example
+        // Fetch prices for all relevant token addresses in a single query
         prices = await ctx.db.query.tokenPricesTable.findMany({
-          where: eq(tokenPricesTable.tokenAddress, tokenAddresses[0] ?? ""),
+          where: inArray(tokenPricesTable.tokenAddress, tokenAddresses),
+          // Optional: Add orderBy if you need the latest price for each token
+          // orderBy: (table, { desc }) => [desc(table.timestamp)],
         });
       }
 
