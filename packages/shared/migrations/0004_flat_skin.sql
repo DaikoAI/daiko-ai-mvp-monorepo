@@ -1,1 +1,0 @@
-ALTER TABLE "portfolio_snapshots" ALTER COLUMN "user_id" SET DATA TYPE varchar(255);

@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { index, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { index, numeric, pgTable, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { tokensTable } from "./tokens";
 import { usersTable } from "./users";
@@ -17,7 +17,7 @@ export const userBalancesTable = pgTable(
     tokenAddress: varchar("token_address", { length: 255 })
       .notNull()
       .references(() => tokensTable.address),
-    balance: text("balance").notNull(), // 精度の高い数値型を文字列で保存
+    balance: numeric("balance", { precision: 100, scale: 2 }).notNull(), // 精度の高い数値型を文字列で保存
     updatedAt: timestamp("updated_at", {
       mode: "date",
       withTimezone: true,

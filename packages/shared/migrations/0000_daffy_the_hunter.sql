@@ -13,6 +13,19 @@ CREATE TABLE "accounts" (
 	CONSTRAINT "accounts_provider_provider_account_id_pk" PRIMARY KEY("provider","provider_account_id")
 );
 --> statement-breakpoint
+CREATE TABLE "authenticators" (
+	"credential_id" varchar(255) NOT NULL,
+	"user_id" varchar(255) NOT NULL,
+	"provider_account_id" varchar(255) NOT NULL,
+	"credential_public_key" text NOT NULL,
+	"counter" integer NOT NULL,
+	"credential_device_type" varchar(255) NOT NULL,
+	"credential_backed_up" integer NOT NULL,
+	"transports" varchar(255),
+	CONSTRAINT "authenticators_user_id_credential_id_pk" PRIMARY KEY("user_id","credential_id"),
+	CONSTRAINT "authenticators_credential_id_unique" UNIQUE("credential_id")
+);
+--> statement-breakpoint
 CREATE TABLE "funding_rates" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"token_address" varchar(255) NOT NULL,
@@ -70,6 +83,17 @@ CREATE TABLE "perp_positions" (
 	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 --> statement-breakpoint
+CREATE TABLE "portfolio_snapshots" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar(255) NOT NULL,
+	"timestamp" timestamp NOT NULL,
+	"total_value_usd" numeric(20, 8) NOT NULL,
+	"pnl_from_previous" numeric(20, 8),
+	"pnl_from_start" numeric(20, 8),
+	"snapshot_details" jsonb,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "proposals" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"trigger_event_id" varchar,
@@ -94,8 +118,16 @@ CREATE TABLE "sessions" (
 	"expires" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "token_prices" (
+	"id" varchar(255) PRIMARY KEY NOT NULL,
+	"token_address" varchar(255) NOT NULL,
+	"price_usd" text NOT NULL,
+	"last_updated" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"source" varchar(50) NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "tokens" (
-	"address" varchar(255) NOT NULL,
+	"address" varchar(255) PRIMARY KEY NOT NULL,
 	"symbol" varchar(20) NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"decimals" integer NOT NULL,
@@ -130,7 +162,7 @@ CREATE TABLE "user_balances" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,
 	"token_address" varchar(255) NOT NULL,
-	"balance" text NOT NULL,
+	"balance" numeric(100, 2) NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 --> statement-breakpoint
@@ -138,12 +170,18 @@ CREATE TABLE "users" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"name" varchar(255),
 	"email" varchar(255) NOT NULL,
-	"emailVerified" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-	"age" integer NOT NULL,
+	"email_verified" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"age" integer,
 	"image" varchar(255),
-	"tradeStyle" text NOT NULL,
-	"totalAssetUsd" integer NOT NULL,
-	"cryptoInvestmentUsd" integer NOT NULL
+	"trade_style" text,
+	"total_asset_usd" integer,
+	"crypto_investment_usd" integer,
+	"wallet_address" varchar(255) DEFAULT '1nc1nerator11111111111111111111111111111111' NOT NULL,
+	"risk_tolerance" varchar(20) DEFAULT 'medium',
+	"staking_enabled" boolean DEFAULT true,
+	"birthday" timestamp,
+	"twitter_connected" boolean DEFAULT false,
+	"twitter_username" varchar(255)
 );
 --> statement-breakpoint
 CREATE TABLE "verification_tokens" (
@@ -164,13 +202,16 @@ CREATE TABLE "x_accounts" (
 );
 --> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "authenticators" ADD CONSTRAINT "authenticators_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "funding_rates" ADD CONSTRAINT "funding_rates_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "interest_rates" ADD CONSTRAINT "interest_rates_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "investments" ADD CONSTRAINT "investments_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "investments" ADD CONSTRAINT "investments_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "perp_positions" ADD CONSTRAINT "perp_positions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "perp_positions" ADD CONSTRAINT "perp_positions_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "portfolio_snapshots" ADD CONSTRAINT "portfolio_snapshots_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "token_prices" ADD CONSTRAINT "token_prices_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_from_token_address_tokens_address_fk" FOREIGN KEY ("from_token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_to_token_address_tokens_address_fk" FOREIGN KEY ("to_token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -178,4 +219,31 @@ ALTER TABLE "tweets" ADD CONSTRAINT "tweets_x_account_id_x_accounts_id_fk" FOREI
 ALTER TABLE "user_balances" ADD CONSTRAINT "user_balances_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_balances" ADD CONSTRAINT "user_balances_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_user_id_idx" ON "accounts" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "sessions_user_id_idx" ON "sessions" USING btree ("user_id");
+CREATE INDEX "authenticator_user_id_idx" ON "authenticators" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "idx_funding_rates_token" ON "funding_rates" USING btree ("token_address");--> statement-breakpoint
+CREATE INDEX "idx_funding_rates_timestamp" ON "funding_rates" USING btree ("timestamp");--> statement-breakpoint
+CREATE INDEX "idx_interest_rates_token" ON "interest_rates" USING btree ("token_address","action_type");--> statement-breakpoint
+CREATE INDEX "idx_interest_rates_effective" ON "interest_rates" USING btree ("effective_date");--> statement-breakpoint
+CREATE INDEX "idx_investments_user_id" ON "investments" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "idx_investments_token_address" ON "investments" USING btree ("token_address");--> statement-breakpoint
+CREATE INDEX "idx_investments_status" ON "investments" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_investments_action_type" ON "investments" USING btree ("action_type");--> statement-breakpoint
+CREATE INDEX "idx_perp_user_status" ON "perp_positions" USING btree ("user_id","status");--> statement-breakpoint
+CREATE INDEX "idx_perp_token_address" ON "perp_positions" USING btree ("token_address");--> statement-breakpoint
+CREATE INDEX "idx_perp_liquidation" ON "perp_positions" USING btree ("liquidation_price","status");--> statement-breakpoint
+CREATE INDEX "user_timestamp_idx" ON "portfolio_snapshots" USING btree ("user_id","timestamp");--> statement-breakpoint
+CREATE INDEX "timestamp_idx" ON "portfolio_snapshots" USING btree ("timestamp");--> statement-breakpoint
+CREATE INDEX "idx_sessions_user_id" ON "sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_token_prices_address" ON "token_prices" USING btree ("token_address");--> statement-breakpoint
+CREATE INDEX "idx_token_prices_updated" ON "token_prices" USING btree ("last_updated");--> statement-breakpoint
+CREATE INDEX "idx_tokens_symbol" ON "tokens" USING btree ("symbol");--> statement-breakpoint
+CREATE INDEX "idx_tokens_type" ON "tokens" USING btree ("type");--> statement-breakpoint
+CREATE INDEX "idx_transactions_user_id" ON "transactions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "idx_transactions_created_at" ON "transactions" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "idx_transactions_type_user" ON "transactions" USING btree ("transaction_type","user_id");--> statement-breakpoint
+CREATE INDEX "idx_transactions_from_token" ON "transactions" USING btree ("from_token_address");--> statement-breakpoint
+CREATE INDEX "idx_transactions_to_token" ON "transactions" USING btree ("to_token_address");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_balances_user_token" ON "user_balances" USING btree ("user_id","token_address");--> statement-breakpoint
+CREATE INDEX "idx_user_balances_token_address" ON "user_balances" USING btree ("token_address");--> statement-breakpoint
+CREATE INDEX "idx_users_email" ON "users" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "idx_users_wallet_address" ON "users" USING btree ("wallet_address");

@@ -12,7 +12,7 @@ export async function setupInitialPortfolio(
   userId: string,
   options?: {
     // カスタム残高設定（指定された場合はデフォルト設定より優先）
-    customBalances?: Record<string, string>;
+    customBalances?: Record<string, number>;
     // 特定のトークンシンボルのみを使用
     specificSymbols?: string[];
   },
@@ -34,43 +34,51 @@ export async function setupInitialPortfolio(
     }
 
     // デフォルトの残高設定
-    const defaultBalances: Record<string, string> = {
-      SOL: "10", // 基本トークン
-      USDC: "1000", // ステーブルコイン
-      BONK: "10000", // ミームコイン
-      $WIF: "20", // ミームコイン
-      JUP: "200", // DEXトークン
-      RAY: "200", // DEXトークン
-      PYTH: "200", // オラクル
-      JTO: "100", // ステーキング関連
-      TRUMP: "20", // その他
-      GRASS: "20", // その他
-      INF: "20", // その他
-      jitoSOL: "0.5", // ステーキングトークン
-      jupSOL: "0.5", // ステーキングトークン
+    const defaultBalances: Record<string, number> = {
+      SOL: 240000,
+      JUP: 20000,
+      JTO: 20000,
+      RAY: 20000,
+      HNT: 20000,
+      PYTH: 20000,
+      TRUMP: 20000,
+      WIF: 20000,
+      W: 20000,
+      MEW: 20000,
+      POPCAT: 20000,
+      ORCA: 20000,
+      ZEUS: 20000,
+      KMNO: 20000,
+      WBTC: 20000,
+      USDC: 200000,
+      BONK: 20000,
+      WSUI: 20000,
+      BIO: 20000,
+      LAYER: 20000,
+      AIXBT: 20000,
+      ACT: 20000,
+      Fartcoin: 20000,
     };
 
     // 各トークンに対して残高を作成
     const initialBalances = tokens.map((token) => {
       // カスタム残高が指定されている場合はそれを使用し、
       // なければデフォルト残高を使用、どちらもなければ0
-      const balance = options?.customBalances?.[token.symbol] ?? defaultBalances[token.symbol] ?? "0";
+      const balance = options?.customBalances?.[token.symbol] ?? defaultBalances[token.symbol] ?? 0;
 
       return {
         userId,
         tokenAddress: token.address,
-        balance,
+        balance: balance.toString(),
       };
     });
 
-    // 残高が0より大きいもののみ挿入
-    const balancesToInsert = initialBalances.filter(
-      (balance) => balance.balance !== "0" && parseFloat(balance.balance) > 0,
-    );
+    // 残高が0より大きいもののみフィルタリング
+    const balancesToInsert = initialBalances.filter(({ balance }) => parseFloat(balance) > 0);
 
-    // ユーザー残高テーブルに挿入
-    for (const balance of balancesToInsert) {
-      await db.insert(userBalancesTable).values(balance);
+    // ユーザー残高テーブルに一括挿入
+    if (balancesToInsert.length > 0) {
+      await db.insert(userBalancesTable).values(balancesToInsert);
     }
 
     console.log(`ユーザー ${userId} の初期ポートフォリオを設定しました`);

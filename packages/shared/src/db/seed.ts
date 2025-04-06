@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { db } from "./connection";
+import { db } from ".";
+import { setupInitialPortfolio } from "../utils/portfolio";
 import { InterestRateInsert, interestRatesTable } from "./schema/interest_rates";
 import { NewsSiteInsert, newsSiteTable } from "./schema/news_sites";
 import { TokenInsert, tokensTable } from "./schema/tokens";
-import { UserBalanceInsert, userBalancesTable } from "./schema/user_balances";
 import { UserInsert, UserSelect, usersTable } from "./schema/users";
 import { XAccountInsert, xAccountTable } from "./schema/x_accounts";
 
@@ -106,16 +106,8 @@ const seedTokens = async () => {
         iconUrl: "https://static.jup.ag/jup/icon.png",
       },
       {
-        address: "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs",
-        symbol: "GRASS",
-        name: "Grass",
-        decimals: 9,
-        type: "normal",
-        iconUrl: "https://static.grassfoundation.io/grass-logo.png",
-      },
-      {
         address: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
-        symbol: "$WIF",
+        symbol: "WIF",
         name: "dogwifhat",
         decimals: 6,
         type: "normal",
@@ -132,7 +124,7 @@ const seedTokens = async () => {
       {
         address: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
         symbol: "JTO",
-        name: "JITO",
+        name: "Jito",
         decimals: 9,
         type: "normal",
         iconUrl: "https://metadata.jito.network/token/jto/image",
@@ -153,6 +145,76 @@ const seedTokens = async () => {
         decimals: 6,
         type: "normal",
         iconUrl: "https://pyth.network/token.svg",
+      },
+      {
+        address: "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux",
+        symbol: "HNT",
+        name: "Helium Network Token",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "https://shdw-drive.genesysgo.net/6tF2J46QN4NCNGnLkGz29g6Puf1bq19E2134V7fF7Jj1/hnt.png",
+      },
+      {
+        address: "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
+        symbol: "W",
+        name: "Wormhole",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "https://wormhole.com/token.png",
+      },
+      {
+        address: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+        symbol: "MEW",
+        name: "cat in a dogs world",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5.png?key=2d57a9",
+      },
+      {
+        address: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
+        symbol: "POPCAT",
+        name: "Popcat (SOL)",
+        decimals: 9,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr.png?key=af7c36",
+      },
+      {
+        address: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+        symbol: "ORCA",
+        name: "Orca",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE/logo.png",
+      },
+      {
+        address: "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq",
+        symbol: "ZEUS",
+        name: "Zeus Network",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq.png?key=68e8cb",
+      },
+      {
+        address: "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
+        symbol: "KMNO",
+        name: "Kamino",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS.png?key=8b4bd9",
+      },
+      {
+        address: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+        symbol: "WBTC",
+        name: "Wrapped Bitcoin (Portal)",
+        decimals: 8,
+        type: "normal",
+        iconUrl:
+          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E/logo.png",
       },
       {
         address: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
@@ -179,6 +241,51 @@ const seedTokens = async () => {
         type: "liquid_staking",
         iconUrl: "https://bafkreiflz2xxkfn33qjch2wj55bvbn33q3s4mmb6bye5pt3mpgy4t2wg4e.ipfs.nftstorage.link/",
       },
+      {
+        address: "bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ",
+        symbol: "BIO",
+        name: "BIO",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ.png?key=289685",
+      },
+      {
+        address: "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc",
+        symbol: "LAYER",
+        name: "Solayer",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc.png?key=2260ae",
+      },
+      {
+        address: "14zP2ToQ79XWvc7FQpm4bRnp9d6Mp1rFfsUW3gpLcRX",
+        symbol: "AIXBT",
+        name: "aixbt by Virtuals (Wormhole)",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/base/0x4f9fd6be4a90f2620860d680c0d4d5fb53d1a825.png?key=6a3b50",
+      },
+      {
+        address: "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
+        symbol: "ACT",
+        name: "Act I : The AI Prophecy",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump.png?key=1aece6",
+      },
+      {
+        address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+        symbol: "Fartcoin",
+        name: "Fartcoin",
+        decimals: 6,
+        type: "normal",
+        iconUrl:
+          "https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2",
+      },
     ];
 
     const existingTokens = await db.select().from(tokensTable);
@@ -195,10 +302,7 @@ const seedTokens = async () => {
     }
 
     return tokens;
-  } catch (error) {
-    console.error("トークンデータの挿入中にエラーが発生しました:", error);
-    throw error;
-  }
+  } catch (error) {}
 };
 
 const seedXAccounts = async (generatedUsers: UserSelect[]) => {
@@ -304,69 +408,17 @@ const seedNewsSites = async (generatedUsers: UserSelect[]) => {
   return newsSites;
 };
 
-const seedUserTokenBalances = async (generatedUsers: UserSelect[]) => {
+const seedUserTokenBalances = async (generatedUsers: UserSelect[]): Promise<void> => {
   try {
     console.log("ユーザートークン残高データを挿入中...");
 
-    // すべてのトークンを取得
-    const tokens = await db.select().from(tokensTable);
-
-    // staking tokenを除外
-    const nonStakingTokens = tokens.filter((token) => token.type !== "staking");
-
-    // すでに存在するユーザートークン残高を確認
-    const existingBalances = await db.select().from(userBalancesTable);
-
-    const balances: UserBalanceInsert[] = [];
-
-    // トークンごとのデフォルト残高を設定
-    const defaultBalances: Record<string, number> = {
-      SOL: 100, // 基本トークン
-      USDC: 10000, // ステーブルコイン
-      BONK: 100000, // ミームコイン
-      $WIF: 20, // ミームコイン
-      JUP: 200, // DEXトークン
-      RAY: 200, // DEXトークン
-      PYTH: 200, // オラクル
-      JTO: 100, // ステーキング関連
-      TRUMP: 20, // その他
-      GRASS: 20, // その他
-      INF: 20, // その他
-    };
-
-    // ユーザーごとのトークン残高を設定
+    // ユーザーごとに setupInitialPortfolio を呼び出す
     for (const user of generatedUsers) {
-      for (const token of nonStakingTokens) {
-        // トークンシンボルに基づいて残高を取得
-        const amount = defaultBalances[token.symbol] || 0;
-
-        // 残高が0より大きい場合のみ追加
-        if (amount > 0) {
-          balances.push({
-            userId: user.id,
-            tokenAddress: token.address,
-            balance: amount.toString(),
-          });
-        }
-      }
+      await setupInitialPortfolio(user.id);
+      // setupInitialPortfolio内でログが出力されるため、ここでの個別ログは不要
     }
 
-    // 残高を挿入
-    for (const balance of balances) {
-      // 既存の残高をチェック
-      const existingBalance = existingBalances.find(
-        (b) => b.userId === balance.userId && b.tokenAddress === balance.tokenAddress,
-      );
-
-      if (!existingBalance) {
-        await db.insert(userBalancesTable).values(balance);
-        console.log(`ユーザーID ${balance.userId} のトークン残高 ${balance.balance} を挿入しました`);
-      } else {
-        console.log(`ユーザーID ${balance.userId} のトークン残高は既に存在します。スキップします。`);
-      }
-    }
-
-    return balances;
+    console.log(`全ユーザー (${generatedUsers.length}人) の初期トークン残高設定が完了しました。`);
   } catch (error) {
     console.error("ユーザートークン残高データの挿入中にエラーが発生しました:", error);
     throw error;

@@ -5,57 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1743772136791,
-      "tag": "0000_woozy_lifeguard",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1743772282709,
-      "tag": "0001_mature_gamma_corps",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1743775094874,
-      "tag": "0002_eager_the_twelve",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1743792578484,
-      "tag": "0003_parallel_the_initiative",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1743792676066,
-      "tag": "0004_flat_skin",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1743870294268,
-      "tag": "0005_silly_tomorrow_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1743871270085,
-      "tag": "0006_vengeful_red_wolf",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1743962484327,
-      "tag": "0007_fresh_paper_doll",
+      "when": 1743974661387,
+      "tag": "0000_daffy_the_hunter",
       "breakpoints": true
     }
   ]
