@@ -18,7 +18,7 @@ type PortfolioPageProps = {
 const PortfolioPage: NextPage<PortfolioPageProps> = async ({ params }) => {
   // Get the wallet address from params
   const { publicKey } = await params;
-  const walletAddress = publicKey || "86oHY5tUBn4gqHSQAZJSUX6MU7WJVpg8bn8MZ4jKEb63";
+  const walletAddress = publicKey;
 
   const session = await auth();
   const user = session?.user;
