@@ -1,0 +1,250 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# NeonDB (PostgreSQL) と drizzle-orm の最適化ガイド
+
+## アプリケーションレイヤーでの最適化
+
+### 1. IN句の活用
+
+```typescript
+// 非効率: ループでの単一クエリ実行（N+1問題）
+async function getUsersByIds(userIds: number[]) {
+  const users = [];
+  for (const id of userIds) {
+    const user = await db.select().from(users).where(eq(users.id, id));
+    users.push(user);
+  }
+  return users;
+}
+
+// 効率的: IN句を使用した単一クエリ
+async function getUsersByIds(userIds: number[]) {
+  return await db.select().from(users).where(inArray(users.id, userIds));
+}
+```
+
+### 2. バッチ処理
+
+```typescript
+// 非効率: 1件ずつ挿入
+async function createUsers(userData: User[]) {
+  for (const user of userData) {
+    await db.insert(users).values(user);
+  }
+}
+
+// 効率的: バルク挿入
+async function createUsers(userData: User[]) {
+  await db.insert(users).values(userData);
+}
+```
+
+### 3. コネクションプール最適化
+
+```typescript
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10, // 適切なコネクション数
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 3000,
+});
+
+export const db = drizzle(pool);
+```
+
+## SQLレイヤーでの最適化
+
+### 1. 適切なインデックス定義
+
+```typescript
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 255 }),
+}, (table) => {
+  return {
+    emailIdx: index('email_idx').on(table.email),
+    nameIdx: index('name_idx').on(table.name),
+  }
+});
+```
+
+### 2. 部分的なインデックス
+
+```typescript
+export const orders = pgTable('orders', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+}, (table) => {
+  return {
+    activeOrdersIdx: index('active_orders_idx')
+      .on(table.userId)
+      .where(eq(table.status, 'active'))
+  }
+});
+```
+
+### 3. 複合インデックス
+
+```typescript
+export const products = pgTable('products', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+}, (table) => {
+  return {
+    categoryPriceIdx: index('category_price_idx').on(table.categoryId, table.price)
+  }
+});
+```
+
+## クエリ最適化
+
+### 1. 必要なカラムのみ選択
+
+```typescript
+// 非効率: 全カラム取得
+const allUsers = await db.select().from(users);
+
+// 効率的: 必要なカラムのみ取得
+const userNames = await db.select({
+  id: users.id,
+  name: users.name
+}).from(users);
+```
+
+### 2. ページネーション最適化
+
+```typescript
+// 非効率なオフセットベースページネーション
+const page = 50;
+const limit = 20;
+const offset = (page - 1) * limit;
+const products = await db.select()
+  .from(products)
+  .limit(limit)
+  .offset(offset);
+
+// 効率的なカーソルベースページネーション
+const lastId = 1000; // 前のページの最後のID
+const nextProducts = await db.select()
+  .from(products)
+  .where(gt(products.id, lastId))
+  .orderBy(asc(products.id))
+  .limit(limit);
+```
+
+### 3. 結合クエリの最適化
+
+```typescript
+const userOrders = await db
+  .select({
+    userId: users.id,
+    userName: users.name,
+    orderId: orders.id,
+    orderAmount: orders.amount
+  })
+  .from(users)
+  .innerJoin(orders, eq(users.id, orders.userId))
+  .where(eq(orders.status, 'completed'));
+```
+
+## NeonDB特有の最適化
+
+### 1. サーバーレス特性を考慮した接続管理
+
+```typescript
+let db: ReturnType<typeof drizzle> | null = null;
+
+export async function getDB() {
+  if (!db) {
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 5,
+    });
+    db = drizzle(pool);
+  }
+  return db;
+}
+```
+
+### 2. 自動スケーリングとコールドスタートを考慮
+
+```typescript
+async function queryWithRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries > 0 && error.code === 'CONNECTION_ERROR') {
+      await new Promise(r => setTimeout(r, 500));
+      return queryWithRetry(fn, retries - 1);
+    }
+    throw error;
+  }
+}
+```
+
+### 3. プリペアドステートメントの活用
+
+```typescript
+// クエリを定義
+const getUserByIdQuery = db
+  .select()
+  .from(users)
+  .where(eq(users.id, placeholder('id')));
+
+// 複数回実行
+for (const id of userIds) {
+  const user = await getUserByIdQuery.execute({ id });
+}
+```
+
+## その他のパフォーマンスTips
+
+### 1. トランザクション活用
+
+```typescript
+await db.transaction(async (tx) => {
+  await tx.insert(orders).values(newOrder);
+  await tx.update(users)
+    .set({ orderCount: sql`order_count + 1` })
+    .where(eq(users.id, newOrder.userId));
+});
+```
+
+### 2. JSON列の効率的な使用
+
+```typescript
+// 効率的: JSON部分だけを取得
+const settings = await db.select({
+  id: users.id,
+  theme: sql`${users.settings}->>'theme'`
+}).from(users);
+```
+
+### 3. バッチ処理の実装
+
+```typescript
+async function processAllUsers() {
+  let lastId = 0;
+  const batchSize = 1000;
+  
+  while (true) {
+    const batch = await db.select()
+      .from(users)
+      .where(gt(users.id, lastId))
+      .orderBy(asc(users.id))
+      .limit(batchSize);
+    
+    if (batch.length === 0) break;
+    
+    await processBatch(batch);
+    lastId = batch[batch.length - 1].id;
+  }
+}
+```
