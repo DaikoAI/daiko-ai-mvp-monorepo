@@ -1,7 +1,7 @@
 ---
 description: 
-globs: 
-alwaysApply: true
+globs: apps/web
+alwaysApply: false
 ---
 # Nextjs Coding Rules
 
