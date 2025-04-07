@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { auth } from "@/server/auth";
 import { ChevronLeft } from "lucide-react";
 import type { NextPage } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ChatInterface } from "../components/chat-interface";
 
 interface ChatThreadPageProps {
@@ -14,15 +12,9 @@ interface ChatThreadPageProps {
 
 const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
   const { threadId } = await params;
-  const session = await auth();
-  if (!session) {
-    redirect("/onboarding"); // Or your login page
-  }
-
-  // TODO: Fetch thread title based on threadId to display in header
 
   return (
-    <main className="flex flex-col pb-safe h-screen">
+    <main className="flex flex-col h-screen">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-md border-b border-white/10">
         <Link href="/chat">

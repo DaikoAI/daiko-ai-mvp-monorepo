@@ -6,10 +6,12 @@ import { TokensTab } from "../components/tokens-tab";
 import type { NextPage } from "next";
 
 import { CopyButton } from "@/components/copy-button";
-import { auth } from "@/server/auth";
+import { AuthAvatar } from "@/components/auth-avater";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BalanceCard } from "../components/balance-card";
+import { Skeleton } from "@/components/ui/skeleton";
+export const experimental_ppr = true;
 
 type PortfolioPageProps = {
   params: Promise<{
@@ -22,9 +24,6 @@ const PortfolioPage: NextPage<PortfolioPageProps> = async ({ params }) => {
   const { publicKey } = await params;
   const walletAddress = publicKey;
 
-  const session = await auth();
-  const user = session?.user;
-
   const shortAddress = `${walletAddress.slice(0, 5)}...${walletAddress.slice(-5)}`;
 
   // NFTsは現在APIから返されていない場合は空配列を使用
@@ -35,7 +34,9 @@ const PortfolioPage: NextPage<PortfolioPageProps> = async ({ params }) => {
       <header className="flex items-center justify-between">
         <Link href="/profile" className="flex items-center">
           <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10">
-            <img src={user?.image} alt="Profile" className="w-full h-full object-cover" />
+            <Suspense fallback={<Skeleton className="w-full h-full rounded-full" />}>
+              <AuthAvatar />
+            </Suspense>
           </div>
         </Link>
         <ActionButtons />

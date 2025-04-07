@@ -183,7 +183,7 @@ export const ChatInterface: React.FC<{ question?: string; threadId?: string }> =
         ref={messagesContainerRef}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="space-y-3">
+        <div className="py-3 flex flex-col gap-3">
           {/* Left padding for AI messages: 36px, right padding: 12px */}
           {/* Right padding for user messages: 36px, left padding: 12px */}
           {messages.map((message) => (
@@ -192,8 +192,8 @@ export const ChatInterface: React.FC<{ question?: string; threadId?: string }> =
               className={cn(
                 "flex max-w-[80%] flex-col",
                 message.role === "user"
-                  ? "ml-auto pr-[36px] pl-[12px]"
-                  : "pr-[12px] pl-[36px]"
+                  ? "ml-auto pr-[8px] pl-[12px]"
+                  : "pr-[12px] pl-[8px]"
               )}
             >
               <div className="rounded-2xl p-4 backdrop-blur-[4px] bg-white/12">
@@ -258,7 +258,7 @@ export const ChatInterface: React.FC<{ question?: string; threadId?: string }> =
       </div>
 
       {/* Input area - fixed at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-[64px] border-t border-white/10 z-10 rounded-t-2xl">
+      <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-[64px] border-t border-white/10 z-10 rounded-t-2xl pb-safe">
         <div className="flex items-center px-5 py-3 gap-2">
           <div className="relative flex-1">
             <textarea

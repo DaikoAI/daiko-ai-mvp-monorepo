@@ -6,8 +6,12 @@ const nextConfig: NextConfig = {
   experimental: {
     // typedRoutes: true,
     viewTransition: true,
-    ppr: true,
+    ppr: "incremental",
     reactCompiler: true,
+    useCache: true,
+    staleTimes: {
+      dynamic: 60 * 5, // 5 minutes = batch update interval
+    },
     // optimizePackageImports: ["solana-agent-kit"],
   },
   devIndicators: false,
