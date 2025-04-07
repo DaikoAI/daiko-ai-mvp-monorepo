@@ -11,7 +11,7 @@ export const Tabs: React.FC<TabsProps> = ({ tokensTab, collectiblesTab }) => {
   const [activeTab, setActiveTab] = useState<"tokens" | "collectibles">("tokens");
 
   return (
-    <div>
+    <section>
       <div className="flex mb-4">
         <div className="flex justify-center gap-8 w-full">
           <button
@@ -34,6 +34,6 @@ export const Tabs: React.FC<TabsProps> = ({ tokensTab, collectiblesTab }) => {
       </div>
 
       <div className="mt-2">{activeTab === "tokens" ? tokensTab : collectiblesTab}</div>
-    </div>
+    </section>
   );
 };

@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { TokenPriceService } from "./services/token-price-service";
 
 /**

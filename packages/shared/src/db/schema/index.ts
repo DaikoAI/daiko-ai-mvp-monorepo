@@ -1,5 +1,7 @@
 export * from "./accounts";
 export * from "./authenticators";
+export * from "./chat_messages";
+export * from "./chat_threads";
 export * from "./funding_rates";
 export * from "./interest_rates";
 export * from "./investments";

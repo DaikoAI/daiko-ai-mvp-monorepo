@@ -83,8 +83,8 @@ export const OnboardingFlow: React.FC = () => {
       <div className="w-full max-w-md mx-auto mb-8">
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-          <span>開始</span>
-          <span>完了</span>
+          <span>Start</span>
+          <span>Complete</span>
         </div>
       </div>
 

@@ -11,6 +11,7 @@
 - use Tailwind v4
 - サイト内で使用する文言はdescriptiveになり過ぎないように、なるべく短い単語で簡潔にuserが分かりやすいようなword choiceを必ず心がけて下さい！
 - Keep `page.tsx` as Server Component as much as possible
+- html構造はなるべくsimpleなものにして下さい。安易にdivを重ねてstyleを当てるのではなく、semanticなhtmlを心がけて下さい
 
 ## React Components
 

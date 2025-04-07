@@ -19,7 +19,6 @@
     "job:news-scraper:cron": "turbo run dev:cron --filter=@daiko-ai/news-scraper-job",
     "job:x-scraper": "turbo run dev --filter=@daiko-ai/x-scraper-job",
     "job:x-scraper:cron": "turbo run dev:cron --filter=@daiko-ai/x-scraper-job",
-    "n": "node --experimental-strip-types --experimental-transform-types --experimental-detect-module --no-warnings=ExperimentalWarning",
     "jobs:cron": "turbo run dev:cron --filter=\"@daiko-ai/*-job\"",
     "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\""
   },

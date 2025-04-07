@@ -152,7 +152,7 @@ const seedTokens = async () => {
         name: "Helium Network Token",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://shdw-drive.genesysgo.net/6tF2J46QN4NCNGnLkGz29g6Puf1bq19E2134V7fF7Jj1/hnt.png",
+        iconUrl: "https://s2.coinmarketcap.com/static/img/coins/64x64/5665.png",
       },
       {
         address: "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
@@ -204,8 +204,7 @@ const seedTokens = async () => {
         name: "Kamino",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS.png?key=8b4bd9",
+        iconUrl: "https://cdn.kamino.finance/kamino.svg",
       },
       {
         address: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",

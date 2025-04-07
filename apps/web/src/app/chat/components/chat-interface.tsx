@@ -3,14 +3,14 @@
 import { Button } from "@/components/ui/button";
 import type { ApiChatMessage, ChatMessage } from "@/types/chat";
 import { cn, createNoScrollbarStyle } from "@/utils";
-import { Send } from "lucide-react";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { ArrowUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 
 // Create a component that uses question prop instead of useSearchParams
-const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
+export const ChatInterface: React.FC<{ question?: string; threadId?: string }> = ({ question, threadId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -30,6 +30,7 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
   // スクロールバーを非表示にするスタイルを適用
   useEffect(() => {
     createNoScrollbarStyle();
+    // TODO: If threadId exists, load messages for that thread
   }, []);
 
   // Handle initial question from prop - 一度だけ実行するように変更
@@ -102,6 +103,7 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
     if (!textToSend.trim() || isAiTyping) return;
 
     // Add user message
+    // TODO: associate message with threadId if it exists
     const newUserMessage: ChatMessage = {
       id: Date.now().toString(),
       content: textToSend,
@@ -132,6 +134,7 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
       }
 
       // ストリーミングが完了したらメッセージリストに追加
+      // TODO: associate message with threadId if it exists
       const newAiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: result.content,
@@ -173,48 +176,79 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
   };
 
   return (
-    <div className="relative flex flex-col h-full">
+    <div className="relative flex flex-col h-full bg-[#080808]">
       {/* Messages container - takes all available space and scrolls */}
       <div
         className="absolute inset-0 bottom-16 overflow-y-auto touch-auto no-scrollbar"
         ref={messagesContainerRef}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="space-y-4 p-4 pb-6">
+        <div className="space-y-3">
+          {/* Left padding for AI messages: 36px, right padding: 12px */}
+          {/* Right padding for user messages: 36px, left padding: 12px */}
           {messages.map((message) => (
             <div
               key={message.id}
               className={cn(
-                "flex max-w-[80%] flex-col rounded-lg p-3",
+                "flex max-w-[80%] flex-col",
                 message.role === "user"
-                  ? "ml-auto bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground",
+                  ? "ml-auto pr-[36px] pl-[12px]"
+                  : "pr-[12px] pl-[36px]"
               )}
             >
-              <MessageContent content={message.content} isMarkdown={message.role === "assistant"} />
-              <span className="mt-1 self-end text-xs opacity-70">
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+              <div className="rounded-2xl p-4 backdrop-blur-[4px] bg-white/12">
+                <div className="space-y-2">
+                  {message.role === "assistant" && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex gap-1.5">
+                        {/* Icons would go here */}
+                      </div>
+                      <span className="text-sm text-white/40" style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}>
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="text-white" style={{ fontFamily: "Inter", fontWeight: 400, fontSize: "14px", lineHeight: "1.286em" }}>
+                    <MessageContent content={message.content} isMarkdown={message.role === "assistant"} />
+                  </div>
+                  {message.role === "user" && (
+                    <div className="flex justify-end">
+                      <span className="text-sm text-white/40" style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}>
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
 
           {/* ストリーミング中のメッセージを表示 */}
           {pendingMessage && (
-            <div className="flex max-w-[80%] flex-col rounded-lg p-3 bg-secondary text-secondary-foreground">
-              <MessageContent content={pendingMessage} isMarkdown={true} />
+            <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
+              <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
+                <div className="text-white" style={{ fontFamily: "Inter", fontWeight: 400, fontSize: "14px", lineHeight: "1.286em" }}>
+                  <MessageContent content={pendingMessage} isMarkdown={true} />
+                </div>
+              </div>
             </div>
           )}
 
           {/* AIの入力中表示 */}
           {isAiTyping && !pendingMessage && (
-            <div className="flex max-w-[80%] animate-pulse rounded-lg bg-secondary p-3">
-              <div className="flex space-x-1">
-                <div className="h-2 w-2 rounded-full bg-muted-foreground"></div>
-                <div className="h-2 w-2 rounded-full bg-muted-foreground"></div>
-                <div className="h-2 w-2 rounded-full bg-muted-foreground"></div>
+            <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
+              <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
+                <div className="flex space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-white/40"></div>
+                  <div className="h-2 w-2 rounded-full bg-white/40"></div>
+                  <div className="h-2 w-2 rounded-full bg-white/40"></div>
+                </div>
               </div>
             </div>
           )}
@@ -224,11 +258,11 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
       </div>
 
       {/* Input area - fixed at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 border-t bg-background pt-3 px-4 z-10">
-        <div className="flex items-start space-x-2">
+      <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-[64px] border-t border-white/10 z-10 rounded-t-2xl">
+        <div className="flex items-center px-5 py-3 gap-2">
           <div className="relative flex-1">
             <textarea
-              placeholder="Ask about your portfolio..."
+              placeholder="Type any text."
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value);
@@ -237,14 +271,18 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
                 e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px";
               }}
               onKeyDown={handleKeyDown}
-              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 no-scrollbar"
+              className="w-full resize-none bg-transparent px-3 py-2 text-white placeholder:text-white/40 focus:outline-none no-scrollbar"
               style={{
-                minHeight: "36px",
+                minHeight: "24px",
                 maxHeight: "100px",
                 overflowY: "auto",
-                scrollbarWidth: "none" /* Firefox */,
-                msOverflowStyle: "none" /* IE and Edge */,
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
                 WebkitOverflowScrolling: "touch",
+                fontFamily: "Inter",
+                fontWeight: 400,
+                fontSize: "14px",
+                lineHeight: "1.286em",
               }}
               rows={1}
               disabled={isAiTyping}
@@ -254,21 +292,12 @@ const ChatWithParams: React.FC<{ question?: string }> = ({ question }) => {
             size="icon"
             onClick={() => handleSendMessage()}
             disabled={!inputValue.trim() || isAiTyping}
-            className="h-9 w-9 rounded-full bg-primary mt-0.5"
+            className="h-6 w-6 rounded-full bg-white hover:bg-white/90 flex items-center justify-center"
           >
-            <Send className="h-4 w-4" />
+            <ArrowUp className="h-4 w-4 text-black" />
           </Button>
         </div>
       </div>
     </div>
-  );
-};
-
-// Main component that wraps the chat with Suspense
-export const ChatInterface: React.FC<{ question?: string }> = ({ question }) => {
-  return (
-    <Suspense fallback={<div className="p-4">Loading chat interface...</div>}>
-      <ChatWithParams question={question} />
-    </Suspense>
   );
 };

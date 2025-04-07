@@ -98,9 +98,7 @@ export const authConfig = {
 
           // 共通の初期ポートフォリオ設定関数を使用
           // 新規ユーザーには基本的なトークンのみを設定
-          await setupInitialPortfolio(user.id, {
-            specificSymbols: ["SOL", "USDC", "BONK"],
-          });
+          await setupInitialPortfolio(user.id);
         } catch (error) {
           console.error("ユーザー情報の更新に失敗しました:", error);
         }

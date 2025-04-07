@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { RouterOutputs } from "@/trpc/react";
 import { cn } from "@/utils";
 
@@ -6,7 +7,7 @@ type AssetListProps = {
   assets: RouterOutputs["portfolio"]["getUserPortfolio"]["tokens"];
 };
 
-export const AssetList: React.FC<AssetListProps> = ({ assets }) => {
+export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
   return (
     <section className="space-y-2">
       {assets.map((asset, index) => (
@@ -62,3 +63,25 @@ export const AssetList: React.FC<AssetListProps> = ({ assets }) => {
     </section>
   );
 };
+
+const AssetListSkeleton: React.FC = () => {
+  return (
+    <section className="space-y-2">
+      {[...Array(5)].map((_, index) => (
+        <Card key={index} className="backdrop-blur-sm bg-white/12 rounded-2xl border-none transition-all duration-200">
+          <div className="flex cursor-pointer items-center justify-between p-4">
+            <div className="flex items-center">
+              <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 p-0.5">
+                <Skeleton className="h-full w-full rounded-full" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </section>
+  );
+};
+
+export const AssetList = Object.assign(AssetListComponent, {
+  Skeleton: AssetListSkeleton,
+});
