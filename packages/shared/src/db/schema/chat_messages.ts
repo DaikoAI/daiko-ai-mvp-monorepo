@@ -2,7 +2,7 @@ import { index, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg
 import { chatThreadsTable } from "./chat_threads";
 
 // Define the sender enum type
-export const senderEnum = pgEnum("sender", ["user", "ai", "system"]);
+export const roleEnum = pgEnum("role", ["user", "assistant", "system"]);
 
 export const chatMessagesTable = pgTable(
   "chat_messages",
@@ -14,7 +14,7 @@ export const chatMessagesTable = pgTable(
     threadId: varchar("thread_id")
       .notNull()
       .references(() => chatThreadsTable.id),
-    sender: senderEnum("sender").notNull(),
+    role: roleEnum("role").notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

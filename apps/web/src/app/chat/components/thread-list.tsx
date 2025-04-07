@@ -1,0 +1,96 @@
+import { Skeleton } from "@/components/ui/skeleton";
+import { AppRouter, createCaller } from "@/server/api/root"; // Import server-side caller factory
+import { createTRPCContext } from "@/server/api/trpc"; // Import context creator
+import { formatChatListTimestamp } from "@/utils/date";
+import { type inferProcedureOutput } from "@trpc/server"; // Utility to infer types
+import { unstable_noStore as noStore } from "next/cache"; // Opt out of caching for dynamic list
+import Link from "next/link";
+
+// Infer the output type of getUserThreads
+type ThreadWithLastMessage = inferProcedureOutput<AppRouter["chat"]["getUserThreads"]>[number];
+
+interface ThreadListProps {
+  searchQuery?: string;
+}
+
+export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQuery }) => {
+  noStore(); // Ensure fresh data on each request/navigation
+
+  // Create context required for server-side tRPC call
+  const context = await createTRPCContext({ headers: new Headers() });
+  const caller = createCaller(context);
+
+  // Initialize with the correct inferred type
+  let threads: ThreadWithLastMessage[] = [];
+  let error: string | null = null;
+
+  try {
+    // Fetch threads using the server-side caller and the search query
+    threads = await caller.chat.getUserThreads({ query: searchQuery });
+  } catch (err) {
+    console.error("Error fetching chat threads:", err);
+    error = "Failed to load chat threads.";
+    // Optionally check for specific error types (e.g., UNAUTHORIZED)
+  }
+
+  if (error) {
+    return <p className="text-center text-red-500 py-8">{error}</p>;
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <ul className="space-y-2 p-4">
+        {threads && threads.length > 0 ? (
+          threads.map((thread) => (
+            <li
+              key={thread.id}
+              className="rounded-xl bg-[rgba(255,255,255,0.12)] backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+            >
+              <Link href={`/chat/${thread.id}`} className="block p-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-start">
+                    <p className="text-base font-semibold text-white truncate flex-1 mr-4">{thread.title}</p>
+                    <time dateTime={thread.updatedAt?.toISOString()} className="text-xs text-white/40 flex-shrink-0">
+                      {formatChatListTimestamp(thread.updatedAt)}
+                    </time>
+                  </div>
+                  <p className="text-sm text-white/60 line-clamp-2">
+                    {thread.lastMessage?.content ?? "No messages yet"}
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ))
+        ) : (
+          <p className="text-center text-muted-foreground py-8">
+            {searchQuery ? "No matching chats found." : "No chat history found. Start a new chat!"}
+          </p>
+        )}
+      </ul>
+    </div>
+  );
+};
+
+export const ThreadList = Object.assign(ThreadListComponent, {
+  Skeleton: () => (
+    <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      {[...Array(5)].map((_, i) => (
+        // Match the outer list item styling (padding, background, etc.)
+        <li key={i} className="rounded-xl bg-[rgba(255,255,255,0.12)] p-4 backdrop-blur-sm shadow-sm list-none">
+          {/* Match the inner flex structure and gap */}
+          <div className="flex flex-col gap-1">
+            {/* Match the top row layout */}
+            <div className="flex justify-between items-start">
+              {/* Match title (text-base -> h-6). Use more generous width. */}
+              <Skeleton className="h-6 w-2/3 bg-white/20 rounded" />
+              {/* Match timestamp (text-xs -> h-4). */}
+              <Skeleton className="h-4 w-1/4 bg-white/20 rounded" />
+            </div>
+            {/* Match message (text-sm, line-clamp-2 -> approx h-10). Use generous width. */}
+            <Skeleton className="h-10 w-11/12 bg-white/20 rounded" />
+          </div>
+        </li>
+      ))}
+    </div>
+  ),
+});

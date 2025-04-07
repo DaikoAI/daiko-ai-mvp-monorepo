@@ -82,7 +82,7 @@ export const authConfig = {
   events: {
     // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
     createUser: async ({ user }) => {
-      console.log("createUser", user);
+      console.log("createUser event triggered for user:", user.id);
       if (user.id) {
         try {
           // Solanaウォレットアドレスを生成
@@ -94,13 +94,14 @@ export const authConfig = {
             .set({ walletAddress })
             .where(sql`${usersTable.id} = ${user.id}`);
 
-          console.log(`Solanaウォレットアドレスを生成しました: ${walletAddress}`);
+          console.log(`Generated Solana wallet address: ${walletAddress} for user ${user.id}`);
 
           // 共通の初期ポートフォリオ設定関数を使用
           // 新規ユーザーには基本的なトークンのみを設定
           await setupInitialPortfolio(user.id);
+          console.log(`Initialized portfolio for user ${user.id}`);
         } catch (error) {
-          console.error("ユーザー情報の更新に失敗しました:", error);
+          console.error(`Error during createUser event for user ${user.id}:`, error);
         }
       }
     },

@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import type { NextPage } from "next";
 import Link from "next/link";
 import { ChatInterface } from "../components/chat-interface";
+import { api } from "@/trpc/server";
 
 interface ChatThreadPageProps {
   params: Promise<{
@@ -13,8 +14,12 @@ interface ChatThreadPageProps {
 const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
   const { threadId } = await params;
 
+  const thread = await api.chat.getThread({ threadId });
+  console.log(thread);
+  const messages = await api.chat.getMessages({ threadId });
+
   return (
-    <main className="flex flex-col h-screen-safe">
+    <main className="flex flex-col h-screen">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-md border-b border-white/10">
         <Link href="/chat">
@@ -24,12 +29,20 @@ const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
           </Button>
         </Link>
         {/* TODO: Replace with dynamic thread title */}
-        <h1 className="text-xl font-semibold truncate mx-4 flex-1 text-center">Chat title</h1>
+        <h1 className="text-xl font-semibold truncate mx-4 flex-1 text-center">{thread?.title}</h1>
       </header>
 
       {/* Chat Interface takes full height minus header */}
       <div className="flex-1 relative">
-        <ChatInterface threadId={threadId} />
+        <ChatInterface
+          initialMessages={messages.map((message) => ({
+            id: message.id,
+            content: message.content,
+            role: message.role,
+            timestamp: message.createdAt,
+          }))}
+          threadId={threadId}
+        />
       </div>
     </main>
   );

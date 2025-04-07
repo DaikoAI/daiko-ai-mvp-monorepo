@@ -29,7 +29,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["@serwist/next/typings"]
+    "types": ["@serwist/next/typings", "./src/types/index.d.ts"]
   },
   "include": [".eslintrc.cjs", "next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.cjs", "**/*.js", ".next/types/**/*.ts"],
   "exclude": ["node_modules", "public/sw.js"]

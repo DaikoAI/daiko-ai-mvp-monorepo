@@ -1,3 +1,4 @@
+import { chatRouter } from "@/server/api/routers/chat";
 import { portfolioRouter } from "@/server/api/routers/portfolio";
 import { proposalRouter } from "@/server/api/routers/proposal";
 import { tokensRouter } from "@/server/api/routers/tokens";
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
   portfolio: portfolioRouter,
   tokens: tokensRouter,
   transactions: transactionsRouter,
+  chat: chatRouter,
 });
 
 // export type definition of API

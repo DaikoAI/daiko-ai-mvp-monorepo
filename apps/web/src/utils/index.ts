@@ -39,24 +39,3 @@ export function formatPrice(price?: number): string {
     maximumFractionDigits: 2,
   })}`;
 }
-
-// グローバルCSSにno-scrollbarクラスが含まれていない場合に備えて、
-// 動的にスタイルを作成する関数を追加
-export function createNoScrollbarStyle() {
-  // すでにスタイルが存在する場合は追加しない
-  if (document.getElementById("no-scrollbar-style")) return;
-
-  const style = document.createElement("style");
-  style.id = "no-scrollbar-style";
-  style.innerHTML = `
-    .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;  /* Chrome, Safari, Opera */
-    }
-  `;
-  document.head.appendChild(style);
-}

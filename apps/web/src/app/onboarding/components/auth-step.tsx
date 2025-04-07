@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { signIn, useSession } from "next-auth/react";
+import Link from "next/link";
 import { useEffect } from "react";
 
 export const AuthStep: React.FC = () => {
@@ -84,7 +85,7 @@ export const AuthStep: React.FC = () => {
         </Button>
         {process.env.NODE_ENV === "development" && (
           <Button variant="outline" className="w-full" onClick={handleSkip}>
-            Skip for Development
+            <Link href="/chat">Skip for Development</Link>
           </Button>
         )}
       </CardFooter>
