@@ -25,25 +25,25 @@ const typeStyles = {
   trade: {
     icon: <Bot size={16} className="text-blue-300" />,
     label: "Trade",
-    bgColor: "bg-gradient-to-r from-blue-500/50 to-black/40",
+    bgColor: "bg-gradient-to-r from-blue-500/50 to-white/20",
     textColor: "text-blue-300",
   },
   stake: {
     icon: <Plus size={16} className="text-purple-300" />,
     label: "Staking",
-    bgColor: "bg-gradient-to-r from-purple-500/50 to-black/40",
+    bgColor: "bg-gradient-to-r from-purple-500/50 to-white/20",
     textColor: "text-purple-300",
   },
   risk: {
     icon: <AlertCircle size={16} className="text-red-400" />,
     label: "Risk Alert",
-    bgColor: "bg-gradient-to-r from-red-600/50 to-black/40",
+    bgColor: "bg-gradient-to-r from-red-600/50 to-white/20",
     textColor: "text-red-400",
   },
   opportunity: {
     icon: <Bot size={16} className="text-green-400" />,
     label: "Opportunity",
-    bgColor: "bg-gradient-to-r from-green-500/50 to-black/40",
+    bgColor: "bg-gradient-to-r from-green-500/50 to-white/20",
     textColor: "text-green-400",
   },
 };
@@ -199,10 +199,10 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
 
   return (
     <>
-      {/* Stronger backdrop blur, slightly darker overlay for readability */}
+      {/* Remove bg-black/10 overlay, add subtle white border */}
       <Card
         className={cn(
-          "overflow-hidden rounded-2xl p-4 relative text-white border-none shadow-lg backdrop-blur-lg bg-black/10",
+          "overflow-hidden rounded-2xl p-4 relative text-white border-none shadow-lg backdrop-blur-lg",
           currentTypeStyle.bgColor
         )}
       >

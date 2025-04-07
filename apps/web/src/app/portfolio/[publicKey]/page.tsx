@@ -5,12 +5,11 @@ import { TokensTab } from "../components/tokens-tab";
 
 import type { NextPage } from "next";
 
-import { CopyButton } from "@/components/copy-button";
 import { AuthAvatar } from "@/components/auth-avater";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BalanceCard } from "../components/balance-card";
-import { Skeleton } from "@/components/ui/skeleton";
 export const experimental_ppr = true;
 
 type PortfolioPageProps = {
@@ -23,8 +22,6 @@ const PortfolioPage: NextPage<PortfolioPageProps> = async ({ params }) => {
   // Get the wallet address from params
   const { publicKey } = await params;
   const walletAddress = publicKey;
-
-  const shortAddress = `${walletAddress.slice(0, 5)}...${walletAddress.slice(-5)}`;
 
   // NFTsは現在APIから返されていない場合は空配列を使用
   const nfts: any[] = [];
@@ -45,13 +42,6 @@ const PortfolioPage: NextPage<PortfolioPageProps> = async ({ params }) => {
       <Suspense fallback={<BalanceCard.Skeleton />}>
         <BalanceCard walletAddress={walletAddress} />
       </Suspense>
-
-      <section className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <p className="text-sm text-muted-foreground">{shortAddress}</p>
-          <CopyButton value={walletAddress} />
-        </div>
-      </section>
 
       {/* Use Tabs component with Composition Pattern */}
       <Tabs
