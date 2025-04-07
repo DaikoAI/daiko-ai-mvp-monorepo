@@ -80,7 +80,7 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
   return (
     <>
       {proposals.length > 0 ? (
-        <div className="space-y-4">
+        <div className="flex flex-col space-y-3">
           {proposals
             .filter((proposal) => proposal.id !== undefined)
             .map((proposal) => (
@@ -90,9 +90,9 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
             ))}
         </div>
       ) : (
-        <div className="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
-          <p className="mb-2 text-lg font-medium">No active proposals</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed border-gray-700 p-8 text-center">
+          <p className="mb-2 text-lg font-semibold text-white">No active proposals</p>
+          <p className="text-sm text-gray-400">
             All proposals have been reviewed. Check back later for new suggestions.
           </p>
         </div>

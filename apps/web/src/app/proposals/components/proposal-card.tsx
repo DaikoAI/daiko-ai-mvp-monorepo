@@ -13,30 +13,42 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/utils";
-import { getTimeRemaining, isWithin24Hours } from "@/utils/date";
+import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
-import { Bot, Check, ChevronDown, ChevronUp, Clock, ExternalLink, Loader2, Twitter, X } from "lucide-react";
+import { AlertCircle, Bot, Check, ChevronDown, ChevronRight, ChevronUp, ExternalLink, Loader2, Plus, Send, Twitter, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-// Type colors mapping
-const typeColors = {
-  trade: "bg-blue-500/20 text-blue-500 border-blue-500/30",
-  stake: "bg-purple-500/20 text-purple-500 border-purple-500/30",
-  risk: "bg-red-500/20 text-red-500 border-red-500/30",
-  opportunity: "bg-green-500/20 text-green-500 border-green-500/30",
+// Type styles - Adjusted for Glassmorphism & Figma
+const typeStyles = {
+  trade: {
+    icon: <Bot size={16} className="text-blue-300" />,
+    label: "Trade",
+    bgColor: "bg-gradient-to-r from-blue-500/50 to-black/40",
+    textColor: "text-blue-300",
+  },
+  stake: {
+    icon: <Plus size={16} className="text-purple-300" />,
+    label: "Staking",
+    bgColor: "bg-gradient-to-r from-purple-500/50 to-black/40",
+    textColor: "text-purple-300",
+  },
+  risk: {
+    icon: <AlertCircle size={16} className="text-red-400" />,
+    label: "Risk Alert",
+    bgColor: "bg-gradient-to-r from-red-600/50 to-black/40",
+    textColor: "text-red-400",
+  },
+  opportunity: {
+    icon: <Bot size={16} className="text-green-400" />,
+    label: "Opportunity",
+    bgColor: "bg-gradient-to-r from-green-500/50 to-black/40",
+    textColor: "text-green-400",
+  },
 };
 
-// Type labels
-const typeLabels = {
-  trade: "Trade",
-  stake: "Stake",
-  risk: "Risk Alert",
-  opportunity: "Opportunity",
-};
-
-// PnLビジュアライゼーションコンポーネント
+// PnL Visualization - Adjusted for readability
 const ProposalPnLVisualization: React.FC<{
   financialImpact?: {
     currentValue: number;
@@ -50,76 +62,58 @@ const ProposalPnLVisualization: React.FC<{
   const isPositive = financialImpact.percentChange > 0;
   const isStaking = proposalType === "stake";
 
-  // Staking提案の場合、現在の収益を0として表示
   const currentValue = isStaking ? 0 : financialImpact.currentValue;
   const projectedValue = isStaking
     ? Math.round(financialImpact.currentValue * (financialImpact.percentChange / 100))
     : financialImpact.projectedValue;
 
-  // 差分計算
-  const diffValue = isStaking
-    ? projectedValue
-    : Math.abs(financialImpact.projectedValue - financialImpact.currentValue);
-
   return (
-    <div className="mt-3 p-3 rounded-lg bg-card/50">
-      <div className="text-xs text-muted-foreground mb-1">Price Prediction</div>
-
+    // Slightly darker background for contrast
+    <div className="mt-4 p-3 rounded-lg bg-black/50">
+      <div className="text-xs font-semibold text-gray-400 mb-2">Price Prediction</div>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex space-x-4">
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Current</span>
-            <span className="font-medium">${currentValue.toLocaleString()}</span>
-            {isStaking && <span className="text-xs text-muted-foreground">(No earnings)</span>}
+            <span className="text-xs font-medium text-gray-400">Current</span>
+            {/* Slightly larger font for values */}
+            <span className="font-semibold text-sm text-white">${currentValue.toLocaleString()}</span>
+            {isStaking && <span className="text-xs text-gray-500">(No earnings)</span>}
           </div>
-
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Expected</span>
-            <span className="font-medium">${projectedValue.toLocaleString()}</span>
-            {isStaking && (
-              <span className="text-xs text-muted-foreground">(With APY ${financialImpact.percentChange}%)</span>
-            )}
+            <span className="text-xs font-medium text-gray-400">Expected{isStaking ? ` (APY ${financialImpact.percentChange}%)` : ""}</span>
+            <span className="font-semibold text-sm text-white">${projectedValue.toLocaleString()}</span>
           </div>
         </div>
-
         <div
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            isPositive ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"
-          }`}
+          className={cn(
+            "px-1.5 py-0.5 rounded text-xs font-medium flex items-center",
+            isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400",
+          )}
         >
           {isPositive ? "+" : ""}
-          {financialImpact.percentChange}% (${diffValue.toLocaleString()})
+          {financialImpact.percentChange}%
         </div>
       </div>
     </div>
   );
 };
 
-// 残り時間表示コンポーネント
+// Time Remaining - No changes needed based on last update
 const TimeRemaining: React.FC<{ expiresAt: Date }> = ({ expiresAt }) => {
   const [timeLeft, setTimeLeft] = useState("");
-  const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
-      // 自作の関数を使用
       setTimeLeft(getTimeRemaining(expiresAt));
-      setIsExpiringSoon(isWithin24Hours(expiresAt));
     };
-
     updateTime();
-    const interval = setInterval(updateTime, 60000); // 1分ごとに更新
-
+    const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
   }, [expiresAt]);
 
   return (
-    <div
-      className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full
-        ${isExpiringSoon ? "bg-red-500/20 text-red-500" : "bg-secondary/80 text-secondary-foreground"}`}
-    >
-      <Clock className={`h-3 w-3 ${isExpiringSoon ? "animate-pulse" : ""}`} />
-      <span className={isExpiringSoon ? "animate-pulse" : ""}>{timeLeft}</span>
+    <div className="flex items-center gap-1 text-xs font-normal text-gray-400">
+      <span>{timeLeft}</span>
     </div>
   );
 };
@@ -135,7 +129,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
   const router = useRouter();
   const [showShareDialog, setShowShareDialog] = useState(false);
 
-  // ユーザー設定
+  // User preferences state remains the same
   const [userPreferences, setUserPreferences] = useState<{
     hideProposal: boolean;
     holdToken: boolean;
@@ -146,7 +140,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     holdUntil: "1month",
   });
 
-  // ローカルストレージからユーザー設定を読み込む
   useEffect(() => {
     const savedPrefs = localStorage.getItem(`proposal_prefs_${proposal.id}`);
     if (savedPrefs) {
@@ -154,7 +147,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     }
   }, [proposal.id]);
 
-  // ユーザー設定を保存する
   const saveUserPreferences = (prefs: { hideProposal: boolean; holdToken: boolean; holdUntil: string }) => {
     setUserPreferences(prefs);
     localStorage.setItem(`proposal_prefs_${proposal.id}`, JSON.stringify(prefs));
@@ -170,14 +162,9 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
 
   const handleAccept = async () => {
     setIsAccepting(true);
-
-    // Simulate transaction processing
     await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // 提案受け入れツイート用のテキスト作成
     const tweetText = `I just accepted a proposal to "${proposal.title}" with Daiko AI. 🚀 Managing my crypto portfolio is getting smarter! #DaikoAI #CryptoPortfolio`;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-
     toast.success("Proposal accepted", {
       description: "You can check your portfolio for updated positions.",
       action: {
@@ -187,11 +174,8 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
       icon: <Check className="h-4 w-4" />,
       duration: 8000,
     });
-
     setIsAccepting(false);
     setShowShareDialog(true);
-
-    // Remove the proposal after acceptance
     if (onRemove) {
       onRemove(proposal.id);
     }
@@ -201,199 +185,149 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     toast.error("Proposal declined", {
       description: `The ${proposal.title} proposal has been declined.`,
     });
-
-    // Remove the proposal after declining
     if (onRemove) {
       onRemove(proposal.id);
     }
   };
 
   const handleAskAI = () => {
-    // reasonがリスト形式になっているため、テキスト形式に変換
     const reasonText = proposal.reason.join(". ");
-    // Navigate to chat with pre-filled message
     router.push(`/chat?q=${encodeURIComponent(`Tell me more about this proposal: ${proposal.title}. ${reasonText}`)}`);
   };
 
+  const currentTypeStyle = typeStyles[(proposal.type as keyof typeof typeStyles) || "opportunity"];
+
   return (
     <>
+      {/* Stronger backdrop blur, slightly darker overlay for readability */}
       <Card
-        className="overflow-hidden border-l-4 transition-all relative"
-        style={{ borderLeftColor: getTypeColor(proposal.type) }}
+        className={cn(
+          "overflow-hidden rounded-2xl p-4 relative text-white border-none shadow-lg backdrop-blur-lg bg-black/10",
+          currentTypeStyle.bgColor
+        )}
       >
-        <CardHeader className="pb-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <div
-              className={cn(
-                "px-2 py-1 text-xs font-medium rounded-full border",
-                typeColors[(proposal.type as keyof typeof typeColors) || "opportunity"],
-              )}
-            >
-              {typeLabels[(proposal.type as keyof typeof typeLabels) || "opportunity"]}
+        <CardHeader className="p-0 mb-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1">
+              {currentTypeStyle.icon}
+              <span className={cn("text-sm font-semibold", currentTypeStyle.textColor)}>
+                {currentTypeStyle.label}
+              </span>
             </div>
-
-            <div className="flex items-center gap-2">
-              <div className="flex items-center text-xs text-muted-foreground">
-                <Bot className="mr-1 h-3.5 w-3.5" />
-                {proposal.proposedBy || "AI XBT"}
-              </div>
-
-              {proposal.expires_at && <TimeRemaining expiresAt={proposal.expires_at} />}
-            </div>
+            {proposal.expires_at && <TimeRemaining expiresAt={proposal.expires_at} />}
           </div>
-          <CardTitle className="text-lg mt-2">{proposal.title}</CardTitle>
-          {/* <p className="text-sm text-muted-foreground">{proposal.summary}</p> */}
-
-          {/* 損益ビジュアライゼーション */}
+          <CardTitle className="text-base font-bold text-white">{proposal.title}</CardTitle>
           {proposal.financialImpact && (
             <ProposalPnLVisualization financialImpact={proposal.financialImpact} proposalType={proposal.type} />
           )}
         </CardHeader>
-        <CardContent>
-          <div
-            className="overflow-hidden transition-all duration-300"
-            style={{ maxHeight: detailHeight ? `${detailHeight}px` : "0" }}
-          >
-            <div ref={detailRef} className="space-y-4">
-              <div className="mb-4">
-                <h3 className="font-medium mb-2">Reasons:</h3>
-                <ul className="list-disc list-inside space-y-1.5 text-sm text-muted-foreground">
-                  {proposal.reason.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
 
-              <div className="flex justify-center">
-                <Button variant="outline" size="sm" className="text-xs w-full max-w-md" onClick={handleAskAI}>
-                  Ask AI for More Details
-                </Button>
-              </div>
-
-              <h4 className="mb-2 font-medium">Data Sources:</h4>
-              <ul className="space-y-1">
-                {proposal.sources.map((source, index) => (
-                  <li key={index} className="flex items-center text-xs">
-                    <ExternalLink className="mr-1 h-3 w-3" />
-                    <a
-                      href={source.url}
-                      className="text-primary hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {source.name}
-                    </a>
-                  </li>
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ height: detailHeight === undefined ? undefined : `${detailHeight}px` }}
+        >
+          <div ref={detailRef} className="pb-4">
+            <CardContent className="p-0 pt-2">
+              <p className="text-sm text-gray-200 mb-3">{proposal.summary}</p>
+              <h4 className="text-sm font-semibold text-gray-100 mb-1">Reasons:</h4>
+              <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 mb-3">
+                {proposal.reason.map((r, index) => (
+                  <li key={index}>{r}</li>
                 ))}
               </ul>
-
-              {/* ユーザー設定セクション */}
-              <div className="mt-4 pt-4 border-t border-muted">
-                <div className="text-xs font-medium mb-2">Your preferences</div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`hide-${proposal.id}`} className="text-xs text-muted-foreground">
-                      Don't show similar proposals
-                    </Label>
-                    <Switch
-                      id={`hide-${proposal.id}`}
-                      checked={userPreferences.hideProposal}
-                      onCheckedChange={(checked) => saveUserPreferences({ ...userPreferences, hideProposal: checked })}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor={`hold-${proposal.id}`} className="text-xs text-muted-foreground">
-                      Hold this asset for at least
-                    </Label>
-                    <select
-                      className="h-7 text-xs rounded-md border border-input bg-transparent px-2"
-                      value={userPreferences.holdUntil}
-                      onChange={(e) => saveUserPreferences({ ...userPreferences, holdUntil: e.target.value })}
-                      disabled={!userPreferences.holdToken}
-                    >
-                      <option value="1month">1 month</option>
-                      <option value="3months">3 months</option>
-                      <option value="6months">6 months</option>
-                      <option value="1year">1 year</option>
-                    </select>
-                  </div>
-                </div>
+              <h4 className="text-sm font-semibold text-gray-100 mb-1">Sources:</h4>
+              <div className="space-y-1 mb-4">
+                {proposal.sources.map((source, index) => (
+                  <a
+                    key={index}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-xs text-blue-300 hover:underline"
+                  >
+                    {source.name}
+                    <ExternalLink className="ml-1 h-3 w-3" />
+                  </a>
+                ))}
               </div>
-            </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAskAI}
+                className="w-full justify-center items-center bg-white text-black font-bold rounded-full h-9 text-base hover:bg-gray-200 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
+              >
+                Ask AI for More Details
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </CardContent>
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-3 pt-0">
-          <div className="flex w-full justify-between">
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setExpanded(!expanded)}>
-              {expanded ? (
-                <>
-                  <ChevronUp className="mr-1 h-4 w-4" />
-                  Hide Details
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-1 h-4 w-4" />
-                  Show Details
-                </>
-              )}
-            </Button>
-          </div>
+        </div>
 
-          <div className="flex w-full gap-2">
-            <Button variant="destructive" className="flex-1" onClick={handleDecline}>
-              <X className="mr-2 h-4 w-4" />
+        <CardFooter className="p-0 flex flex-col items-stretch space-y-3 mt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center justify-start text-sm font-medium text-white hover:bg-transparent hover:text-gray-300 px-0"
+          >
+            {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
+            {expanded ? "Hide Details" : "Show Details"}
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="default"
+              onClick={handleDecline}
+              className="flex-1 bg-[#666666] hover:bg-gray-500 text-white font-bold rounded-full h-10 text-base shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
+            >
+              <X className="mr-1 h-5 w-5" />
               Decline
             </Button>
-
-            <Button variant="success" className="flex-1" onClick={handleAccept} disabled={isAccepting}>
+            <Button
+              variant="default"
+              onClick={handleAccept}
+              disabled={isAccepting}
+              className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold rounded-full h-10 text-base shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
+            >
               {isAccepting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing
-                </>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Accept
-                </>
+                <Check className="mr-1 h-5 w-5" />
               )}
+              {isAccepting ? "Processing..." : "Accept"}
             </Button>
           </div>
         </CardFooter>
       </Card>
 
-      {/* シェアダイアログ */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share Your Investment Decision</DialogTitle>
-            <DialogDescription>Let your followers know about your latest investment move!</DialogDescription>
+            <DialogTitle>Proposal Accepted!</DialogTitle>
+            <DialogDescription>Would you like to share this action?</DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center py-6">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Check className="h-8 w-8 text-primary" />
-            </div>
+          <div className="py-4">
+            <Label htmlFor={`hide-${proposal.id}`} className="flex items-center">
+              <Switch
+                id={`hide-${proposal.id}`}
+                checked={userPreferences.hideProposal}
+                onCheckedChange={(checked) => saveUserPreferences({ ...userPreferences, hideProposal: checked })}
+              />
+              <span className="ml-2">Don't show similar proposals</span>
+            </Label>
           </div>
-          <div className="p-4 rounded-lg bg-muted">
-            <p className="text-sm">
-              I just accepted a proposal to {proposal.title.toLowerCase()} 📈 via @DaikoAI #InvestSmart
-            </p>
-          </div>
-          <DialogFooter className="sm:justify-start">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowShareDialog(false)}>
               Close
             </Button>
             <Button
-              className="flex items-center gap-2 bg-[#1DA1F2] hover:bg-[#1DA1F2]/90 text-white"
               onClick={() => {
-                const text = `I just accepted a proposal to ${proposal.title.toLowerCase()} 📈 via @DaikoAI #InvestSmart`;
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+                const tweetText = `I just accepted a proposal to "${proposal.title}" with Daiko AI. 🚀 Managing my crypto portfolio is getting smarter! #DaikoAI #CryptoPortfolio`;
+                const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(tweetUrl, "_blank");
                 setShowShareDialog(false);
               }}
             >
-              <Twitter size={18} />
+              <Twitter className="mr-2 h-4 w-4" />
               Share on Twitter
             </Button>
           </DialogFooter>
@@ -402,19 +336,3 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     </>
   );
 };
-
-// 追加する関数
-function getTypeColor(type?: string | null): string {
-  switch (type) {
-    case "trade":
-      return "var(--blue-500, #3b82f6)";
-    case "stake":
-      return "var(--purple-500, #8b5cf6)";
-    case "risk":
-      return "var(--red-500, #ef4444)";
-    case "opportunity":
-      return "var(--green-500, #10b981)";
-    default:
-      return "#6c6c6c";
-  }
-}
