@@ -1,10 +1,9 @@
+import { AuthAvatar } from "@/components/auth-avater";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Assuming Input component exists
-import { auth } from "@/server/auth";
 import { Search } from "lucide-react"; // Import Search icon
 import type { NextPage } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 // Placeholder for chat threads data - replace with actual data fetching later
 const mockThreads = [
@@ -14,13 +13,6 @@ const mockThreads = [
 ];
 
 const ChatListPage: NextPage = async () => {
-  const session = await auth();
-  if (!session) {
-    redirect("/onboarding"); // Or your login page
-  }
-
-  const user = session?.user;
-
   // TODO: Fetch actual chat threads for the user
   const threads = mockThreads; // Use mock data for now
 
@@ -29,11 +21,10 @@ const ChatListPage: NextPage = async () => {
   return (
     <main className="flex flex-col safe-main-container h-screen">
       {/* Header */}
-      {/* Figma Header: Title Left, Button Right */}
       <header className="flex items-center justify-between px-4 py-6">
-      <Link href="/profile" className="flex items-center">
+        <Link href="/profile" className="flex items-center">
           <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10">
-            <img src={user?.image} alt="Profile" className="w-full h-full object-cover" />
+            <AuthAvatar />
           </div>
         </Link>
         <Link href={`/chat/new`}>

@@ -4,12 +4,13 @@ import type { ProposalSelect } from "@daiko-ai/shared";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProposalCard } from "./proposal-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ProposalListProps = {
   initialProposals: ProposalSelect[];
 };
 
-export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) => {
+export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProposals }) => {
   const [proposals, setProposals] = useState(initialProposals);
   const [expiringProposals, setExpiringProposals] = useState<string[]>([]);
   // 通知済みの期限切れproposalを追跡するためのRef
@@ -77,6 +78,7 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
     setProposals(proposals.filter((proposal) => proposal.id !== id));
     setExpiringProposals((prev) => prev.filter((propId) => propId !== id));
   };
+
   return (
     <>
       {proposals.length > 0 ? (
@@ -100,3 +102,13 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
     </>
   );
 };
+
+export const ProposalList = Object.assign(ProposalListComponent, {
+  Skeleton: () => (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+    </div>
+  ),
+});

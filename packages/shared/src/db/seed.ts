@@ -3,6 +3,7 @@ import { db } from ".";
 import { setupInitialPortfolio } from "../utils/portfolio";
 import { InterestRateInsert, interestRatesTable } from "./schema/interest_rates";
 import { NewsSiteInsert, newsSiteTable } from "./schema/news_sites";
+import { ProposalInsert, proposalTable } from "./schema/proposals";
 import { TokenInsert, tokensTable } from "./schema/tokens";
 import { UserInsert, UserSelect, usersTable } from "./schema/users";
 import { XAccountInsert, xAccountTable } from "./schema/x_accounts";
@@ -489,6 +490,150 @@ const seedStakingTokenInterestRates = async () => {
 };
 
 /**
+ * proposalデータを挿入するシード関数
+ */
+const seedProposals = async (generatedUsers: UserSelect[]) => {
+  try {
+    console.log("提案データを挿入中...");
+
+    // userId: "1" に該当するユーザーを探す (デモデータに基づき最初のユーザーとする)
+    // 本番環境では、より堅牢なユーザー特定方法が必要です
+    const targetUser = await db.query.usersTable.findFirst({
+      where: eq(usersTable.id, "f8b96aa8-9dac-4a72-bf0d-1620f8e53eff"),
+    });
+
+    if (!targetUser) {
+      console.log("提案を割り当てるユーザーが見つかりません。スキップします。");
+      return [];
+    }
+
+    const initialProposalsData: Omit<ProposalInsert, "userId" | "triggerEventId">[] = [
+      {
+        title: "Take Profit SOL 5x Long Position on Jupiter",
+        summary: "Close 50% of your 5x leveraged SOL long position on Jupiter Exchange to secure profits",
+        reason: [
+          "Your position is currently up 12.3% ($615) with potential for reversal",
+          "On-chain data shows 23% decrease in SOL perpetual open interest over past 12 hours",
+          "Whale wallets reduced leveraged long positions by 18% in last 6 hours",
+          // "This pattern historically preceded 5-8% market corrections",
+          // "Taking partial profits protects gains while maintaining upside exposure",
+          // "Decreased capital inflows to Solana derivatives markets detected",
+        ],
+        sources: [
+          { name: "Jupiter Exchange On-Chain Data", url: "#" },
+          { name: "Solana Whale Wallet Tracker", url: "#" },
+          { name: "Perpetual Market Open Interest Analysis", url: "#" },
+        ],
+        type: "trade",
+        proposedBy: "Daiko AI",
+        expires_at: new Date(Date.now() + 1000 * 40),
+        financialImpact: {
+          currentValue: 5000,
+          projectedValue: 5615,
+          percentChange: 12.3,
+          timeFrame: "immediate",
+          riskLevel: "medium",
+        },
+        status: "active",
+        contractCall: null,
+      },
+      {
+        title: "Reduce 80% $BONK Exposure Due to Whale Selling",
+        summary: "Sell 75% of your 150M BONK tokens ($1,500) to protect against imminent price decline",
+        reason: [
+          "Top 20 wallets reduced holdings by 18.7% in the past 36 hours",
+          "$BONK founder left the project",
+          "$BONK already experienced 2.1% price decline",
+          // "This whale selling pattern preceded 25-40% corrections in 7 of 8 historical cases",
+          // "Optimal selling window is within 24 hours, before retail selling accelerates",
+          // "Converting 112.5M BONK to USDC while keeping 37.5M for potential recovery is recommended",
+        ],
+        sources: [
+          { name: "$BONK Whale Wallet Movement Analysis", url: "#" },
+          { name: "$BONK Founder's Exit Announcement", url: "#" },
+          { name: "DEX Order Book Depth Analysis", url: "#" },
+        ],
+        type: "risk",
+        proposedBy: "Daiko AI",
+        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        financialImpact: {
+          currentValue: 1500,
+          projectedValue: 900,
+          percentChange: -40,
+          timeFrame: "7 days",
+          riskLevel: "high",
+        },
+        status: "active",
+        contractCall: null,
+      },
+      {
+        title: "Stake 15.8 SOL in Jupiter's JupSOL for Enhanced Yields",
+        summary:
+          "Earn 8.24% APY by converting your idle 15.8 SOL ($3,243) to JupSOL, Jupiter's high-yield liquid staking token",
+        reason: [
+          "You have 15.8 SOL ($3,243) sitting idle in your wallet",
+          "JupSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+          "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
+          // "100% MEV kickback increases your staking rewards",
+          // "Helps improve Jupiter's transaction success rates during congestion",
+          // "Maintains liquidity - can be used across DeFi or redeemed for SOL anytime",
+          // "Low risk with SPL stake pool security and multi-sig program authority",
+          // "Validator run by Triton One, a trusted industry expert",
+        ],
+        sources: [
+          { name: "Jupiter JupSOL Documentation", url: "#" },
+          { name: "Solana LST Comparison Analysis", url: "#" },
+          { name: "JupSOL Performance Metrics", url: "#" },
+        ],
+        type: "stake",
+        proposedBy: "Daiko AI",
+        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72),
+        financialImpact: {
+          currentValue: 3243,
+          projectedValue: 3510,
+          percentChange: 8.24,
+          timeFrame: "1 year",
+          riskLevel: "low",
+        },
+        status: "active",
+        contractCall: null,
+      },
+    ];
+
+    // TODO: Trigger Events should be seeded first, then link proposals to them.
+    // For now, using placeholder triggerEventId. Need to adjust schema and seeding logic.
+    const proposals: ProposalInsert[] = initialProposalsData.map((p, index) => ({
+      ...p,
+      userId: targetUser.id,
+      triggerEventId: `seed-trigger-${index + 1}`, // Placeholder ID
+    }));
+
+    const existingProposals = await db.select().from(proposalTable);
+    const generatedProposals = [];
+
+    for (const proposal of proposals) {
+      // タイトルとユーザーIDによる重複チェック
+      const existingProposal = existingProposals.find(
+        (p) => p.title === proposal.title && p.userId === proposal.userId,
+      );
+
+      if (!existingProposal) {
+        const [generatedProposal] = await db.insert(proposalTable).values(proposal).returning();
+        generatedProposals.push(generatedProposal);
+        console.log(`提案 "${proposal.title}" をユーザーID ${proposal.userId} に挿入しました`);
+      } else {
+        console.log(`提案 "${proposal.title}" はユーザーID ${proposal.userId} に既に存在します。スキップします。`);
+      }
+    }
+
+    return generatedProposals;
+  } catch (error) {
+    console.error("提案データの挿入中にエラーが発生しました:", error);
+    throw error;
+  }
+};
+
+/**
  * データベースにシードデータを挿入
  */
 async function seed() {
@@ -515,6 +660,10 @@ async function seed() {
   // ニュースサイト挿入
   console.log("ニュースサイトデータを挿入中...");
   await seedNewsSites(generatedUsers);
+
+  // 提案データ挿入 (New)
+  console.log("提案データを挿入中...");
+  await seedProposals(generatedUsers);
 
   console.log("シードデータの挿入が完了しました！");
 }

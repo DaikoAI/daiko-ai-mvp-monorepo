@@ -1,6 +1,6 @@
 "use client";
 
-import { unstable_ViewTransition as ViewTransition } from "react";
+// import { unstable_ViewTransition as ViewTransition } from "react";
 import { PwaFooter } from "@/components/pwa-footer";
 import { TRPCReactProvider } from "@/trpc/react";
 // import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
@@ -28,10 +28,10 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
           {/* <ConnectionProvider endpoint={endpoint}>
               <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider> */}
-          <ViewTransition>
-            {children}
-            <PwaFooter />
-          </ViewTransition>
+
+          {children}
+          <PwaFooter />
+
           {/* </WalletModalProvider>
               </WalletProvider>
             </ConnectionProvider> */}

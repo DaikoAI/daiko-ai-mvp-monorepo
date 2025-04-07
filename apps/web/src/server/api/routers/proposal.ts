@@ -1,6 +1,6 @@
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { proposalTable } from "@daiko-ai/shared";
-import { desc } from "drizzle-orm";
+import { asc, gt } from "drizzle-orm";
 import { z } from "zod";
 
 export const proposalRouter = createTRPCRouter({
@@ -23,12 +23,12 @@ export const proposalRouter = createTRPCRouter({
       });
     }),
 
-  getLatest: protectedProcedure.query(async ({ ctx }) => {
-    const proposal = await ctx.db.query.proposalTable.findFirst({
-      orderBy: [desc(proposalTable.createdAt)],
+  getProposals: protectedProcedure.query(async ({ ctx }) => {
+    const proposals = await ctx.db.query.proposalTable.findMany({
+      orderBy: [asc(proposalTable.expires_at)],
+      where: gt(proposalTable.expires_at, new Date()),
     });
-
-    return proposal ?? null;
+    return proposals;
   }),
 
   getSecretMessage: protectedProcedure.query(() => {
