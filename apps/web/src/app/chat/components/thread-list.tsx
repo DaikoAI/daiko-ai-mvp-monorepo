@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppRouter, createCaller } from "@/server/api/root"; // Import server-side caller factory
+import { type AppRouter, createCaller } from "@/server/api/root"; // Import server-side caller factory
 import { createTRPCContext } from "@/server/api/trpc"; // Import context creator
 import { formatChatListTimestamp } from "@/utils/date";
 import { type inferProcedureOutput } from "@trpc/server"; // Utility to infer types
