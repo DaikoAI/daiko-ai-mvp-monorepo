@@ -11,7 +11,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BalanceCard } from "../components/balance-card";
 
-export const experimental_ppr = true;
+// export const experimental_ppr = true;
 
 type PortfolioPageProps = {
   params: Promise<{
