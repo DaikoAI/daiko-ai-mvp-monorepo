@@ -33,7 +33,7 @@ export const OnboardingFlow: React.FC = () => {
       // Wait briefly before redirecting (to show completion screen)
       const timer = setTimeout(() => {
         // alphaテストモードならポートフォリオページへ、そうでなければプロポーザルページへ
-        router.replace("/portfolio");
+        router.replace("/proposals");
       }, 2000);
 
       return () => clearTimeout(timer);

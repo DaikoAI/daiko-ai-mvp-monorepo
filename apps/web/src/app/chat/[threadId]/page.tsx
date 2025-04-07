@@ -14,7 +14,7 @@ const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
   const { threadId } = await params;
 
   return (
-    <main className="flex flex-col h-screen">
+    <main className="flex flex-col h-screen-safe">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-md border-b border-white/10">
         <Link href="/chat">

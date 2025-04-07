@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useHaptic } from "use-haptic";
@@ -14,11 +14,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
   const { triggerHaptic } = useHaptic();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleAddClick = () => {
-    triggerHaptic();
-    // ここに資産追加ページへの遷移ロジックを追加
-    // router.push('/add-asset');
-  };
+  // const handleAddClick = () => {
+  //   triggerHaptic();
+  //   // ここに資産追加ページへの遷移ロジックを追加
+  //   // router.push('/add-asset');
+  // };
 
   const handleRefreshClick = async () => {
     if (isRefreshing) return;
@@ -41,12 +41,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
 
   return (
     <div className="flex items-center gap-3">
-      <button
+      {/* <button
         onClick={handleAddClick}
         className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
       >
         <Plus size={24} className="text-white" />
-      </button>
+      </button> */}
       <button
         onClick={handleRefreshClick}
         disabled={isRefreshing}

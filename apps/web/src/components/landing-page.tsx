@@ -4,6 +4,7 @@ import { InstallDrawer } from "@/components/install-drawer";
 import { Button } from "@/components/ui/button";
 import { useA2HS } from "@/hooks/useA2H";
 import { isPWA } from "@/utils/pwa";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ export const LandingPage: React.FC = () => {
   const { promptEvent } = useA2HS();
   const [mounted, setMounted] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const { data: session } = useSession();
 
   // PWA detection and redirect
   useEffect(() => {
@@ -25,7 +27,11 @@ export const LandingPage: React.FC = () => {
 
     // Redirect to onboarding if accessed as PWA
     if (isPWA()) {
-      router.replace("/onboarding");
+      if (session) {
+        router.replace("/proposals");
+      } else {
+        router.replace("/onboarding");
+      }
     }
   }, [router]);
 
