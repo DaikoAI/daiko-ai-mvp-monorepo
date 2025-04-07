@@ -171,6 +171,26 @@
 | rate          | DECIMAL(10,5) | NOT NULL                                                                              | Funding Rate     |
 | timestamp     | TIMESTAMP     | NOT NULL, **INDEX** `idx_funding_rates_timestamp`                                     | 適用時刻         |
 
+### `chat_threads` テーブル
+
+| カラム名   | データ型  | 制約                                                                          | 説明             |
+| ---------- | --------- | ----------------------------------------------------------------------------- | ---------------- |
+| id         | UUID      | PRIMARY KEY, DEFAULT gen_random_uuid()                                        | スレッドID       |
+| user_id    | UUID      | NOT NULL, FOREIGN KEY REFERENCES users(id), **INDEX** `idx_chat_threads_user` | ユーザーID       |
+| title      | TEXT      | NOT NULL, DEFAULT 'New Chat'                                                  | スレッドタイトル |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT NOW(), **INDEX** `idx_chat_threads_created`                 | 作成日時         |
+| updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW()                                                       | 更新日時         |
+
+### `chat_messages` テーブル
+
+| カラム名   | データ型    | 制約                                                                                    | 説明           |
+| ---------- | ----------- | --------------------------------------------------------------------------------------- | -------------- |
+| id         | UUID        | PRIMARY KEY, DEFAULT gen_random_uuid()                                                  | メッセージID   |
+| thread_id  | UUID        | NOT NULL, FOREIGN KEY REFERENCES chat_threads(id), **INDEX** `idx_chat_messages_thread` | スレッドID     |
+| sender     | VARCHAR(10) | NOT NULL CHECK (sender IN ('user', 'ai'))                                               | 送信者         |
+| content    | TEXT        | NOT NULL                                                                                | メッセージ内容 |
+| created_at | TIMESTAMP   | NOT NULL, DEFAULT NOW(), **INDEX** `idx_chat_messages_created`                          | 作成日時       |
+
 ## 6. API設計
 
 ### API一覧
@@ -624,7 +644,7 @@ async function getLeaderboard(limit: number = 20) {
 
 </details>
 
-### セッション管理API（バックエンド内部利用）
+#### セッション管理API（バックエンド内部利用）
 
 <details>
 <summary>実装コード例</summary>
@@ -671,6 +691,105 @@ function scheduleSessionEnd(walletAddress: string) {
       await redis.zincrby("token_frequency", -1, token);
     }
   }, 300000); // 5分後
+}
+```
+
+</details>
+
+#### チャット関連API
+
+| エンドポイント                      | メソッド | パラメータ                                                | リクエストボディ                                                                               | 説明                           |
+| ----------------------------------- | -------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------ |
+| `/api/chat/threads/:wallet_address` | GET      | `wallet_address`: ウォレットアドレス<br>`limit`: 取得件数 | -                                                                                              | ユーザーのチャットスレッド一覧 |
+| `/api/chat/threads`                 | POST     | -                                                         | `wallet_address`: ウォレットアドレス<br>`title`: スレッドタイトル                              | 新規チャットスレッド作成       |
+| `/api/chat/messages/:thread_id`     | GET      | `thread_id`: スレッドID<br>`limit`: 取得件数              | -                                                                                              | スレッド内のメッセージ一覧     |
+| `/api/chat/messages`                | POST     | -                                                         | `thread_id`: スレッドID<br>`content`: メッセージ内容<br>`sender`: 送信者（"user" または "ai"） | 新規メッセージ送信             |
+
+<details>
+<summary>実装コード例</summary>
+
+```typescript
+// GET /api/chat/threads/:wallet_address
+async function getUserChatThreads(walletAddress: string, limit: number = 20) {
+  const user = await db.users.findFirst({
+    where: { wallet_address: walletAddress },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  const threads = await db.chatThreads.findMany({
+    where: { user_id: user.id },
+    orderBy: { updated_at: "desc" },
+    take: limit,
+    include: {
+      messages: {
+        orderBy: { created_at: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  return {
+    wallet_address: walletAddress,
+    threads: threads.map((thread) => ({
+      id: thread.id,
+      title: thread.title,
+      created_at: thread.created_at,
+      updated_at: thread.updated_at,
+      last_message: thread.messages[0] || null,
+    })),
+  };
+}
+
+// POST /api/chat/threads
+async function createChatThread(walletAddress: string, title?: string) {
+  const user = await db.users.findFirst({
+    where: { wallet_address: walletAddress },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  const thread = await db.chatThreads.create({
+    data: {
+      user_id: user.id,
+      title: title || "New Chat",
+    },
+  });
+
+  return thread;
+}
+
+// GET /api/chat/messages/:thread_id
+async function getChatMessages(threadId: string, limit: number = 50) {
+  const messages = await db.chatMessages.findMany({
+    where: { thread_id: threadId },
+    orderBy: { created_at: "desc" },
+    take: limit,
+  });
+
+  return {
+    thread_id: threadId,
+    messages: messages.reverse(), // 古い順に並び替え
+  };
+}
+
+// POST /api/chat/messages
+async function createChatMessage(threadId: string, content: string, sender: "user" | "ai") {
+  const message = await db.chatMessages.create({
+    data: {
+      thread_id: threadId,
+      content,
+      sender,
+    },
+  });
+
+  // スレッドの更新日時を更新
+  await db.chatThreads.update({
+    where: { id: threadId },
+    data: { updated_at: new Date() },
+  });
+
+  return message;
 }
 ```
 
