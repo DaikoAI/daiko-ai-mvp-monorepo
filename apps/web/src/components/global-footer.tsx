@@ -42,6 +42,7 @@ export const GlobalFooter: React.FC = () => {
           return (
             <Link
               href={item.href}
+              key={item.href}
               className={cn(
                 "flex h-full w-full flex-col items-center justify-center space-y-1",
                 isActive ? "text-white" : "text-white/50",
