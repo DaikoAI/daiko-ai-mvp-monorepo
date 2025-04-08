@@ -2,20 +2,23 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { useAlphaWallet } from "@/features/alphaWallet/AlphaWalletProvider";
+import type { AlphaTx } from "@/features/alphaWallet/types";
 import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
-import { AlertCircle, Bot, Check, ChevronDown, ChevronRight, ChevronUp, ExternalLink, Loader2, Plus, Send, Twitter, X } from "lucide-react";
+import {
+  AlertCircle,
+  Bot,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  ExternalLink,
+  Loader2,
+  Plus,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -80,7 +83,9 @@ const ProposalPnLVisualization: React.FC<{
             {isStaking && <span className="text-xs text-gray-500">(No earnings)</span>}
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-400">Expected{isStaking ? ` (APY ${financialImpact.percentChange}%)` : ""}</span>
+            <span className="text-xs font-medium text-gray-400">
+              Expected{isStaking ? ` (APY ${financialImpact.percentChange}%)` : ""}
+            </span>
             <span className="font-semibold text-sm text-white">${projectedValue.toLocaleString()}</span>
           </div>
         </div>
@@ -128,6 +133,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
   const detailRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const { requestTransaction } = useAlphaWallet();
 
   // User preferences state remains the same
   const [userPreferences, setUserPreferences] = useState<{
@@ -162,22 +168,72 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
 
   const handleAccept = async () => {
     setIsAccepting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const tweetText = `I just accepted a proposal to "${proposal.title}" with Daiko AI. 🚀 Managing my crypto portfolio is getting smarter! #DaikoAI #CryptoPortfolio`;
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-    toast.success("Proposal accepted", {
-      description: "You can check your portfolio for updated positions.",
-      action: {
-        label: "Tweet",
-        onClick: () => window.open(tweetUrl, "_blank"),
-      },
-      icon: <Check className="h-4 w-4" />,
-      duration: 8000,
-    });
-    setIsAccepting(false);
-    setShowShareDialog(true);
-    if (onRemove) {
-      onRemove(proposal.id);
+
+    try {
+      // プロポーザルの種類に応じてトランザクションを構築
+      const tx: AlphaTx = {
+        id: proposal.id,
+        description: proposal.title,
+        requestedBy: "Daiko AI",
+        timestamp: Date.now(),
+        instructions: [],
+      };
+
+      // プロポーザルの種類に応じて命令を追加
+      switch (proposal.type) {
+        case "trade":
+          if (proposal.financialImpact) {
+            tx.instructions.push({
+              type: "transfer",
+              fromToken: "USDC", // 仮の値、実際のプロポーザルから取得する必要あり
+              toToken: "SOL", // 仮の値、実際のプロポーザルから取得する必要あり
+              fromAmount: proposal.financialImpact.currentValue.toString(),
+              toAmount: proposal.financialImpact.projectedValue.toString(),
+            });
+          }
+          break;
+
+        case "stake":
+          if (proposal.financialImpact) {
+            tx.instructions.push({
+              type: "stake",
+              token: "SOL", // 仮の値、実際のプロポーザルから取得する必要あり
+              amount: proposal.financialImpact.currentValue.toString(),
+              apy: proposal.financialImpact.percentChange,
+            });
+          }
+          break;
+
+        // 他のケースも同様に実装
+      }
+
+      // トランザクションを実行
+      const result = await requestTransaction(tx);
+
+      if (result.success) {
+        const tweetText = `I just accepted a proposal to "${proposal.title}" with Daiko AI. 🚀 Managing my crypto portfolio is getting smarter! #DaikoAI #CryptoPortfolio`;
+        const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+        toast.success("Proposal accepted", {
+          description: "You can check your portfolio for updated positions.",
+          action: {
+            label: "Tweet",
+            onClick: () => window.open(tweetUrl, "_blank"),
+          },
+          icon: <Check className="h-4 w-4" />,
+          duration: 8000,
+        });
+
+        if (onRemove) {
+          onRemove(proposal.id);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to execute transaction:", error);
+      toast.error("Failed to execute transaction", {
+        description: "An error occurred while processing your request.",
+      });
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -198,141 +254,97 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
   const currentTypeStyle = typeStyles[(proposal.type as keyof typeof typeStyles) || "opportunity"];
 
   return (
-    <>
-      {/* Remove bg-black/10 overlay, add subtle white border */}
-      <Card
-        className={cn(
-          "overflow-hidden rounded-2xl p-4 relative text-white border-none shadow-lg backdrop-blur-lg",
-          currentTypeStyle.bgColor
-        )}
-      >
-        <CardHeader className="p-0 mb-4">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1">
-              {currentTypeStyle.icon}
-              <span className={cn("text-sm font-semibold", currentTypeStyle.textColor)}>
-                {currentTypeStyle.label}
-              </span>
-            </div>
-            {proposal.expires_at && <TimeRemaining expiresAt={proposal.expires_at} />}
+    <Card
+      className={cn(
+        "overflow-hidden rounded-2xl p-4 relative text-white border-none shadow-lg backdrop-blur-lg",
+        currentTypeStyle.bgColor,
+      )}
+    >
+      <CardHeader className="p-0 mb-4">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-1">
+            {currentTypeStyle.icon}
+            <span className={cn("text-sm font-semibold", currentTypeStyle.textColor)}>{currentTypeStyle.label}</span>
           </div>
-          <CardTitle className="text-base font-bold text-white">{proposal.title}</CardTitle>
-          {proposal.financialImpact && (
-            <ProposalPnLVisualization financialImpact={proposal.financialImpact} proposalType={proposal.type} />
-          )}
-        </CardHeader>
-
-        <div
-          className="overflow-hidden transition-all duration-300 ease-in-out"
-          style={{ height: detailHeight === undefined ? undefined : `${detailHeight}px` }}
-        >
-          <div ref={detailRef} className="pb-4">
-            <CardContent className="p-0 pt-2">
-              <p className="text-sm text-gray-200 mb-3">{proposal.summary}</p>
-              <h4 className="text-sm font-semibold text-gray-100 mb-1">Reasons:</h4>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 mb-3">
-                {proposal.reason.map((r, index) => (
-                  <li key={index}>{r}</li>
-                ))}
-              </ul>
-              <h4 className="text-sm font-semibold text-gray-100 mb-1">Sources:</h4>
-              <div className="space-y-1 mb-4">
-                {proposal.sources.map((source, index) => (
-                  <a
-                    key={index}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-xs text-blue-300 hover:underline"
-                  >
-                    {source.name}
-                    <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAskAI}
-                className="w-full justify-center items-center bg-white text-black font-bold rounded-full h-9 text-base hover:bg-gray-200 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
-              >
-                Ask AI for More Details
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </div>
+          {proposal.expires_at && <TimeRemaining expiresAt={proposal.expires_at} />}
         </div>
+        <CardTitle className="text-base font-bold text-white">{proposal.title}</CardTitle>
+        {proposal.financialImpact && (
+          <ProposalPnLVisualization financialImpact={proposal.financialImpact} proposalType={proposal.type} />
+        )}
+      </CardHeader>
 
-        <CardFooter className="p-0 flex flex-col items-stretch space-y-3 mt-4">
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{ height: detailHeight === undefined ? undefined : `${detailHeight}px` }}
+      >
+        <div ref={detailRef} className="pb-4">
+          <CardContent className="p-0 pt-2">
+            <p className="text-sm text-gray-200 mb-3">{proposal.summary}</p>
+            <h4 className="text-sm font-semibold text-gray-100 mb-1">Reasons:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 mb-3">
+              {proposal.reason.map((r, index) => (
+                <li key={index}>{r}</li>
+              ))}
+            </ul>
+            <h4 className="text-sm font-semibold text-gray-100 mb-1">Sources:</h4>
+            <div className="space-y-1 mb-4">
+              {proposal.sources.map((source, index) => (
+                <a
+                  key={index}
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-xs text-blue-300 hover:underline"
+                >
+                  {source.name}
+                  <ExternalLink className="ml-1 h-3 w-3" />
+                </a>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAskAI}
+              className="w-full justify-center items-center bg-white text-black font-bold rounded-full h-9 text-base hover:bg-gray-200 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
+            >
+              Ask AI for More Details
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </div>
+      </div>
+
+      <CardFooter className="p-0 flex flex-col items-stretch space-y-3 mt-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center justify-start text-sm font-medium text-white hover:bg-transparent hover:text-gray-300 px-0"
+        >
+          {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
+          {expanded ? "Hide Details" : "Show Details"}
+        </Button>
+        <div className="flex gap-2">
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center justify-start text-sm font-medium text-white hover:bg-transparent hover:text-gray-300 px-0"
+            variant="default"
+            onClick={handleDecline}
+            className="flex-1 bg-[#666666] hover:bg-gray-500 text-white font-bold rounded-full h-10 text-base shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
           >
-            {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
-            {expanded ? "Hide Details" : "Show Details"}
+            <X className="mr-1 h-5 w-5" />
+            Decline
           </Button>
-          <div className="flex gap-2">
-            <Button
-              variant="default"
-              onClick={handleDecline}
-              className="flex-1 bg-[#666666] hover:bg-gray-500 text-white font-bold rounded-full h-10 text-base shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
-            >
-              <X className="mr-1 h-5 w-5" />
-              Decline
-            </Button>
-            <Button
-              variant="default"
-              onClick={handleAccept}
-              disabled={isAccepting}
-              className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold rounded-full h-10 text-base shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
-            >
-              {isAccepting ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Check className="mr-1 h-5 w-5" />
-              )}
-              {isAccepting ? "Processing..." : "Accept"}
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Proposal Accepted!</DialogTitle>
-            <DialogDescription>Would you like to share this action?</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor={`hide-${proposal.id}`} className="flex items-center">
-              <Switch
-                id={`hide-${proposal.id}`}
-                checked={userPreferences.hideProposal}
-                onCheckedChange={(checked) => saveUserPreferences({ ...userPreferences, hideProposal: checked })}
-              />
-              <span className="ml-2">Don't show similar proposals</span>
-            </Label>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowShareDialog(false)}>
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                const tweetText = `I just accepted a proposal to "${proposal.title}" with Daiko AI. 🚀 Managing my crypto portfolio is getting smarter! #DaikoAI #CryptoPortfolio`;
-                const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-                window.open(tweetUrl, "_blank");
-                setShowShareDialog(false);
-              }}
-            >
-              <Twitter className="mr-2 h-4 w-4" />
-              Share on Twitter
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          <Button
+            variant="default"
+            onClick={handleAccept}
+            disabled={isAccepting}
+            className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold rounded-full h-10 text-base shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
+          >
+            {isAccepting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-1 h-5 w-5" />}
+            {isAccepting ? "Processing..." : "Accept"}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 };

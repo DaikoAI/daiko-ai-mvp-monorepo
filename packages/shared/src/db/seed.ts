@@ -78,8 +78,7 @@ const seedTokens = async () => {
         name: "Wrapped SOL",
         decimals: 9,
         type: "normal",
-        iconUrl:
-          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+        iconUrl: "/tokens/SOL.png",
       },
       {
         address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -87,8 +86,7 @@ const seedTokens = async () => {
         name: "USD Coin",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
+        iconUrl: "/tokens/USDC.png",
       },
       {
         address: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
@@ -96,7 +94,7 @@ const seedTokens = async () => {
         name: "OFFICIAL TRUMP",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://arweave.net/VQrPjACwnQRmxdKBTqNwPiyo65x7LAT773t8Kd7YBzw",
+        iconUrl: "/tokens/TRUMP.png",
       },
       {
         address: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
@@ -104,7 +102,7 @@ const seedTokens = async () => {
         name: "Jupiter",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://static.jup.ag/jup/icon.png",
+        iconUrl: "/tokens/JUP.png",
       },
       {
         address: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
@@ -112,7 +110,7 @@ const seedTokens = async () => {
         name: "dogwifhat",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://bafkreibk3covs5ltyqxa272uodhculbr6kea6betidfwy3ajsav2vjzyum.ipfs.nftstorage.link",
+        iconUrl: "/tokens/WIF.png",
       },
       {
         address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
@@ -120,7 +118,7 @@ const seedTokens = async () => {
         name: "Bonk",
         decimals: 5,
         type: "normal",
-        iconUrl: "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I",
+        iconUrl: "/tokens/BONK.png",
       },
       {
         address: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
@@ -128,7 +126,7 @@ const seedTokens = async () => {
         name: "Jito",
         decimals: 9,
         type: "normal",
-        iconUrl: "https://metadata.jito.network/token/jto/image",
+        iconUrl: "/tokens/JTO.png",
       },
       {
         address: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
@@ -136,8 +134,7 @@ const seedTokens = async () => {
         name: "Raydium",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/logo.png",
+        iconUrl: "/tokens/RAY.png",
       },
       {
         address: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
@@ -145,7 +142,7 @@ const seedTokens = async () => {
         name: "Pyth Network",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://pyth.network/token.svg",
+        iconUrl: "/tokens/PYTH.png",
       },
       {
         address: "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux",
@@ -153,7 +150,7 @@ const seedTokens = async () => {
         name: "Helium Network Token",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://s2.coinmarketcap.com/static/img/coins/64x64/5665.png",
+        iconUrl: "/tokens/HNT.png",
       },
       {
         address: "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
@@ -161,7 +158,7 @@ const seedTokens = async () => {
         name: "Wormhole",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://wormhole.com/token.png",
+        iconUrl: "/tokens/W.png",
       },
       {
         address: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
@@ -169,8 +166,7 @@ const seedTokens = async () => {
         name: "cat in a dogs world",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5.png?key=2d57a9",
+        iconUrl: "/tokens/MEW.png",
       },
       {
         address: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
@@ -178,8 +174,7 @@ const seedTokens = async () => {
         name: "Popcat (SOL)",
         decimals: 9,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr.png?key=af7c36",
+        iconUrl: "/tokens/POPCAT.png",
       },
       {
         address: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
@@ -187,8 +182,7 @@ const seedTokens = async () => {
         name: "Orca",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE/logo.png",
+        iconUrl: "/tokens/ORCA.png",
       },
       {
         address: "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq",
@@ -196,8 +190,7 @@ const seedTokens = async () => {
         name: "Zeus Network",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq.png?key=68e8cb",
+        iconUrl: "/tokens/ZEUS.png",
       },
       {
         address: "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
@@ -205,7 +198,7 @@ const seedTokens = async () => {
         name: "Kamino",
         decimals: 6,
         type: "normal",
-        iconUrl: "https://cdn.kamino.finance/kamino.svg",
+        iconUrl: "/tokens/KMNO.svg",
       },
       {
         address: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
@@ -213,8 +206,7 @@ const seedTokens = async () => {
         name: "Wrapped Bitcoin (Portal)",
         decimals: 8,
         type: "normal",
-        iconUrl:
-          "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E/logo.png",
+        iconUrl: "/tokens/WBTC.png",
       },
       {
         address: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
@@ -222,7 +214,7 @@ const seedTokens = async () => {
         name: "Jupiter Staked SOL",
         decimals: 9,
         type: "liquid_staking",
-        iconUrl: "https://wsrv.nl/?w=32&h=32&url=https%3A%2F%2Fstatic.jup.ag%2FjupSOL%2Ficon.png&dpr=2",
+        iconUrl: "/tokens/jupSOL.png",
       },
       {
         address: "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
@@ -230,8 +222,7 @@ const seedTokens = async () => {
         name: "Jito Staked SOL",
         decimals: 9,
         type: "liquid_staking",
-        iconUrl:
-          "https://wsrv.nl/?w=32&h=32&url=https%3A%2F%2Fstorage.googleapis.com%2Ftoken-metadata%2FJitoSOL-256.png&dpr=2",
+        iconUrl: "/tokens/jitoSOL.png",
       },
       {
         address: "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm",
@@ -239,7 +230,7 @@ const seedTokens = async () => {
         name: "Infinity",
         decimals: 9,
         type: "liquid_staking",
-        iconUrl: "https://bafkreiflz2xxkfn33qjch2wj55bvbn33q3s4mmb6bye5pt3mpgy4t2wg4e.ipfs.nftstorage.link/",
+        iconUrl: "/tokens/INF.png",
       },
       {
         address: "bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ",
@@ -247,8 +238,7 @@ const seedTokens = async () => {
         name: "BIO",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ.png?key=289685",
+        iconUrl: "/tokens/BIO.png",
       },
       {
         address: "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc",
@@ -256,8 +246,7 @@ const seedTokens = async () => {
         name: "Solayer",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc.png?key=2260ae",
+        iconUrl: "/tokens/LAYER.png",
       },
       {
         address: "14zP2ToQ79XWvc7FQpm4bRnp9d6Mp1rFfsUW3gpLcRX",
@@ -265,8 +254,7 @@ const seedTokens = async () => {
         name: "aixbt by Virtuals (Wormhole)",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/base/0x4f9fd6be4a90f2620860d680c0d4d5fb53d1a825.png?key=6a3b50",
+        iconUrl: "/tokens/AIXBT.png",
       },
       {
         address: "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
@@ -274,8 +262,7 @@ const seedTokens = async () => {
         name: "Act I : The AI Prophecy",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump.png?key=1aece6",
+        iconUrl: "/tokens/ACT.png",
       },
       {
         address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
@@ -283,8 +270,7 @@ const seedTokens = async () => {
         name: "Fartcoin",
         decimals: 6,
         type: "normal",
-        iconUrl:
-          "https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2",
+        iconUrl: "/tokens/Fartcoin.png",
       },
     ];
 

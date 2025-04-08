@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { RouterOutputs } from "@/trpc/react";
 import { cn } from "@/utils";
+import Image from "next/image";
 
 type AssetListProps = {
   assets: RouterOutputs["portfolio"]["getUserPortfolio"]["tokens"];
@@ -18,7 +19,13 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
           <div className="flex cursor-pointer items-center justify-between p-4">
             <div className="flex items-center">
               <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 p-0.5">
-                <img src={asset.icon_url} alt={asset.token} className="h-full w-full object-cover rounded-full" />
+                <Image
+                  src={asset.icon_url}
+                  alt={asset.token}
+                  height={40}
+                  width={40}
+                  className="h-full w-full object-cover rounded-full"
+                />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-white truncate">{asset.token}</h3>

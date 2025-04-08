@@ -1,10 +1,11 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlphaWalletProvider } from "@/features/alphaWallet/AlphaWalletProvider";
 import type { ProposalSelect } from "@daiko-ai/shared";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProposalCard } from "./proposal-card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type ProposalListProps = {
   initialProposals: ProposalSelect[];
@@ -80,7 +81,7 @@ export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProp
   };
 
   return (
-    <>
+    <AlphaWalletProvider>
       {proposals.length > 0 ? (
         <div className="flex flex-col space-y-3">
           {proposals
@@ -99,7 +100,7 @@ export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProp
           </p>
         </div>
       )}
-    </>
+    </AlphaWalletProvider>
   );
 };
 
