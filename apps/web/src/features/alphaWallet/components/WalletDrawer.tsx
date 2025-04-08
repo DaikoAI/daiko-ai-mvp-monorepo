@@ -1,0 +1,159 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader } from "@/components/ui/drawer";
+import { tokenImageMap } from "@/constants/tokens";
+import { ArrowRight, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { useState } from "react";
+import { parseInstructionsNetEffects } from "../services/AlphaTxExecutor";
+import type { AlphaTx, AlphaTxInstruction } from "../types";
+
+interface WalletDrawerProps {
+  isOpen: boolean;
+  tx: AlphaTx | null;
+  onConfirm: () => void;
+  onReject: () => void;
+}
+
+const TokenIcon: React.FC<{ symbol: string; size?: number }> = ({ symbol, size = 24 }) => {
+  return (
+    <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-800 border border-gray-700 shadow-lg">
+      <Image
+        src={tokenImageMap[symbol] || "/tokens/default.svg"}
+        alt={symbol}
+        width={size}
+        height={size}
+        className="object-cover rounded-full h-full w-full"
+      />
+    </div>
+  );
+};
+
+const TokenDisplay: React.FC<{
+  symbol: string;
+  amount: string;
+  type: "from" | "to";
+}> = ({ symbol, amount, type }) => (
+  <div className="flex items-center bg-gray-800/30 rounded-xl p-4 border border-gray-800">
+    <div className="flex items-center gap-3 flex-1">
+      <TokenIcon symbol={symbol} />
+      <p className="text-sm font-medium text-gray-300">{symbol}</p>
+    </div>
+    <p className="text-xl font-bold tracking-tight" style={{ color: type === "from" ? "#f87171" : "#4ade80" }}>
+      {type === "from" ? "-" : "+"}
+      {amount}
+    </p>
+  </div>
+);
+
+const TransactionDisplay: React.FC<{ instruction: AlphaTxInstruction }> = ({ instruction }) => {
+  if (instruction.type === "transfer") {
+    return (
+      <div className="grid grid-cols-1 gap-3">
+        <TokenDisplay symbol={instruction.fromToken} amount={instruction.fromAmount} type="from" />
+        <div className="flex justify-center">
+          <div className="bg-gray-800/50 rounded-full p-1.5">
+            <ArrowRight className="w-4 h-4 text-gray-500 rotate-90" />
+          </div>
+        </div>
+        <TokenDisplay symbol={instruction.toToken} amount={instruction.toAmount} type="to" />
+      </div>
+    );
+  }
+
+  if (instruction.type === "stake") {
+    return (
+      <div className="grid grid-cols-1 gap-3">
+        <TokenDisplay symbol={instruction.token} amount={instruction.amount} type="from" />
+        <div className="flex justify-center">
+          <div className="bg-gray-800/50 rounded-full p-1.5">
+            <ArrowRight className="w-4 h-4 text-gray-500 rotate-90" />
+          </div>
+        </div>
+        <TokenDisplay
+          symbol={instruction.token === "SOL" ? "jupSOL" : `jito${instruction.token}`}
+          amount={instruction.amount}
+          type="to"
+        />
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfirm, onReject }) => {
+  const effects = tx ? parseInstructionsNetEffects(tx.instructions) : [];
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsConfirming(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  return (
+    <Drawer open={isOpen} onOpenChange={() => !isConfirming && onReject()}>
+      <DrawerContent className="bg-gray-900 text-white border-t border-gray-800">
+        <div className="mx-auto w-full max-w-md">
+          <DrawerHeader>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-gray-800 flex-shrink-0">
+                <Image src="/icon.jpg" alt="Site Icon" width={48} height={48} className="object-cover" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-lg font-semibold text-white">Confirm transaction</h3>
+                <p className="text-sm text-gray-400">daiko.ai</p>
+              </div>
+            </div>
+
+            <DrawerDescription className="text-gray-400 mx-auto">
+              <p>Balance changes are estimated.</p>
+              <p>Amounts and assets involved are not guaranteed.</p>
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="p-6 space-y-6">
+            {tx?.instructions.map((instruction, index) => (
+              <div key={index}>
+                <TransactionDisplay instruction={instruction} />
+              </div>
+            ))}
+          </div>
+
+          <div className="p-6 border-t border-gray-800">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onReject}
+                disabled={isConfirming}
+                className="flex-1 bg-transparent border-gray-700 text-white hover:bg-gray-800 font-bold text-md"
+              >
+                Close
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleConfirm}
+                disabled={isConfirming}
+                className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold text-md"
+              >
+                {isConfirming ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+};
