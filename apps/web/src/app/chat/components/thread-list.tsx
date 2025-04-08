@@ -75,19 +75,13 @@ export const ThreadList = Object.assign(ThreadListComponent, {
   Skeleton: () => (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">
       {[...Array(5)].map((_, i) => (
-        // Match the outer list item styling (padding, background, etc.)
         <li key={i} className="rounded-xl bg-[rgba(255,255,255,0.12)] p-4 backdrop-blur-sm shadow-sm list-none">
-          {/* Match the inner flex structure and gap */}
           <div className="flex flex-col gap-1">
-            {/* Match the top row layout */}
             <div className="flex justify-between items-start">
-              {/* Match title (text-base -> h-6). Use more generous width. */}
-              <Skeleton className="h-6 w-2/3 bg-white/20 rounded" />
-              {/* Match timestamp (text-xs -> h-4). */}
-              <Skeleton className="h-4 w-1/4 bg-white/20 rounded" />
+              <Skeleton className="h-5 w-2/3 bg-white/20 rounded" />
+              <Skeleton className="h-3 w-1/4 bg-white/20 rounded" />
             </div>
-            {/* Match message (text-sm, line-clamp-2 -> approx h-10). Use generous width. */}
-            <Skeleton className="h-10 w-11/12 bg-white/20 rounded" />
+            <Skeleton className="h-4 w-11/12 bg-white/20 rounded" />
           </div>
         </li>
       ))}

@@ -85,7 +85,7 @@ export const AuthStep: React.FC = () => {
         </Button>
         {process.env.NODE_ENV === "development" && (
           <Button variant="outline" className="w-full" onClick={handleSkip}>
-            <Link href="/chat">Skip for Development</Link>
+            Skip for Development
           </Button>
         )}
       </CardFooter>

@@ -11,7 +11,7 @@ export const CompleteStep: React.FC = () => {
 
   const handleGetStarted = () => {
     // Redirect to main app page
-    router.push("/chat");
+    router.push("/proposals");
   };
 
   return (

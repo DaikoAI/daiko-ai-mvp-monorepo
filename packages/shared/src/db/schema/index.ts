@@ -9,6 +9,7 @@ export * from "./news_sites";
 export * from "./perp_positions";
 export * from "./portfolio_snapshots";
 export * from "./proposals";
+export * from "./push_subscriptions";
 export * from "./sessions";
 export * from "./token_prices";
 export * from "./tokens";

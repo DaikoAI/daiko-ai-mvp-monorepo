@@ -12,6 +12,7 @@
     "build:news-scraper": "turbo run build --filter=@daiko-ai/news-scraper",
     "build:web": "turbo run build --filter=@daiko-ai/web",
     "build:shared": "turbo run build --filter=@daiko-ai/shared",
+    "build:proposal-agent": "turbo run build --filter=@daiko-ai/proposal-agent",
     "clean": "sh scripts/clean-packages.sh",
     "job:token-price": "turbo run dev --filter=@daiko-ai/token-price-job",
     "job:token-price:cron": "turbo run dev:cron --filter=@daiko-ai/token-price-job",

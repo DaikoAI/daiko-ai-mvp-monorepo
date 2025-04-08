@@ -20,9 +20,11 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
+    "@types/web-push": "^3.6.4",
     "dotenv": "^16.4.7",
     "drizzle-dbml-generator": "^0.10.0",
-    "drizzle-zod": "^0.7.1"
+    "drizzle-zod": "^0.7.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/uuid": "^9.0.7",

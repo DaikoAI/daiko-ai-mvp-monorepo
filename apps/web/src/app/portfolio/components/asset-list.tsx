@@ -20,10 +20,10 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
               <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 p-0.5">
                 <img src={asset.icon_url} alt={asset.token} className="h-full w-full object-cover rounded-full" />
               </div>
-              <div>
-                <h3 className="font-semibold text-white">{asset.token}</h3>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-white truncate">{asset.token}</h3>
                 <div className="flex items-center gap-1">
-                  <p className="text-sm text-[#9DA4AE]">
+                  <p className="text-sm text-[#9DA4AE] truncate">
                     $
                     {parseFloat(asset.price_usd || "0").toLocaleString("en-US", {
                       minimumFractionDigits: 4,
@@ -33,7 +33,7 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
                   {asset.price_usd && (
                     <div
                       className={cn(
-                        "text-xs font-medium px-2 py-0.5 rounded-md",
+                        "text-xs font-medium px-2 py-0.5 rounded-md truncate flex-shrink-0",
                         parseFloat(asset.price_usd) > 0
                           ? "bg-[#2DD48B]/8 text-[#2DD48B]"
                           : parseFloat(asset.price_usd) < 0
@@ -49,10 +49,12 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <div className="text-right">
-                <p className="font-medium text-base text-white">${parseFloat(asset.value_usd).toLocaleString()}</p>
-                <p className="text-sm text-[#9DA4AE]">
+            <div className="flex items-center min-w-0 ml-2">
+              <div className="text-right min-w-0">
+                <p className="font-medium text-base text-white truncate">
+                  ${parseFloat(asset.value_usd).toLocaleString()}
+                </p>
+                <p className="text-sm text-[#9DA4AE] truncate">
                   {parseFloat(asset.balance).toLocaleString()} {asset.token}
                 </p>
               </div>
