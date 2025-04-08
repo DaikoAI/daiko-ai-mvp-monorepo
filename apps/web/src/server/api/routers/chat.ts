@@ -1,13 +1,13 @@
 import { asc, desc, eq, like } from "drizzle-orm";
 import { z } from "zod";
 
+import { env } from "@/env";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { chatMessagesTable, chatThreadsTable } from "@daiko-ai/shared";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
-import { OpenAI } from "openai";
-import { env } from "@/env";
 import { revalidatePath } from "next/cache";
+import { OpenAI } from "openai";
 export const chatRouter = createTRPCRouter({
   getUserThreads: protectedProcedure
     .input(
@@ -200,7 +200,7 @@ export const chatRouter = createTRPCRouter({
         .set({ updatedAt: new Date() })
         .where(eq(chatThreadsTable.id, threadId));
 
-      // TODO: Trigger AI response generation process here if needed
+      revalidatePath(`/chat/${threadId}`);
 
       return insertedMessage;
     }),

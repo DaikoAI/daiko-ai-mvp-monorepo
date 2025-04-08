@@ -6,7 +6,7 @@ import {
   userBalancesTable,
   usersTable,
 } from "@daiko-ai/shared";
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 // Import BigNumber from local installation
 import BigNumber from "bignumber.js";
@@ -47,6 +47,7 @@ export const portfolioRouter = createTRPCRouter({
         with: {
           token: true,
         },
+        orderBy: [desc(userBalancesTable.balance)],
       });
 
       // Get token prices
