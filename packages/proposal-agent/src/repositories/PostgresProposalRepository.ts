@@ -16,6 +16,10 @@ export class PostgresProposalRepository implements ProposalRepository {
     operator: string,
     value: ProposalSelect[K],
   ): Promise<ProposalSelect[]> {
+    if (value === null) {
+      return [];
+    }
+
     // 簡易的な実装 - 実際には様々な演算子をサポートする必要がある
     if (operator === "=") {
       return await db

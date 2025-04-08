@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import React, { createContext, useContext, useState } from "react";
 import { toast } from "sonner";
 import { WalletDrawer } from "./components/WalletDrawer";
@@ -9,11 +10,11 @@ import type { AlphaTx, AlphaTxResult, AlphaWalletInterface } from "./types";
 const AlphaWalletContext = createContext<AlphaWalletInterface | null>(null);
 
 export function AlphaWalletProvider({ children }: { children: React.ReactNode }) {
-  const [walletAddress, setWalletAddress] = useState<string | undefined>(undefined);
+  const { data: session } = useSession();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [pendingTx, setPendingTx] = useState<AlphaTx | null>(null);
   const [pendingTxResolver, setPendingTxResolver] = useState<((res: AlphaTxResult) => void) | null>(null);
-  const executeInstruction = useExecuteInstruction();
+  const { execute } = useExecuteInstruction();
 
   async function requestTransaction(tx: AlphaTx): Promise<AlphaTxResult> {
     return new Promise<AlphaTxResult>((resolve) => {
@@ -24,12 +25,14 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
   }
 
   async function handleConfirmTx() {
-    if (!pendingTx || !pendingTxResolver) return;
+    console.log("handleConfirmTx", pendingTx);
+    if (!pendingTx || !pendingTxResolver) {
+      console.error("Pending transaction or resolver not found");
+      return;
+    }
 
     try {
-      for (const instruction of pendingTx.instructions) {
-        await executeInstruction(instruction, walletAddress);
-      }
+      await execute(pendingTx.instruction, session?.user?.walletAddress);
 
       pendingTxResolver({
         success: true,
@@ -74,7 +77,7 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
 
   const value: AlphaWalletInterface = {
     requestTransaction,
-    walletAddress,
+    walletAddress: session?.user?.walletAddress,
     isDrawerOpen,
   };
 

@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAlphaWallet } from "@/features/alphaWallet/AlphaWalletProvider";
-import type { AlphaTx } from "@/features/alphaWallet/types";
+import type { AlphaTx, ContractCall } from "@/features/alphaWallet/types";
+import { contractCallToInstruction } from "@/features/alphaWallet/types";
 import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
@@ -170,44 +171,27 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     setIsAccepting(true);
 
     try {
-      // プロポーザルの種類に応じてトランザクションを構築
+      if (!proposal.contractCall) {
+        throw new Error("No contract call specified in the proposal");
+      }
+
+      const contractCall = {
+        ...proposal.contractCall,
+        params: {
+          ...proposal.contractCall.params,
+          fromToken: proposal.contractCall.params.fromToken,
+          toToken: proposal.contractCall.params.toToken,
+        },
+      } as ContractCall;
+
       const tx: AlphaTx = {
         id: proposal.id,
         description: proposal.title,
         requestedBy: "Daiko AI",
         timestamp: Date.now(),
-        instructions: [],
+        instruction: contractCallToInstruction(contractCall),
       };
 
-      // プロポーザルの種類に応じて命令を追加
-      switch (proposal.type) {
-        case "trade":
-          if (proposal.financialImpact) {
-            tx.instructions.push({
-              type: "transfer",
-              fromToken: "USDC", // 仮の値、実際のプロポーザルから取得する必要あり
-              toToken: "SOL", // 仮の値、実際のプロポーザルから取得する必要あり
-              fromAmount: proposal.financialImpact.currentValue.toString(),
-              toAmount: proposal.financialImpact.projectedValue.toString(),
-            });
-          }
-          break;
-
-        case "stake":
-          if (proposal.financialImpact) {
-            tx.instructions.push({
-              type: "stake",
-              token: "SOL", // 仮の値、実際のプロポーザルから取得する必要あり
-              amount: proposal.financialImpact.currentValue.toString(),
-              apy: proposal.financialImpact.percentChange,
-            });
-          }
-          break;
-
-        // 他のケースも同様に実装
-      }
-
-      // トランザクションを実行
       const result = await requestTransaction(tx);
 
       if (result.success) {
@@ -230,7 +214,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     } catch (error) {
       console.error("Failed to execute transaction:", error);
       toast.error("Failed to execute transaction", {
-        description: "An error occurred while processing your request.",
+        description: error instanceof Error ? error.message : "An error occurred while processing your request.",
       });
     } finally {
       setIsAccepting(false);

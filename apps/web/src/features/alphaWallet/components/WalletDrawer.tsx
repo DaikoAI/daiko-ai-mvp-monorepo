@@ -1,19 +1,26 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader } from "@/components/ui/drawer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { tokenImageMap } from "@/constants/tokens";
+import { getTokenPrices } from "@/lib/token-price";
 import { ArrowRight, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseInstructionsNetEffects } from "../services/AlphaTxExecutor";
 import type { AlphaTx, AlphaTxInstruction } from "../types";
 
 interface WalletDrawerProps {
   isOpen: boolean;
   tx: AlphaTx | null;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   onReject: () => void;
+}
+
+interface TokenPrice {
+  usdPrice: number;
 }
 
 const TokenIcon: React.FC<{ symbol: string; size?: number }> = ({ symbol, size = 24 }) => {
@@ -32,13 +39,22 @@ const TokenIcon: React.FC<{ symbol: string; size?: number }> = ({ symbol, size =
 
 const TokenDisplay: React.FC<{
   symbol: string;
-  amount: string;
+  amount?: string;
   type: "from" | "to";
-}> = ({ symbol, amount, type }) => (
+  usdPrice?: string;
+  isLoading?: boolean;
+}> = ({ symbol, amount, type, usdPrice, isLoading = false }) => (
   <div className="flex items-center bg-gray-800/30 rounded-xl p-4 border border-gray-800">
     <div className="flex items-center gap-3 flex-1">
       <TokenIcon symbol={symbol} />
-      <p className="text-sm font-medium text-gray-300">{symbol}</p>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-gray-300">{symbol}</p>
+        {isLoading ? (
+          <Skeleton className="h-4 w-20" />
+        ) : usdPrice ? (
+          <p className="text-xs text-gray-500">${Number(usdPrice).toFixed(2)}</p>
+        ) : null}
+      </div>
     </div>
     <p className="text-xl font-bold tracking-tight" style={{ color: type === "from" ? "#f87171" : "#4ade80" }}>
       {type === "from" ? "-" : "+"}
@@ -47,52 +63,87 @@ const TokenDisplay: React.FC<{
   </div>
 );
 
-const TransactionDisplay: React.FC<{ instruction: AlphaTxInstruction }> = ({ instruction }) => {
-  if (instruction.type === "transfer") {
-    return (
-      <div className="grid grid-cols-1 gap-3">
-        <TokenDisplay symbol={instruction.fromToken} amount={instruction.fromAmount} type="from" />
-        <div className="flex justify-center">
-          <div className="bg-gray-800/50 rounded-full p-1.5">
-            <ArrowRight className="w-4 h-4 text-gray-500 rotate-90" />
-          </div>
+const TransactionDisplay: React.FC<{
+  instruction: AlphaTxInstruction;
+  tokenPrices: Record<string, string>;
+  isLoading: boolean;
+}> = ({ instruction, tokenPrices, isLoading }) => {
+  return (
+    <div className="grid grid-cols-1 gap-3">
+      <TokenDisplay
+        symbol={instruction.fromToken.symbol}
+        amount={instruction.fromAmount}
+        type="from"
+        usdPrice={tokenPrices[instruction.fromToken.address]}
+        isLoading={isLoading}
+      />
+      <div className="flex justify-center">
+        <div className="bg-gray-800/50 rounded-full p-1.5">
+          <ArrowRight className="w-4 h-4 text-gray-500 rotate-90" />
         </div>
-        <TokenDisplay symbol={instruction.toToken} amount={instruction.toAmount} type="to" />
       </div>
-    );
-  }
-
-  if (instruction.type === "stake") {
-    return (
-      <div className="grid grid-cols-1 gap-3">
-        <TokenDisplay symbol={instruction.token} amount={instruction.amount} type="from" />
-        <div className="flex justify-center">
-          <div className="bg-gray-800/50 rounded-full p-1.5">
-            <ArrowRight className="w-4 h-4 text-gray-500 rotate-90" />
-          </div>
-        </div>
-        <TokenDisplay
-          symbol={instruction.token === "SOL" ? "jupSOL" : `jito${instruction.token}`}
-          amount={instruction.amount}
-          type="to"
-        />
-      </div>
-    );
-  }
-
-  return null;
+      <TokenDisplay
+        symbol={instruction.toToken.symbol}
+        amount={instruction.toAmount}
+        type="to"
+        usdPrice={tokenPrices[instruction.toToken.address]}
+        isLoading={isLoading}
+      />
+    </div>
+  );
 };
 
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfirm, onReject }) => {
-  const effects = tx ? parseInstructionsNetEffects(tx.instructions) : [];
+  const effects = tx ? parseInstructionsNetEffects([tx.instruction]) : [];
   const [isConfirming, setIsConfirming] = useState(false);
+  const [tokenPrices, setTokenPrices] = useState<Record<string, string>>({});
+  const [isLoadingPrices, setIsLoadingPrices] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      if (!tx || !tx.instruction) return;
+
+      setIsLoadingPrices(true);
+      try {
+        const instruction = tx.instruction;
+        const tokenAddresses = [instruction.fromToken.address, instruction.toToken.address];
+        const prices = await getTokenPrices(tokenAddresses);
+        console.log("prices", prices);
+        setTokenPrices(prices);
+
+        // Update toToken amount to match fromToken price or handle stake
+        if (instruction.type === "stake") {
+          instruction.toAmount = instruction.fromAmount;
+        } else {
+          const fromPrice = parseFloat(prices[instruction.fromToken.address] || "0");
+          const toPrice = parseFloat(prices[instruction.toToken.address] || "0");
+          const fromAmount = parseFloat(instruction.fromAmount || "0");
+
+          const equivalentToAmount = (fromAmount * fromPrice) / toPrice;
+          instruction.toAmount = equivalentToAmount.toFixed(6);
+        }
+      } catch (error) {
+        console.error("Failed to fetch token prices:", error);
+      } finally {
+        setIsLoadingPrices(false);
+      }
+    };
+
+    fetchPrices();
+  }, [tx]);
 
   const handleConfirm = async () => {
-    setIsConfirming(true);
     try {
       await onConfirm();
-    } finally {
-      setIsConfirming(false);
+      setIsConfirmed(true);
+      setTimeout(() => {
+        setIsConfirmed(false);
+        // Close the drawer
+        onReject();
+      }, 1000);
+    } catch (error) {
+      console.error("Error confirming transaction:", error);
     }
   };
 
@@ -106,24 +157,16 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
                 <Image src="/icon.jpg" alt="Site Icon" width={48} height={48} className="object-cover" />
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-white">Confirm transaction</h3>
+                <DialogTitle>Confirm transaction</DialogTitle>
                 <p className="text-sm text-gray-400">daiko.ai</p>
               </div>
             </div>
 
             <DrawerDescription className="text-gray-400 mx-auto">
-              <p>Balance changes are estimated.</p>
-              <p>Amounts and assets involved are not guaranteed.</p>
+              Balance changes are estimated. <br />
+              Amounts and assets involved are not guaranteed.
             </DrawerDescription>
           </DrawerHeader>
-
-          <div className="p-6 space-y-6">
-            {tx?.instructions.map((instruction, index) => (
-              <div key={index}>
-                <TransactionDisplay instruction={instruction} />
-              </div>
-            ))}
-          </div>
 
           <div className="p-6 border-t border-gray-800">
             <div className="flex gap-3">
