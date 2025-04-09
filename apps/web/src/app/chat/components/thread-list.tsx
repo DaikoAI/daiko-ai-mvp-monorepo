@@ -1,41 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { type AppRouter, createCaller } from "@/server/api/root"; // Import server-side caller factory
-import { createTRPCContext } from "@/server/api/trpc"; // Import context creator
+import { api } from "@/trpc/server";
 import { formatChatListTimestamp } from "@/utils/date";
-import { type inferProcedureOutput } from "@trpc/server"; // Utility to infer types
-import { unstable_noStore as noStore } from "next/cache"; // Opt out of caching for dynamic list
 import Link from "next/link";
-
-// Infer the output type of getUserThreads
-type ThreadWithLastMessage = inferProcedureOutput<AppRouter["chat"]["getUserThreads"]>[number];
 
 interface ThreadListProps {
   searchQuery?: string;
 }
 
 export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQuery }) => {
-  noStore(); // Ensure fresh data on each request/navigation
-
-  // Create context required for server-side tRPC call
-  const context = await createTRPCContext({ headers: new Headers() });
-  const caller = createCaller(context);
-
-  // Initialize with the correct inferred type
-  let threads: ThreadWithLastMessage[] = [];
-  let error: string | null = null;
-
-  try {
-    // Fetch threads using the server-side caller and the search query
-    threads = await caller.chat.getUserThreads({ query: searchQuery });
-  } catch (err) {
-    console.error("Error fetching chat threads:", err);
-    error = "Failed to load chat threads.";
-    // Optionally check for specific error types (e.g., UNAUTHORIZED)
-  }
-
-  if (error) {
-    return <p className="text-center text-red-500 py-8">{error}</p>;
-  }
+  const threads = await api.chat.getUserThreads({ query: searchQuery });
 
   return (
     <div className="flex-1 overflow-y-auto">
