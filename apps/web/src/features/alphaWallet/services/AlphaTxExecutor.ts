@@ -5,10 +5,10 @@ interface InstructionEffect {
   summary: string;
 }
 
-export function parseInstructionsNetEffects(instructions: AlphaTxInstruction[]): InstructionEffect[] {
-  return instructions.map((inst) => ({
-    summary: `Send ${inst.fromAmount} ${inst.fromToken} and receive ${inst.toAmount} ${inst.toToken}`,
-  }));
+export function parseInstructionsNetEffects(instruction: AlphaTxInstruction): InstructionEffect {
+  return {
+    summary: `Send ${instruction.fromAmount} ${instruction.fromToken} and receive ${instruction.toAmount} ${instruction.toToken}`,
+  };
 }
 
 export function useExecuteInstruction() {

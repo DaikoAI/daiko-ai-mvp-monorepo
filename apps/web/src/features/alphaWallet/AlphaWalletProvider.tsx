@@ -56,7 +56,6 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
 
     setPendingTx(null);
     setPendingTxResolver(null);
-    setIsDrawerOpen(false);
   }
 
   function handleRejectTx() {
@@ -84,7 +83,13 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
   return (
     <AlphaWalletContext.Provider value={value}>
       {children}
-      <WalletDrawer isOpen={isDrawerOpen} tx={pendingTx} onConfirm={handleConfirmTx} onReject={handleRejectTx} />
+      <WalletDrawer
+        isOpen={isDrawerOpen}
+        tx={pendingTx}
+        setIsOpen={setIsDrawerOpen}
+        onConfirm={handleConfirmTx}
+        onReject={handleRejectTx}
+      />
     </AlphaWalletContext.Provider>
   );
 }

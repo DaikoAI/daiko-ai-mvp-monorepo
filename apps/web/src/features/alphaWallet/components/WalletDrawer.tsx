@@ -6,14 +6,14 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader } from "@/compon
 import { Skeleton } from "@/components/ui/skeleton";
 import { tokenImageMap } from "@/constants/tokens";
 import { getTokenPrices } from "@/lib/token-price";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { parseInstructionsNetEffects } from "../services/AlphaTxExecutor";
 import type { AlphaTx, AlphaTxInstruction } from "../types";
 
 interface WalletDrawerProps {
   isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
   tx: AlphaTx | null;
   onConfirm: () => Promise<void>;
   onReject: () => void;
@@ -93,8 +93,7 @@ const TransactionDisplay: React.FC<{
   );
 };
 
-export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfirm, onReject }) => {
-  const effects = tx ? parseInstructionsNetEffects([tx.instruction]) : [];
+export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfirm, onReject, setIsOpen }) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [tokenPrices, setTokenPrices] = useState<Record<string, string>>({});
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
@@ -135,12 +134,12 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
 
   const handleConfirm = async () => {
     try {
+      setIsConfirming(true);
       await onConfirm();
       setIsConfirmed(true);
+      setIsConfirming(false);
       setTimeout(() => {
-        setIsConfirmed(false);
-        // Close the drawer
-        onReject();
+        setIsOpen(false);
       }, 1000);
     } catch (error) {
       console.error("Error confirming transaction:", error);
@@ -168,6 +167,22 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
             </DrawerDescription>
           </DrawerHeader>
 
+          <div className="p-6 space-y-6">
+            {isConfirmed ? (
+              <div className="flex justify-center items-center">
+                <Check className="text-green-500 w-8 h-8" />
+              </div>
+            ) : (
+              tx?.instruction && (
+                <TransactionDisplay
+                  instruction={tx.instruction}
+                  tokenPrices={tokenPrices}
+                  isLoading={isLoadingPrices}
+                />
+              )
+            )}
+          </div>
+
           <div className="p-6 border-t border-gray-800">
             <div className="flex gap-3">
               <Button
@@ -181,7 +196,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
               <Button
                 variant="default"
                 onClick={handleConfirm}
-                disabled={isConfirming}
+                disabled={isConfirming || isConfirmed}
                 className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold text-md"
               >
                 {isConfirming ? (
@@ -189,6 +204,8 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing...
                   </>
+                ) : isConfirmed ? (
+                  "Confirmed"
                 ) : (
                   "Confirm"
                 )}
