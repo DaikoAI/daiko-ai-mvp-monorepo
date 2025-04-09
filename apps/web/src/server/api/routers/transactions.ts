@@ -3,6 +3,7 @@ import { tokensTable, transactionsTable, userBalancesTable, usersTable } from "@
 import { TRPCError } from "@trpc/server";
 import BigNumber from "bignumber.js";
 import { type SQL, and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 export const transactionsRouter = createTRPCRouter({
@@ -210,6 +211,9 @@ export const transactionsRouter = createTRPCRouter({
             .where(and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.toTokenAddress)));
         }
       }
+
+      revalidatePath("/portfolio");
+      revalidatePath("/proposals");
 
       return transaction;
     }),

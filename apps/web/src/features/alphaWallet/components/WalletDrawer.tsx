@@ -148,7 +148,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
 
   return (
     <Drawer open={isOpen} onOpenChange={() => !isConfirming && onReject()}>
-      <DrawerContent className="bg-gray-900 text-white border-t border-gray-800">
+      <DrawerContent className="bg-background text-foreground border-t border-gray-800 rounded-t-xl">
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
             <div className="flex items-center gap-4 mb-6">
