@@ -13,7 +13,9 @@
         "DATABASE_URL",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
-        "AUTH_SECRET"
+        "AUTH_SECRET",
+        "WEB_PUSH_VAPID_PRIVATE_KEY",
+        "WEB_PUSH_VAPID_PUBLIC_KEY"
       ],
       "cache": true
     },
