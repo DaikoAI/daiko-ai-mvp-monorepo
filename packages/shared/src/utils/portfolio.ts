@@ -1,5 +1,5 @@
 import { inArray } from "drizzle-orm";
-import { db, tokensTable, userBalancesTable } from "../db";
+import { db, tokenPricesTable, tokensTable, userBalancesTable } from "../db";
 
 /**
  * ユーザーの初期ポートフォリオをセットアップする共通関数
@@ -11,7 +11,7 @@ import { db, tokensTable, userBalancesTable } from "../db";
 export async function setupInitialPortfolio(
   userId: string,
   options?: {
-    // カスタム残高設定（指定された場合はデフォルト設定より優先）
+    // カスタム残高設定（指定された場合はデフォルト設定より優先）- USD建て
     customBalances?: Record<string, number>;
     // 特定のトークンシンボルのみを使用
     specificSymbols?: string[];
@@ -33,43 +33,61 @@ export async function setupInitialPortfolio(
       return;
     }
 
-    // デフォルトの残高設定
-    const defaultBalances: Record<string, number> = {
-      SOL: 240000,
-      JUP: 20000,
-      JTO: 20000,
-      RAY: 20000,
-      HNT: 20000,
-      PYTH: 20000,
-      TRUMP: 20000,
-      WIF: 20000,
-      W: 20000,
-      MEW: 20000,
-      POPCAT: 20000,
-      ORCA: 20000,
-      ZEUS: 20000,
-      KMNO: 20000,
-      WBTC: 20000,
-      USDC: 200000,
-      BONK: 20000,
-      WSUI: 20000,
-      BIO: 20000,
-      LAYER: 20000,
-      AIXBT: 20000,
-      ACT: 20000,
-      Fartcoin: 20000,
+    // トークン価格を取得
+    const tokenPrices = await db
+      .select()
+      .from(tokenPricesTable)
+      .where(
+        inArray(
+          tokenPricesTable.tokenAddress,
+          tokens.map((t) => t.address),
+        ),
+      );
+
+    // 価格マップを作成
+    const priceMap = new Map(tokenPrices.map((tp) => [tp.tokenAddress, parseFloat(tp.priceUsd)]));
+
+    // デフォルトのUSD建て残高設定
+    const defaultUsdBalances: Record<string, number> = {
+      SOL: 2000, // $2,000 worth of SOL
+      JUP: 1000, // $1,000 worth of JUP
+      JTO: 1000, // $1,000 worth of JTO
+      RAY: 1000, // $1,000 worth of RAY
+      HNT: 1000, // $1,000 worth of HNT
+      PYTH: 1000, // $1,000 worth of PYTH
+      TRUMP: 1000, // $1,000 worth of TRUMP
+      WIF: 1000, // $1,000 worth of WIF
+      W: 1000, // $1,000 worth of W
+      MEW: 1000, // $1,000 worth of MEW
+      POPCAT: 1000, // $1,000 worth of POPCAT
+      ORCA: 1000, // $1,000 worth of ORCA
+      ZEUS: 1000, // $1,000 worth of ZEUS
+      KMNO: 1000, // $1,000 worth of KMNO
+      WBTC: 2000, // $2,000 worth of WBTC
+      USDC: 2000, // $2,000 worth of USDC
+      BONK: 1000, // $1,000 worth of BONK
+      WSUI: 1000, // $1,000 worth of WSUI
+      BIO: 1000, // $1,000 worth of BIO
+      LAYER: 1000, // $1,000 worth of LAYER
+      AIXBT: 1000, // $1,000 worth of AIXBT
+      ACT: 1000, // $1,000 worth of ACT
     };
 
     // 各トークンに対して残高を作成
     const initialBalances = tokens.map((token) => {
-      // カスタム残高が指定されている場合はそれを使用し、
+      // カスタム残高（USD建て）が指定されている場合はそれを使用し、
       // なければデフォルト残高を使用、どちらもなければ0
-      const balance = options?.customBalances?.[token.symbol] ?? defaultBalances[token.symbol] ?? 0;
+      const usdAmount = options?.customBalances?.[token.symbol] ?? defaultUsdBalances[token.symbol] ?? 0;
+      const price = priceMap.get(token.address) || 0;
+
+      // トークン数量を計算（USD金額 ÷ トークン価格）
+      // 価格が0の場合は0を設定
+      const tokenAmount = price > 0 ? usdAmount / price : 0;
 
       return {
         userId,
         tokenAddress: token.address,
-        balance: balance.toString(),
+        balance: tokenAmount.toString(),
       };
     });
 

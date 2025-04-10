@@ -49,10 +49,18 @@ function generateSolanaWalletAddress(): string {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
+  debug: process.env.NODE_ENV === "development",
   providers: [
     GoogleProvider({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
     }),
     /**
      * ...add more providers here.
@@ -78,6 +86,14 @@ export const authConfig = {
         id: user.id,
       },
     }),
+  },
+  logger: {
+    error(error: Error) {
+      console.error("Auth Error:", error.message, error);
+    },
+    warn(warning: string) {
+      console.warn("Auth Warning:", warning);
+    },
   },
   events: {
     // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
