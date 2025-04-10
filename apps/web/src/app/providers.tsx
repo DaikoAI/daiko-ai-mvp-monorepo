@@ -29,10 +29,8 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
               <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider> */}
 
-          <ViewTransition>
-            {children}
-            <PwaFooter />
-          </ViewTransition>
+          <ViewTransition>{children}</ViewTransition>
+          <PwaFooter />
 
           {/* </WalletModalProvider>
               </WalletProvider>

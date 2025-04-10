@@ -62,7 +62,7 @@ export const AuthStep: React.FC = () => {
         </div>
       </CardContent>
       <CardFooter className="flex-col space-y-2">
-        <Button className="w-full flex items-center gap-2" onClick={handleSignIn}>
+        <Button className="w-full flex items-center gap-2 font-bold text-lg" onClick={handleSignIn}>
           Sign in with
           <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
             <path
