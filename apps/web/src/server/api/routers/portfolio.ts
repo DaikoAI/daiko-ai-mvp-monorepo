@@ -128,13 +128,13 @@ export const portfolioRouter = createTRPCRouter({
           totalValue = totalValue.plus(valueUsd);
 
           return {
-            token: balance.token.symbol,
-            token_address: balance.tokenAddress,
+            symbol: balance.token.symbol,
+            tokenAddress: balance.tokenAddress,
             balance: balance.balance,
-            price_usd: tokenPrice,
-            value_usd: valueUsd,
-            price_change_24h: "0",
-            icon_url: balance.token.iconUrl,
+            priceUsd: tokenPrice,
+            valueUsd: valueUsd,
+            priceChange24h: "0",
+            iconUrl: balance.token.iconUrl,
           };
         }),
       );
@@ -144,11 +144,11 @@ export const portfolioRouter = createTRPCRouter({
 
       const tokensWithPriceChange = await Promise.all(
         portfolio.map(async (token) => {
-          const oldPrice = oldPrices.get(token.token_address);
-          const priceChange = oldPrice ? calculatePriceChange(token.price_usd, oldPrice) : "0";
+          const oldPrice = oldPrices.get(token.tokenAddress);
+          const priceChange = oldPrice ? calculatePriceChange(token.priceUsd, oldPrice) : "0";
           return {
             ...token,
-            price_change_24h: priceChange,
+            priceChange24h: priceChange,
           };
         }),
       );
@@ -169,16 +169,16 @@ export const portfolioRouter = createTRPCRouter({
 
         return {
           id: position.id,
-          token: position.token.symbol,
-          token_address: position.tokenAddress,
+          symbol: position.token.symbol,
+          tokenAddress: position.tokenAddress,
           direction: position.positionDirection,
           leverage: position.leverage,
-          entry_price: position.entryPrice,
-          current_price: currentPrice,
-          position_size: position.positionSize,
-          collateral_amount: position.collateralAmount,
-          liquidation_price: position.liquidationPrice,
-          value_usd: positionValue.toString(),
+          entryPrice: position.entryPrice,
+          currentPrice: currentPrice,
+          positionSize: position.positionSize,
+          collateralAmount: position.collateralAmount,
+          liquidationPrice: position.liquidationPrice,
+          valueUsd: positionValue.toString(),
           // PnL calculation (simplified)
           pnl: new BigNumber(currentPrice)
             .minus(position.entryPrice)
@@ -191,7 +191,7 @@ export const portfolioRouter = createTRPCRouter({
       return {
         wallet_address: input.walletAddress,
         total_value_usd: totalValue.toString(),
-        tokens: tokensWithPriceChange.sort((a, b) => new BigNumber(b.price_usd).minus(a.price_usd).toNumber()),
+        tokens: tokensWithPriceChange.sort((a, b) => new BigNumber(b.priceUsd).minus(a.priceUsd).toNumber()),
         perp_positions: perpPositionsData,
         last_updated: new Date(),
       };

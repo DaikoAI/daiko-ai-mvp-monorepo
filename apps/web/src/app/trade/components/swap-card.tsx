@@ -1,17 +1,26 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlphaWalletProvider } from "@/features/alphaWallet/AlphaWalletProvider";
+import { auth } from "@/server/auth";
 import { api } from "@/trpc/server";
 import { SwapForm } from "./swap-form";
 
 const SwapCardComponent: React.FC = async () => {
+  const session = await auth();
+  if (!session?.user?.walletAddress) {
+    return <div>Please Login</div>;
+  }
+
   const tokens = await api.token.getAllTokens();
+  const portfolio = await api.portfolio.getUserPortfolio({
+    walletAddress: session.user.walletAddress,
+  });
 
   return (
     <Card className="w-full max-w-md">
       <CardContent className="p-6">
         <AlphaWalletProvider>
-          <SwapForm tokens={tokens} />
+          <SwapForm tokens={tokens} portfolio={portfolio.tokens} />
         </AlphaWalletProvider>
       </CardContent>
     </Card>

@@ -8,22 +8,38 @@ import { ArrowDownIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAlphaSwap } from "../hooks/use-alpha-swap";
-import { useTokenBalance } from "../hooks/use-token-balance";
 import { useTokenPrice } from "../hooks/use-token-price";
 import { TokenSelect } from "./token-select";
 
-export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
+interface Balance {
+  priceChange24h: string;
+  symbol: string;
+  tokenAddress: string;
+  balance: string;
+  priceUsd: string;
+  valueUsd: string;
+  iconUrl: string;
+}
+
+export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ tokens, balances }) => {
   const [fromAmount, setFromAmount] = useState<string>("");
   const [fromToken, setFromToken] = useState<Token>(tokens[0]!);
   const [toToken, setToToken] = useState<Token>(tokens[1]!);
 
   const { price: fromPrice, isLoading: isFromPriceLoading } = useTokenPrice(fromToken?.symbol || "");
   const { price: toPrice, isLoading: isPriceLoading } = useTokenPrice(toToken?.symbol || "");
-  const { balance: fromBalance, isLoading: isBalanceLoading } = useTokenBalance(fromToken?.symbol || "");
+
   const { swap, isLoading: isSwapping } = useAlphaSwap();
 
+  const getBalance = (token: Token) => {
+    const balance = balances.find((b) => b.symbol === token.symbol);
+    return balance ? Number(balance.balance) : 0;
+  };
+
+  const fromBalance = getBalance(fromToken);
+
   const handleSwap = async () => {
-    if (!fromPrice || !toPrice || !fromBalance) return;
+    if (!fromPrice || !toPrice) return;
 
     const numericAmount = Number(fromAmount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
@@ -60,7 +76,7 @@ export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
   const estimatedAmount =
     fromPrice && toPrice && fromAmount ? ((Number(fromAmount) * fromPrice) / toPrice).toFixed(6) : "0";
 
-  const isInsufficientBalance = fromBalance !== null && Number(fromAmount) > fromBalance;
+  const isInsufficientBalance = Number(fromAmount) > fromBalance;
   const isValidAmount = Number(fromAmount) > 0;
 
   return (
@@ -77,13 +93,13 @@ export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
           <TokenSelect tokens={tokens} value={fromToken} onChange={(value) => setFromToken(value)} />
         </div>
         <div className="flex justify-between text-sm">
-          {isFromPriceLoading || isBalanceLoading ? (
+          {isFromPriceLoading ? (
             <Skeleton className="h-4 w-24" />
           ) : (
             <>
               <p className="text-muted-foreground">≈ ${(Number(fromAmount) * (fromPrice || 0)).toFixed(2)}</p>
               <p className="text-muted-foreground">
-                Balance: {fromBalance?.toFixed(4) || "0"} {fromToken?.symbol}
+                Balance: {fromBalance.toFixed(4)} {fromToken?.symbol}
               </p>
             </>
           )}
