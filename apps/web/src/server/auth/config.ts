@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
+import { env } from "@/env";
 import { generateSolanaWalletAddress } from "@/utils";
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
 import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
@@ -38,7 +39,10 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    GoogleProvider,
+    GoogleProvider({
+      clientId: env.AUTH_GOOGLE_ID,
+      clientSecret: env.AUTH_GOOGLE_SECRET,
+    }),
     /**
      * ...add more providers here.
      *
