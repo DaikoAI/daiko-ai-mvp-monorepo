@@ -46,6 +46,7 @@ export const authConfig = {
         params: {
           access_type: "offline",
           prompt: "consent",
+          response_type: "code",
         },
       },
     }),
@@ -72,40 +73,38 @@ export const authConfig = {
       }
       return token;
     },
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    async session({ session, user }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+        },
+      };
+    },
   },
   events: {
     // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
     createUser: async ({ user }) => {
+      if (!user.id) return;
       console.log("createUser event triggered for user:", user.id);
-      if (user.id) {
-        try {
-          // Solanaウォレットアドレスを生成
-          const walletAddress = generateSolanaWalletAddress();
-
-          // ユーザー情報をウォレットアドレスで更新
+      try {
+        await Promise.all([
           await db
             .update(usersTable)
-            .set({ walletAddress })
-            .where(sql`${usersTable.id} = ${user.id}`);
+            .set({ walletAddress: generateSolanaWalletAddress() })
+            .where(sql`${usersTable.id} = ${user.id}`),
+          setupInitialPortfolio(user.id),
+        ]);
 
-          console.log(`Generated Solana wallet address: ${walletAddress} for user ${user.id}`);
-
-          // 共通の初期ポートフォリオ設定関数を使用
-          // 新規ユーザーには基本的なトークンのみを設定
-          await setupInitialPortfolio(user.id);
-          console.log(`Initialized portfolio for user ${user.id}`);
-        } catch (error) {
-          console.error(`Error during createUser event for user ${user.id}:`, error);
-        }
+        console.log(`Initialized portfolio for user ${user.id}`);
+      } catch (error) {
+        console.error(`Error during createUser event for user ${user.id}:`, error);
       }
     },
+  },
+  session: {
+    strategy: "jwt",
   },
   debug: true,
 } satisfies NextAuthConfig;
