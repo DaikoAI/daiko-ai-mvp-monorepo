@@ -23,5 +23,5 @@ export const tokenImageMap: Record<string, string> = {
   LAYER: "/tokens/LAYER.png",
   AIXBT: "/tokens/AIXBT.png",
   ACT: "/tokens/ACT.png",
-  FART: "/tokens/Fartcoin.png",
+  Fartcoin: "/tokens/Fartcoin.png",
 };

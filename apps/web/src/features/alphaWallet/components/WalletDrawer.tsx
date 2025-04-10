@@ -115,6 +115,10 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
   }, [externalError]);
 
   useEffect(() => {
+    setIsConfirmed(false);
+  }, [tx]);
+
+  useEffect(() => {
     const fetchPrices = async () => {
       if (!tx || !tx.instruction) return;
 

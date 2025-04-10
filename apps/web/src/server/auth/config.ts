@@ -45,6 +45,15 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
+  callbacks: {
+    session: ({ session, user }) => ({
+      ...session,
+      user: {
+        ...session.user,
+        id: user.id,
+      },
+    }),
+  },
   events: {
     createUser: async ({ user }) => {
       if (!user.id) return;
@@ -63,5 +72,5 @@ export const authConfig = {
       }
     },
   },
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
 } satisfies NextAuthConfig;

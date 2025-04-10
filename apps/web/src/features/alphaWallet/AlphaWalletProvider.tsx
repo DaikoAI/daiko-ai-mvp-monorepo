@@ -14,7 +14,7 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [pendingTx, setPendingTx] = useState<AlphaTx | null>(null);
   const [pendingTxResolver, setPendingTxResolver] = useState<((res: AlphaTxResult) => void) | null>(null);
-  const { execute, isTransferring, transferError } = useExecuteInstruction();
+  const { execute } = useExecuteInstruction();
   const [txError, setTxError] = useState<string | null>(null);
 
   async function requestTransaction(tx: AlphaTx): Promise<AlphaTxResult> {
