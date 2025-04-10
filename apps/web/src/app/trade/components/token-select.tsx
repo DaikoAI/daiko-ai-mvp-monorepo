@@ -5,14 +5,20 @@ import { type TokenSelect as Token } from "@daiko-ai/shared";
 import Image from "next/image";
 
 interface TokenSelectProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: Token | undefined;
+  onChange: (value: Token) => void;
   tokens: Token[];
 }
 
 export const TokenSelect: React.FC<TokenSelectProps> = ({ value, onChange, tokens }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value?.symbol || ""}
+      onValueChange={(symbol) => {
+        const token = tokens.find((t) => t.symbol === symbol);
+        if (token) onChange(token);
+      }}
+    >
       <SelectTrigger className="w-[140px]">
         <SelectValue />
       </SelectTrigger>
@@ -21,7 +27,7 @@ export const TokenSelect: React.FC<TokenSelectProps> = ({ value, onChange, token
           <SelectItem key={token.symbol} value={token.symbol}>
             <div className="flex items-center gap-2">
               <div className="relative h-5 w-5">
-                <Image src={token.iconUrl} alt={token.name} fill className="rounded-full" />
+                <Image src={token.iconUrl} alt={token.name} fill sizes="100%" className="rounded-full" />
               </div>
               <span>{token.symbol}</span>
             </div>

@@ -4,24 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type TokenSelect as Token } from "@daiko-ai/shared";
-import { ArrowDownIcon } from "lucide-react";
+import { ArrowDownIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useSwap } from "../hooks/use-swap";
+import { useAlphaSwap } from "../hooks/use-alpha-swap";
 import { useTokenBalance } from "../hooks/use-token-balance";
 import { useTokenPrice } from "../hooks/use-token-price";
 import { TokenSelect } from "./token-select";
 
 export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
   const [fromAmount, setFromAmount] = useState<string>("");
-  const [fromToken, setFromToken] = useState<string>("SOL");
-  const [toToken, setToToken] = useState<string>("USDC");
-  const [slippageTolerance] = useState(0.5); // 0.5%
+  const [fromToken, setFromToken] = useState<Token>(tokens[0]!);
+  const [toToken, setToToken] = useState<Token>(tokens[1]!);
 
-  const { price: fromPrice, isLoading: isFromPriceLoading } = useTokenPrice(fromToken);
-  const { price: toPrice, isLoading: isPriceLoading } = useTokenPrice(toToken);
-  const { balance: fromBalance, isLoading: isBalanceLoading } = useTokenBalance(fromToken);
-  const { swap, isLoading: isSwapping } = useSwap();
+  const { price: fromPrice, isLoading: isFromPriceLoading } = useTokenPrice(fromToken?.symbol || "");
+  const { price: toPrice, isLoading: isPriceLoading } = useTokenPrice(toToken?.symbol || "");
+  const { balance: fromBalance, isLoading: isBalanceLoading } = useTokenBalance(fromToken?.symbol || "");
+  const { swap, isLoading: isSwapping } = useAlphaSwap();
 
   const handleSwap = async () => {
     if (!fromPrice || !toPrice || !fromBalance) return;
@@ -38,19 +37,22 @@ export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
     }
 
     const result = await swap({
-      fromToken,
-      toToken,
+      fromToken: fromToken,
+      toToken: toToken,
       fromAmount: numericAmount,
-      slippageTolerance,
     });
 
     result.match(
-      (success: any) => {
-        toast.success(`Swapped ${success.fromAmount} ${fromToken} for ${success.toAmount} ${toToken}`);
+      (success) => {
+        toast.success("Swap executed successfully", {
+          description: `Swapped ${success.fromAmount} ${fromToken} for ${success.toAmount} ${toToken}`,
+        });
         setFromAmount("");
       },
-      (error: any) => {
-        toast.error(error.message);
+      (error) => {
+        toast.error("Swap failed", {
+          description: error.message,
+        });
       },
     );
   };
@@ -81,7 +83,7 @@ export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
             <>
               <p className="text-muted-foreground">≈ ${(Number(fromAmount) * (fromPrice || 0)).toFixed(2)}</p>
               <p className="text-muted-foreground">
-                Balance: {fromBalance?.toFixed(4) || "0"} {fromToken}
+                Balance: {fromBalance?.toFixed(4) || "0"} {fromToken?.symbol}
               </p>
             </>
           )}
@@ -119,7 +121,14 @@ export const SwapForm: React.FC<{ tokens: Token[] }> = ({ tokens }) => {
         onClick={handleSwap}
         disabled={!isValidAmount || isInsufficientBalance || isSwapping || fromToken === toToken}
       >
-        {isSwapping ? "Swapping..." : "Swap"}
+        {isSwapping ? (
+          <>
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            Swapping...
+          </>
+        ) : (
+          "Swap"
+        )}
       </Button>
     </div>
   );

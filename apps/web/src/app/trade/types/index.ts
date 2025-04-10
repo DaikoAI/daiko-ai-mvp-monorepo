@@ -1,15 +1,14 @@
+import { type TokenSelect as Token } from "@daiko-ai/shared";
 import { Result } from "neverthrow";
-
 export interface TokenBalance {
   symbol: string;
   amount: number;
 }
 
 export interface SwapParams {
-  fromToken: string;
-  toToken: string;
+  fromToken: Token;
+  toToken: Token;
   fromAmount: number;
-  slippageTolerance: number;
 }
 
 export type SwapError =
