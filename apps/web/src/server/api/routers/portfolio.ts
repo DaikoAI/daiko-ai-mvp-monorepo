@@ -9,7 +9,7 @@ import {
 import type { NeonHttpDatabase } from "@daiko-ai/shared/src/db";
 import { tokenPriceHistory } from "@daiko-ai/shared/src/db/schema";
 import BigNumber from "bignumber.js";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { z } from "zod";
 
@@ -91,7 +91,6 @@ export const portfolioRouter = createTRPCRouter({
         with: {
           token: true,
         },
-        orderBy: [desc(userBalancesTable.balance)],
       });
 
       // Get token prices
@@ -192,7 +191,7 @@ export const portfolioRouter = createTRPCRouter({
       return {
         wallet_address: input.walletAddress,
         total_value_usd: totalValue.toString(),
-        tokens: tokensWithPriceChange,
+        tokens: tokensWithPriceChange.sort((a, b) => new BigNumber(b.price_usd).minus(a.price_usd).toNumber()),
         perp_positions: perpPositionsData,
         last_updated: new Date(),
       };

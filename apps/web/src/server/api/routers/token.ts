@@ -5,6 +5,28 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 
+// カスタムエラークラスの定義
+class TokenError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public status: number = 400,
+  ) {
+    super(message);
+    this.name = "TokenError";
+  }
+}
+
+// エラーコードの定義
+const ErrorCodes = {
+  USER_NOT_FOUND: "USER_NOT_FOUND",
+  TOKEN_NOT_FOUND: "TOKEN_NOT_FOUND",
+  INVALID_AMOUNT: "INVALID_AMOUNT",
+  INSUFFICIENT_BALANCE: "INSUFFICIENT_BALANCE",
+  TRANSACTION_FAILED: "TRANSACTION_FAILED",
+  BALANCE_NOT_FOUND: "BALANCE_NOT_FOUND",
+} as const;
+
 // BigNumberの設定
 BigNumber.config({
   DECIMAL_PLACES: 18,
@@ -136,38 +158,38 @@ export const tokenRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { fromToken, toToken, fromAmount, toAmount, walletAddress } = input;
 
-      const user = await db.query.usersTable.findFirst({
-        where: eq(schema.usersTable.walletAddress, walletAddress),
-      });
-
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      const fromTokenInfo = await db.query.tokensTable.findFirst({
-        where: eq(schema.tokensTable.symbol, fromToken),
-      });
-      const toTokenInfo = await db.query.tokensTable.findFirst({
-        where: eq(schema.tokensTable.symbol, toToken),
-      });
-
-      if (!fromTokenInfo || !toTokenInfo) {
-        throw new Error("Token not found");
-      }
-
-      // 数値の検証
-      const fromAmountBN = new BigNumber(fromAmount || "0");
-      const toAmountBN = new BigNumber(toAmount || "0");
-
-      if (fromAmountBN.isNaN() || toAmountBN.isNaN()) {
-        throw new Error("Invalid amount format");
-      }
-
-      if (fromAmountBN.isLessThanOrEqualTo(0) || toAmountBN.isLessThanOrEqualTo(0)) {
-        throw new Error("Amount must be greater than 0");
-      }
-
       try {
+        const user = await db.query.usersTable.findFirst({
+          where: eq(schema.usersTable.walletAddress, walletAddress),
+        });
+
+        if (!user) {
+          throw new TokenError("User not found", ErrorCodes.USER_NOT_FOUND);
+        }
+
+        const fromTokenInfo = await db.query.tokensTable.findFirst({
+          where: eq(schema.tokensTable.symbol, fromToken),
+        });
+        const toTokenInfo = await db.query.tokensTable.findFirst({
+          where: eq(schema.tokensTable.symbol, toToken),
+        });
+
+        if (!fromTokenInfo || !toTokenInfo) {
+          throw new TokenError(`Token not found: ${!fromTokenInfo ? fromToken : toToken}`, ErrorCodes.TOKEN_NOT_FOUND);
+        }
+
+        // 数値の検証
+        const fromAmountBN = new BigNumber(fromAmount || "0");
+        const toAmountBN = new BigNumber(toAmount || "0");
+
+        if (fromAmountBN.isNaN() || toAmountBN.isNaN()) {
+          throw new TokenError("Invalid amount format", ErrorCodes.INVALID_AMOUNT);
+        }
+
+        if (fromAmountBN.isLessThanOrEqualTo(0) || toAmountBN.isLessThanOrEqualTo(0)) {
+          throw new TokenError("Amount must be greater than 0", ErrorCodes.INVALID_AMOUNT);
+        }
+
         // 1. Get current balance for the fromToken
         const fromBalanceRecord = await db.query.userBalancesTable.findFirst({
           where: and(
@@ -177,14 +199,17 @@ export const tokenRouter = createTRPCRouter({
         });
 
         if (!fromBalanceRecord) {
-          throw new Error("From balance record not found");
+          throw new TokenError(`No balance record found for ${fromToken}`, ErrorCodes.BALANCE_NOT_FOUND);
         }
 
         const currentFromBalance = new BigNumber(fromBalanceRecord.balance || "0");
 
         // 2. Validate balance
         if (currentFromBalance.isLessThan(fromAmountBN)) {
-          throw new Error(`Insufficient balance for ${fromToken}`);
+          throw new TokenError(
+            `Insufficient balance for ${fromToken}. Required: ${fromAmount}, Available: ${currentFromBalance.toString()}`,
+            ErrorCodes.INSUFFICIENT_BALANCE,
+          );
         }
 
         // 3. Decrement fromToken balance
@@ -215,7 +240,7 @@ export const tokenRouter = createTRPCRouter({
         )[0];
 
         if (!transaction) {
-          throw new Error("Failed to create transaction record");
+          throw new TokenError("Failed to create transaction record", ErrorCodes.TRANSACTION_FAILED);
         }
 
         try {
@@ -273,6 +298,7 @@ export const tokenRouter = createTRPCRouter({
                 ...input,
                 status: "failed",
                 error: error instanceof Error ? error.message : "Unknown error",
+                errorCode: error instanceof TokenError ? error.code : ErrorCodes.TRANSACTION_FAILED,
               },
             })
             .where(eq(schema.transactionsTable.id, transaction.id));
@@ -281,7 +307,10 @@ export const tokenRouter = createTRPCRouter({
         }
       } catch (error) {
         console.error("Transfer failed:", error);
-        throw new Error(error instanceof Error ? error.message : "Transfer failed");
+        if (error instanceof TokenError) {
+          throw error;
+        }
+        throw new TokenError(error instanceof Error ? error.message : "Transfer failed", ErrorCodes.TRANSACTION_FAILED);
       }
     }),
 

@@ -17,6 +17,7 @@ interface WalletDrawerProps {
   tx: AlphaTx | null;
   onConfirm: () => Promise<void>;
   onReject: () => void;
+  error?: string | null;
 }
 
 interface TokenPrice {
@@ -93,11 +94,25 @@ const TransactionDisplay: React.FC<{
   );
 };
 
-export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfirm, onReject, setIsOpen }) => {
+export const WalletDrawer: React.FC<WalletDrawerProps> = ({
+  isOpen,
+  tx,
+  onConfirm,
+  onReject,
+  setIsOpen,
+  error: externalError,
+}) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [tokenPrices, setTokenPrices] = useState<Record<string, string>>({});
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (externalError) {
+      setIsConfirming(false);
+      setIsConfirmed(false);
+    }
+  }, [externalError]);
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -136,13 +151,11 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
     try {
       setIsConfirming(true);
       await onConfirm();
-      setIsConfirmed(true);
-      setIsConfirming(false);
-      setTimeout(() => {
-        setIsOpen(false);
-      }, 1000);
-    } catch (error) {
-      console.error("Error confirming transaction:", error);
+      if (!externalError) {
+        setIsConfirmed(true);
+      }
+    } catch (err) {
+      console.error("Error confirming transaction:", err);
     }
   };
 
@@ -168,9 +181,15 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
           </DrawerHeader>
 
           <div className="p-6 space-y-6">
-            {isConfirmed ? (
-              <div className="flex justify-center items-center">
+            {externalError ? (
+              <div className="bg-red-900/20 border border-red-900 rounded-lg p-4 text-red-400">
+                <p className="text-sm font-medium">Transaction failed</p>
+                <p className="text-xs mt-1">{externalError}</p>
+              </div>
+            ) : isConfirmed ? (
+              <div className="flex flex-col items-center gap-2">
                 <Check className="text-green-500 w-8 h-8" />
+                <p className="text-sm text-gray-400">Transaction completed</p>
               </div>
             ) : (
               tx?.instruction && (
@@ -191,25 +210,25 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, tx, onConfir
                 disabled={isConfirming}
                 className="flex-1 bg-transparent border-gray-700 text-white hover:bg-gray-800 font-bold text-md"
               >
-                Close
+                {externalError ? "Close" : "Cancel"}
               </Button>
-              <Button
-                variant="default"
-                onClick={handleConfirm}
-                disabled={isConfirming || isConfirmed}
-                className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold text-md"
-              >
-                {isConfirming ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : isConfirmed ? (
-                  "Confirmed"
-                ) : (
-                  "Confirm"
-                )}
-              </Button>
+              {!externalError && !isConfirmed && (
+                <Button
+                  variant="default"
+                  onClick={handleConfirm}
+                  disabled={isConfirming}
+                  className="flex-1 bg-[#FF9100] hover:bg-orange-500 text-white font-bold text-md"
+                >
+                  {isConfirming ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm"
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>

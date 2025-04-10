@@ -33,12 +33,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
         await onRefresh();
       }
       // フォールバックとして画面を更新
+      await revalidatePortfolio(session?.user.walletAddress);
       router.refresh();
-      revalidatePortfolio(session?.user.walletAddress);
     } catch (error) {
       console.error("Refresh failed:", error);
     } finally {
-      setIsRefreshing(false);
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 1000);
     }
   };
 
@@ -53,9 +55,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
       <button
         onClick={handleRefreshClick}
         disabled={isRefreshing}
-        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <RefreshCw size={20} className={`text-white ${isRefreshing ? "animate-spin" : ""}`} />
+        <RefreshCw
+          size={20}
+          className={`text-white transition-transform duration-1000 ${isRefreshing ? "animate-spin" : ""}`}
+        />
       </button>
     </div>
   );

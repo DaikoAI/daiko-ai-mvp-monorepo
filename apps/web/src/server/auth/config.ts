@@ -1,12 +1,11 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { Keypair } from "@solana/web3.js";
 import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
+import { generateSolanaWalletAddress } from "@/utils";
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
 import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
-import { env } from "process";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -33,35 +32,13 @@ declare module "next-auth" {
 }
 
 /**
- * Solanaのウォレットアドレスを生成する関数
- * @returns ランダムに生成されたSolanaウォレットアドレス
- */
-function generateSolanaWalletAddress(): string {
-  // 新しいKeypairを生成
-  const keypair = Keypair.generate();
-  // 公開鍵（ウォレットアドレス）を文字列として返す
-  return keypair.publicKey.toString();
-}
-
-/**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
-  debug: process.env.NODE_ENV === "development",
   providers: [
-    GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-        },
-      },
-    }),
+    GoogleProvider,
     /**
      * ...add more providers here.
      *
@@ -78,49 +55,17 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
-  logger: {
-    error(error: Error) {
-      console.error("Auth Error:", error.message, error);
-    },
-    warn(warning: string) {
-      console.warn("Auth Warning:", warning);
-    },
-  },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      try {
-        if (!user?.email) {
-          console.error("No email provided in user profile");
-          return false;
-        }
-        return true;
-      } catch (error) {
-        console.error("Error in signIn callback:", error);
-        return false;
-      }
-    },
-    session: ({ session, user }) => {
-      try {
-        return {
-          ...session,
-          user: {
-            ...session.user,
-            id: user.id,
-          },
-        };
-      } catch (error) {
-        console.error("Error in session callback:", error);
-        return session;
-      }
-    },
+    session: ({ session, user }) => ({
+      ...session,
+      user: {
+        ...session.user,
+        id: user.id,
+      },
+    }),
   },
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
-      console.log("Signin event:", { user, account, isNewUser });
-    },
-    async signOut(message) {
-      console.log("Signout event:", message);
-    },
+    // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
     createUser: async ({ user }) => {
       console.log("createUser event triggered for user:", user.id);
       if (user.id) {

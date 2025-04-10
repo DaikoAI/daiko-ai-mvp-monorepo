@@ -1,8 +1,15 @@
 import { api } from "@/trpc/react";
+import { useState } from "react";
 import type { AlphaTx, AlphaTxInstruction, AlphaTxResult, TokenRegistry } from "../types";
 
 interface InstructionEffect {
   summary: string;
+}
+
+interface ExecuteResult {
+  success: boolean;
+  error?: string;
+  txHash?: string;
 }
 
 export function parseInstructionsNetEffects(instruction: AlphaTxInstruction): InstructionEffect {
@@ -12,22 +19,68 @@ export function parseInstructionsNetEffects(instruction: AlphaTxInstruction): In
 }
 
 export function useExecuteInstruction() {
-  const transferMutation = api.token.transfer.useMutation();
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
 
-  async function execute(instruction: AlphaTxInstruction, walletAddress?: string) {
-    if (!walletAddress) throw new Error("No wallet address provided");
+  const transfer = api.token.transfer.useMutation();
+  const stake = api.token.stake.useMutation();
 
-    return await transferMutation.mutateAsync({
-      fromToken: instruction.fromToken.symbol,
-      toToken: instruction.toToken.symbol,
-      fromAmount: instruction.fromAmount || "0",
-      toAmount: instruction.toAmount || "0",
-      walletAddress,
-    });
+  async function execute(instruction: AlphaTxInstruction, walletAddress?: string | null): Promise<ExecuteResult> {
+    if (!walletAddress) {
+      return {
+        success: false,
+        error: "Wallet address not found",
+      };
+    }
+
+    setIsTransferring(true);
+    setTransferError(null);
+
+    try {
+      if (instruction.type === "swap") {
+        const result = await transfer.mutateAsync({
+          fromToken: instruction.fromToken.symbol,
+          toToken: instruction.toToken.symbol,
+          fromAmount: instruction.fromAmount || "0",
+          toAmount: instruction.toAmount || "0",
+          walletAddress,
+        });
+
+        return {
+          success: true,
+          txHash: result.txHash,
+        };
+      } else if (instruction.type === "stake") {
+        const result = await stake.mutateAsync({
+          token: instruction.fromToken.symbol,
+          amount: instruction.fromAmount,
+          walletAddress,
+        });
+
+        return {
+          success: true,
+          txHash: result.txHash,
+        };
+      }
+
+      throw new Error("Unsupported instruction type");
+    } catch (error) {
+      console.error("Transaction execution error:", error);
+      setTransferError(error instanceof Error ? error.message : "Unknown error");
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Transaction failed",
+      };
+    } finally {
+      setIsTransferring(false);
+    }
   }
 
   return {
     execute,
+    isTransferring,
+    transferError,
   };
 }
 

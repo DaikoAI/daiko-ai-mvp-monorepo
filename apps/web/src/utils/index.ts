@@ -1,3 +1,4 @@
+import { Keypair } from "@solana/web3.js";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -38,4 +39,15 @@ export function formatPrice(price?: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+/**
+ * Solanaのウォレットアドレスを生成する関数
+ * @returns ランダムに生成されたSolanaウォレットアドレス
+ */
+export function generateSolanaWalletAddress(): string {
+  // 新しいKeypairを生成
+  const keypair = Keypair.generate();
+  // 公開鍵（ウォレットアドレス）を文字列として返す
+  return keypair.publicKey.toString();
 }
