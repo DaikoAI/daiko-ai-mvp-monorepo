@@ -57,13 +57,16 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
-    async session({ session, user }) {
+    async session({ session, token }) {
       return {
         ...session,
         user: {
           ...session.user,
-          id: user.id,
+          id: token.sub,
         },
       };
     },
