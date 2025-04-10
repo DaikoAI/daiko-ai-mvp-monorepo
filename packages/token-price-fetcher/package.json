@@ -1,8 +1,13 @@
 {
-  "name": "@daiko-ai/token-price-job",
+  "name": "@daiko-ai/token-price-fetcher",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
   "scripts": {
     "dev": "tsx src/server.ts",
     "dev:cron": "tsx src/server.ts --cron",
@@ -12,7 +17,7 @@
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
-    "@daiko-ai/token-price-fetcher": "workspace:*",
+    "@daiko-ai/shared": "workspace:*",
     "dotenv": "^16.3.1",
     "node-cron": "^3.0.3"
   },

@@ -1,4 +1,5 @@
-import { NewsScraper, NewsScraperDB } from "@daiko-ai/news-scraper";
+import { NewsScraperDB } from "./db";
+import { NewsScraper } from "./scraper";
 
 /**
  * ニュースサイトスクレイピング処理を実行するコア関数

@@ -1,5 +1,5 @@
+import { processTokenPrices } from "@daiko-ai/token-price-fetcher";
 import type { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
-import { processTokenPrices } from "../process";
 
 /**
  * AWS Lambda用のハンドラー関数

@@ -1,4 +1,4 @@
-import { XScraper } from "@daiko-ai/x-scraper";
+import { XScraper } from "./scraper";
 
 /**
  * X（Twitter）スクレイピング処理を実行するコア関数
