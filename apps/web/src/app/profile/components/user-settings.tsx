@@ -15,7 +15,12 @@ import { toast } from "sonner";
 
 type UserSettingsProps = {
   user: Session["user"];
-  initialSettings?: any; // サーバーから渡された初期設定
+  initialSettings: {
+    tradeStyle: "day" | "swing" | "long";
+    totalAssetUsd: number;
+    cryptoInvestmentUsd: number;
+    age: number;
+  };
 };
 
 export const UserSettings: React.FC<UserSettingsProps> = ({ user, initialSettings }) => {
@@ -137,7 +142,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ user, initialSetting
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="trading-style">Trading Style</Label>
-              <Select value={tradeStyle} onValueChange={setTradeStyle}>
+              <Select value={tradeStyle} onValueChange={(value) => setTradeStyle(value as "day" | "swing" | "long")}>
                 <SelectTrigger id="trading-style">
                   <SelectValue placeholder="Select trading style" />
                 </SelectTrigger>

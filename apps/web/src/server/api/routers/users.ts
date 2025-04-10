@@ -1,8 +1,9 @@
+import { revalidateProfile } from "@/app/actions";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { usersTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 
+import { z } from "zod";
 export const usersRouter = createTRPCRouter({
   /**
    * Get user by wallet address
@@ -130,6 +131,8 @@ export const usersRouter = createTRPCRouter({
         } as any) // データベーススキーマの変更が反映されるまでの一時的な対処
         .where(eq(usersTable.id, user.id))
         .returning();
+
+      revalidateProfile();
 
       return updatedUser;
     }),

@@ -22,9 +22,9 @@ declare module "next-auth" {
       email: string;
       name: string;
       image: string;
-      totalAssetUsd: string;
-      cryptoInvestmentUsd: string;
-      tradeStyle: string;
+      totalAssetUsd: number;
+      cryptoInvestmentUsd: number;
+      tradeStyle: "day" | "swing" | "long";
       age: number;
       // ...other properties
       // role: UserRole;
