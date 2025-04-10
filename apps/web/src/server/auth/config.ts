@@ -1,12 +1,9 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 import { env } from "@/env";
-import { generateSolanaWalletAddress } from "@/utils";
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
-import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -42,13 +39,6 @@ export const authConfig = {
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
-      authorization: {
-        params: {
-          access_type: "offline",
-          prompt: "consent",
-          response_type: "code",
-        },
-      },
     }),
     /**
      * ...add more providers here.
@@ -85,26 +75,25 @@ export const authConfig = {
   },
   events: {
     // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
-    createUser: async ({ user }) => {
-      if (!user.id) return;
-      console.log("createUser event triggered for user:", user.id);
-      try {
-        await Promise.all([
-          await db
-            .update(usersTable)
-            .set({ walletAddress: generateSolanaWalletAddress() })
-            .where(sql`${usersTable.id} = ${user.id}`),
-          setupInitialPortfolio(user.id),
-        ]);
-
-        console.log(`Initialized portfolio for user ${user.id}`);
-      } catch (error) {
-        console.error(`Error during createUser event for user ${user.id}:`, error);
-      }
-    },
+    // createUser: async ({ user }) => {
+    //   if (!user.id) return;
+    //   console.log("createUser event triggered for user:", user.id);
+    //   try {
+    //     await Promise.all([
+    //       await db
+    //         .update(usersTable)
+    //         .set({ walletAddress: generateSolanaWalletAddress() })
+    //         .where(sql`${usersTable.id} = ${user.id}`),
+    //       setupInitialPortfolio(user.id),
+    //     ]);
+    //     console.log(`Initialized portfolio for user ${user.id}`);
+    //   } catch (error) {
+    //     console.error(`Error during createUser event for user ${user.id}:`, error);
+    //   }
+    // },
   },
-  session: {
-    strategy: "jwt",
-  },
+  // session: {
+  //   strategy: "jwt",
+  // },
   debug: true,
 } satisfies NextAuthConfig;
