@@ -40,7 +40,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
     } finally {
       setTimeout(() => {
         setIsRefreshing(false);
-      }, 1000);
+      }, 2000);
     }
   };
 

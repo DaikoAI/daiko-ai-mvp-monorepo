@@ -8,6 +8,7 @@ import { unstable_ViewTransition as ViewTransition } from "react";
 // import { PhantomWalletAdapter, UnsafeBurnerWalletAdapter } from "@solana/wallet-adapter-wallets";
 // import { clusterApiUrl } from "@solana/web3.js";
 
+import { PwaFooter } from "@/components/pwa-footer";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 
@@ -28,7 +29,10 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
               <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider> */}
 
-          <ViewTransition>{children}</ViewTransition>
+          <ViewTransition>
+            {children}
+            <PwaFooter />
+          </ViewTransition>
 
           {/* </WalletModalProvider>
               </WalletProvider>
