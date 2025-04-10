@@ -6,17 +6,17 @@ export type MessageRole = "user" | "assistant" | "system";
 /**
  * チャットメッセージの型
  */
-export interface ChatMessage {
+export type ChatMessage = {
   id: string;
   content: string;
   role: MessageRole;
-  timestamp: Date;
-}
+  createdAt: Date;
+};
 
 /**
  * API通信用のメッセージの型
  */
-export interface ApiChatMessage {
+export type ApiChatMessage = {
   content: string;
   role: MessageRole;
-}
+};

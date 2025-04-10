@@ -3,12 +3,16 @@ import { api } from "@/trpc/server";
 import { formatChatListTimestamp } from "@/utils/date";
 import Link from "next/link";
 
+export const revalidate = 300;
+
 interface ThreadListProps {
   searchQuery?: string;
 }
 
 export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQuery }) => {
-  const threads = await api.chat.getUserThreads({ query: searchQuery });
+  const threads = await api.chat.getUserThreads({
+    query: searchQuery,
+  });
 
   return (
     <div className="flex-1 overflow-y-auto">

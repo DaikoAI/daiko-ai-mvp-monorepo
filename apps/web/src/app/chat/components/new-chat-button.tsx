@@ -5,14 +5,16 @@ import { api } from "@/trpc/react"; // Import tRPC client
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation"; // Import useRouter
 import { toast } from "sonner";
+import { revalidateChatList } from "../../actions";
 
-export function NewChatButton() {
+export const NewChatButton = () => {
   const router = useRouter();
-
-  // Use the tRPC mutation hook
-  const createThreadMutation = api.chat.createThread.useMutation({
-    onSuccess: (newThread) => {
-      router.push(`/chat/${newThread.id}`);
+  const { mutateAsync, isPending } = api.chat.createThread.useMutation({
+    onSuccess: async (data) => {
+      // 新規チャット作成後にキャッシュを再検証
+      await revalidateChatList();
+      router.refresh();
+      router.push(`/chat/${data.id}`);
     },
     onError: (error) => {
       console.error("Failed to create chat thread:", error);
@@ -22,9 +24,8 @@ export function NewChatButton() {
     },
   });
 
-  const handleClick = () => {
-    // Call the mutation
-    createThreadMutation.mutate({});
+  const handleClick = async () => {
+    await mutateAsync({});
   };
 
   return (
@@ -32,14 +33,10 @@ export function NewChatButton() {
       variant="ghost"
       size="sm"
       onClick={handleClick}
-      disabled={createThreadMutation.isPending} // Use mutation's pending state
+      disabled={isPending} // Use mutation's pending state
       aria-label="Start New Chat"
     >
-      {createThreadMutation.isPending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <span className="text-muted-foreground">New +</span>
-      )}
+      {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-muted-foreground">New +</span>}
     </Button>
   );
-}
+};

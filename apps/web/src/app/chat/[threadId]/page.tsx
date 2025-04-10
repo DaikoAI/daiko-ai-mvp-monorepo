@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { api } from "@/trpc/server";
 import { ChevronLeft } from "lucide-react";
 import type { NextPage } from "next";
 import Link from "next/link";
 import { ChatInterface } from "../components/chat-interface";
-import { api } from "@/trpc/server";
 
 interface ChatThreadPageProps {
   params: Promise<{
@@ -14,9 +14,9 @@ interface ChatThreadPageProps {
 const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
   const { threadId } = await params;
 
-  const thread = await api.chat.getThread({ threadId });
-  console.log(thread);
-  const messages = await api.chat.getMessages({ threadId });
+  const thread = await api.chat.getThread({
+    threadId,
+  });
 
   return (
     <main className="flex flex-col h-screen">
@@ -34,15 +34,7 @@ const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
 
       {/* Chat Interface takes full height minus header */}
       <div className="flex-1 relative">
-        <ChatInterface
-          initialMessages={messages.map((message) => ({
-            id: message.id,
-            content: message.content,
-            role: message.role,
-            timestamp: message.createdAt,
-          }))}
-          threadId={threadId}
-        />
+        <ChatInterface threadId={threadId} />
       </div>
     </main>
   );

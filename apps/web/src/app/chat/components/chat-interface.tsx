@@ -2,29 +2,36 @@
 
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
-import type { ApiChatMessage, ChatMessage } from "@/types/chat";
+import type { ApiChatMessage } from "@/types/chat";
 import { cn } from "@/utils";
+import { setIdleTask } from "idle-task";
 import { ArrowUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
-import { setIdleTask } from "idle-task";
 
-export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId: string; threadTitle?: string }> = ({
-  initialMessages,
-  threadId,
-  threadTitle,
-}) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [inputValue, setInputValue] = useState("");
-  const [isAiTyping, setIsAiTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [pendingMessage, setPendingMessage] = useState("");
-  const [titleSummarizationScheduled, setTitleSummarizationScheduled] = useState(false);
+export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }> = ({ threadId, threadTitle }) => {
+  const {
+    data: messages,
+    isLoading: isMessagesLoading,
+    error: messagesError,
+  } = api.chat.getMessages.useQuery({
+    threadId,
+  });
 
-  const { mutate: sendMessage } = api.chat.sendMessage.useMutation();
+  const utils = api.useContext();
+
+  const { mutate: sendMessage, isPending: isSending } = api.chat.sendMessage.useMutation({
+    onSuccess: (newMessage) => {
+      // キャッシュを最適化的に更新
+      utils.chat.getMessages.setData({ threadId }, (oldMessages) => {
+        if (!oldMessages) return [newMessage];
+        return [...oldMessages, newMessage];
+      });
+    },
+  });
+
   const { mutate: summarizeAndUpdateTitle } = api.chat.summarizeAndUpdateThreadTitle.useMutation({
     onError: (error) => {
       console.error("Title summarization failed:", error);
@@ -37,6 +44,13 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
       }
     },
   });
+
+  const [inputValue, setInputValue] = useState("");
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [pendingMessage, setPendingMessage] = useState("");
+  const [titleSummarizationScheduled, setTitleSummarizationScheduled] = useState(false);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -51,7 +65,7 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
     // 1. threadId exists
     // 2. There are at least 3 messages (e.g., User, AI, User/AI)
     // 3. Summarization hasn't been scheduled yet for this thread instance
-    if (threadId && messages.length >= 3 && !titleSummarizationScheduled && threadTitle === "New Chat") {
+    if (threadId && messages && messages.length >= 3 && !titleSummarizationScheduled && threadTitle === "New Chat") {
       console.log("Scheduling title summarization for thread:", threadId);
 
       // Define the task function that calls the backend mutation
@@ -120,20 +134,11 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
     const textToSend = messageText || inputValue;
     if (!textToSend.trim() || isAiTyping) return;
 
-    // Add user message
-    // TODO: associate message with threadId if it exists
-    const newUserMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: textToSend,
-      role: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, newUserMessage]);
     setInputValue("");
     setIsAiTyping(true);
     setPendingMessage("");
 
+    // ユーザーメッセージを送信
     sendMessage({
       content: textToSend,
       role: "user",
@@ -142,14 +147,15 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
 
     try {
       // メッセージをAPI形式に変換
-      const apiMessages: ApiChatMessage[] = [...messages, newUserMessage].map(({ content, role }) => ({
-        content,
-        role,
-      }));
+      const apiMessages: ApiChatMessage[] = [...(messages ?? []), { content: textToSend, role: "user" as const }].map(
+        ({ content, role }) => ({
+          content,
+          role,
+        }),
+      );
 
       // ローカルに実装したチャット関数を使用
       const result = await chatWithAI(apiMessages, (streamContent) => {
-        // ストリーミング更新時のコールバック
         setPendingMessage(streamContent);
       });
 
@@ -157,32 +163,20 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
         throw new Error(result.error);
       }
 
-      // ストリーミングが完了したらメッセージリストに追加
-      // TODO: associate message with threadId if it exists
-      const newAiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: result.content,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-
+      // AIの応答を送信
       sendMessage({
         content: result.content,
         role: "assistant",
         threadId,
       });
-
-      setMessages((prev) => [...prev, newAiMessage]);
     } catch (error) {
       console.error("APIエラー:", error);
-      // エラーメッセージを表示
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+      // エラー時のメッセージを送信
+      sendMessage({
         content: "申し訳ありません、エラーが発生しました。もう一度お試しください。",
         role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+        threadId,
+      });
     } finally {
       setIsAiTyping(false);
       setPendingMessage("");
@@ -213,86 +207,100 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
         ref={messagesContainerRef}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="py-3 flex flex-col gap-3">
-          {/* Left padding for AI messages: 36px, right padding: 12px */}
-          {/* Right padding for user messages: 36px, left padding: 12px */}
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex max-w-[80%] flex-col",
-                message.role === "user" ? "ml-auto pr-[8px] pl-[12px]" : "pr-[12px] pl-[8px]",
-              )}
-            >
-              <div className="rounded-2xl p-4 backdrop-blur-[4px] bg-white/12">
-                <div className="space-y-2">
-                  {message.role === "assistant" && (
-                    <div className="flex justify-between items-center">
-                      <div className="flex gap-1.5">{/* Icons would go here */}</div>
-                      <span
-                        className="text-sm text-white/40"
-                        style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}
-                      >
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+        {isMessagesLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex space-x-2">
+              <div className="h-3 w-3 rounded-full bg-white/40 animate-bounce"></div>
+              <div className="h-3 w-3 rounded-full bg-white/40 animate-bounce [animation-delay:0.2s]"></div>
+              <div className="h-3 w-3 rounded-full bg-white/40 animate-bounce [animation-delay:0.4s]"></div>
+            </div>
+          </div>
+        ) : messagesError ? (
+          <div className="flex items-center justify-center h-full text-red-500">
+            <p>メッセージの読み込みに失敗しました。再読み込みしてください。</p>
+          </div>
+        ) : (
+          <div className="py-3 flex flex-col gap-3">
+            {/* Left padding for AI messages: 36px, right padding: 12px */}
+            {/* Right padding for user messages: 36px, left padding: 12px */}
+            {messages?.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  "flex max-w-[80%] flex-col",
+                  message.role === "user" ? "ml-auto pr-[8px] pl-[12px]" : "pr-[12px] pl-[8px]",
+                )}
+              >
+                <div className="rounded-2xl p-4 backdrop-blur-[4px] bg-white/12">
+                  <div className="space-y-2">
+                    {message.role === "assistant" && (
+                      <div className="flex justify-between items-center">
+                        <div className="flex gap-1.5">{/* Icons would go here */}</div>
+                        <span
+                          className="text-sm text-white/40"
+                          style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}
+                        >
+                          {message.createdAt.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className="text-white"
+                      style={{ fontFamily: "Inter", fontWeight: 400, fontSize: "14px", lineHeight: "1.286em" }}
+                    >
+                      <MessageContent content={message.content} isMarkdown={message.role === "assistant"} />
                     </div>
-                  )}
+                    {message.role === "user" && (
+                      <div className="flex justify-end">
+                        <span
+                          className="text-sm text-white/40"
+                          style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}
+                        >
+                          {message.createdAt.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* ストリーミング中のメッセージを表示 */}
+            {pendingMessage && (
+              <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
+                <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
                   <div
                     className="text-white"
                     style={{ fontFamily: "Inter", fontWeight: 400, fontSize: "14px", lineHeight: "1.286em" }}
                   >
-                    <MessageContent content={message.content} isMarkdown={message.role === "assistant"} />
+                    <MessageContent content={pendingMessage} isMarkdown={true} />
                   </div>
-                  {message.role === "user" && (
-                    <div className="flex justify-end">
-                      <span
-                        className="text-sm text-white/40"
-                        style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}
-                      >
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            )}
 
-          {/* ストリーミング中のメッセージを表示 */}
-          {pendingMessage && (
-            <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
-              <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
-                <div
-                  className="text-white"
-                  style={{ fontFamily: "Inter", fontWeight: 400, fontSize: "14px", lineHeight: "1.286em" }}
-                >
-                  <MessageContent content={pendingMessage} isMarkdown={true} />
+            {/* AIの入力中表示 */}
+            {(isAiTyping || isSending) && !pendingMessage && (
+              <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
+                <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
+                  <div className="flex space-x-1">
+                    <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce"></div>
+                    <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0.4s]"></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* AIの入力中表示 */}
-          {isAiTyping && !pendingMessage && (
-            <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
-              <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
-                <div className="flex space-x-1">
-                  <div className="h-2 w-2 rounded-full bg-white/40"></div>
-                  <div className="h-2 w-2 rounded-full bg-white/40"></div>
-                  <div className="h-2 w-2 rounded-full bg-white/40"></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       {/* Input area - fixed at bottom */}
@@ -323,13 +331,13 @@ export const ChatInterface: React.FC<{ initialMessages: ChatMessage[]; threadId:
                 lineHeight: "1.286em",
               }}
               rows={1}
-              disabled={isAiTyping}
+              disabled={isAiTyping || isSending || isMessagesLoading}
             />
           </div>
           <Button
             size="icon"
             onClick={() => handleSendMessage()}
-            disabled={!inputValue.trim() || isAiTyping}
+            disabled={!inputValue.trim() || isAiTyping || isSending || isMessagesLoading}
             className="h-6 w-6 rounded-full bg-white hover:bg-white/90 flex items-center justify-center"
           >
             <ArrowUp className="h-4 w-4 text-black" />
