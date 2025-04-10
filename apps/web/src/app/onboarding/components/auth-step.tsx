@@ -14,7 +14,7 @@ export const AuthStep: React.FC = () => {
     if (status === "authenticated" && session) {
       setCurrentStep("notification");
     }
-  }, [status, session, setCurrentStep]);
+  }, [status, session]);
 
   // Skip handler for alpha test users
   const handleSkip = () => {

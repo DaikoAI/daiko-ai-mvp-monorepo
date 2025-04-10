@@ -5,15 +5,7 @@ import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
 import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-// import TwitterProvider from "next-auth/providers/twitter";
-// import PasskeyProvider from "next-auth/providers/passkey";
 
-/**
- * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
- * object and keep type safety.
- *
- * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
- */
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
@@ -26,17 +18,10 @@ declare module "next-auth" {
       cryptoInvestmentUsd: number;
       tradeStyle: "day" | "swing" | "long";
       age: number;
-      // ...other properties
-      // role: UserRole;
     } & DefaultSession["user"];
   }
 }
 
-/**
- * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
- *
- * @see https://next-auth.js.org/configuration/options
- */
 export const authConfig = {
   providers: [GoogleProvider],
   adapter: DrizzleAdapter(db, {
@@ -45,15 +30,12 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
-  // callbacks: {
-  // session: ({ session, user }) => ({
-  //   ...session,
-  //   user: {
-  //     ...session.user,
-  //     id: user.id,
-  //   },
-  // }),
-  // },
+  callbacks: {
+    session: ({ session, user }) => ({
+      ...session,
+      user: { ...session.user, id: user.id },
+    }),
+  },
   events: {
     createUser: async ({ user }) => {
       if (!user.id) return;
