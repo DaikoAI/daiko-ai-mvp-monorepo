@@ -78,15 +78,6 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
-  callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
-  },
   logger: {
     error(error: Error) {
       console.error("Auth Error:", error.message, error);
@@ -95,8 +86,41 @@ export const authConfig = {
       console.warn("Auth Warning:", warning);
     },
   },
+  callbacks: {
+    async signIn({ user, account, profile }) {
+      try {
+        if (!user?.email) {
+          console.error("No email provided in user profile");
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.error("Error in signIn callback:", error);
+        return false;
+      }
+    },
+    session: ({ session, user }) => {
+      try {
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: user.id,
+          },
+        };
+      } catch (error) {
+        console.error("Error in session callback:", error);
+        return session;
+      }
+    },
+  },
   events: {
-    // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
+    async signIn({ user, account, profile, isNewUser }) {
+      console.log("Signin event:", { user, account, isNewUser });
+    },
+    async signOut(message) {
+      console.log("Signout event:", message);
+    },
     createUser: async ({ user }) => {
       console.log("createUser event triggered for user:", user.id);
       if (user.id) {
