@@ -22,7 +22,7 @@ export const AuthStep: React.FC = () => {
   };
 
   const handleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/onboarding" });
+    await signIn("google", { redirectTo: "/onboarding" });
   };
 
   return (
