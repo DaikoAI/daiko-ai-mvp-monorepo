@@ -2,7 +2,6 @@ import { chatRouter } from "@/server/api/routers/chat";
 import { portfolioRouter } from "@/server/api/routers/portfolio";
 import { proposalRouter } from "@/server/api/routers/proposal";
 import { pushRouter } from "@/server/api/routers/push";
-import { tokensRouter } from "@/server/api/routers/tokens";
 import { transactionsRouter } from "@/server/api/routers/transactions";
 import { usersRouter } from "@/server/api/routers/users";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
@@ -18,7 +17,6 @@ export const appRouter = createTRPCRouter({
   proposal: proposalRouter,
   users: usersRouter,
   portfolio: portfolioRouter,
-  tokens: tokensRouter,
   transactions: transactionsRouter,
   chat: chatRouter,
   push: pushRouter,
