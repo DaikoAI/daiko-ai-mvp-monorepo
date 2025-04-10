@@ -1,28 +1,26 @@
-import { ActionButtons } from "../components/action-buttons";
-import { CollectiblesTab } from "../components/collectibles-tab";
-import { Tabs } from "../components/tabs";
-import { TokensTab } from "../components/tokens-tab";
+import { ActionButtons } from "./components/action-buttons";
+import { CollectiblesTab } from "./components/collectibles-tab";
+import { Tabs } from "./components/tabs";
+import { TokensTab } from "./components/tokens-tab";
 
 import type { NextPage } from "next";
 
 import { AuthAvatar } from "@/components/auth-avater";
 import { Skeleton } from "@/components/ui/skeleton";
+import { auth } from "@/server/auth";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { BalanceCard } from "../components/balance-card";
+import { BalanceCard } from "./components/balance-card";
 
 // export const experimental_ppr = true;
 
-type PortfolioPageProps = {
-  params: Promise<{
-    publicKey: string;
-  }>;
-};
-
-const PortfolioPage: NextPage<PortfolioPageProps> = async ({ params }) => {
-  // Get the wallet address from params
-  const { publicKey } = await params;
-  const walletAddress = publicKey;
+const PortfolioPage: NextPage = async () => {
+  const session = await auth();
+  if (!session) {
+    redirect("/");
+  }
+  const walletAddress = session.user.walletAddress;
 
   // NFTsは現在APIから返されていない場合は空配列を使用
   const nfts: any[] = [];

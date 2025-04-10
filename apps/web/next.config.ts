@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     // typedRoutes: true,
-    // viewTransition: true,
+    viewTransition: true,
     // ppr: "incremental",
     reactCompiler: true,
     // useCache: true,

@@ -1,3 +1,4 @@
+import { PwaFooter } from "@/components/pwa-footer";
 import { METADATA, VIEWPORT } from "@/constants";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} dark bg-gradient-subtle`}>
         <Providers>{children}</Providers>
+        <PwaFooter />
       </body>
     </html>
   );
