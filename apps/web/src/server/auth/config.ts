@@ -42,6 +42,12 @@ export const authConfig = {
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
+      authorization: {
+        params: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
     }),
     /**
      * ...add more providers here.
@@ -60,6 +66,12 @@ export const authConfig = {
     verificationTokensTable,
   }),
   callbacks: {
+    async jwt({ token, account }) {
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
     session: ({ session, user }) => ({
       ...session,
       user: {
@@ -95,4 +107,5 @@ export const authConfig = {
       }
     },
   },
+  debug: true,
 } satisfies NextAuthConfig;
