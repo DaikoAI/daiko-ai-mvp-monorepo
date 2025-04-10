@@ -4,9 +4,10 @@ import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable }
 import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
 import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
-// import GoogleProvider from "next-auth/providers/google";
+import GoogleProvider from "next-auth/providers/google";
 // import TwitterProvider from "next-auth/providers/twitter";
-import PasskeyProvider from "next-auth/providers/passkey";
+// import PasskeyProvider from "next-auth/providers/passkey";
+
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
  * object and keep type safety.
@@ -37,49 +38,14 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
-  providers: [
-    // GoogleProvider({
-    //   clientId: env.AUTH_GOOGLE_ID,
-    //   clientSecret: env.AUTH_GOOGLE_SECRET,
-    //   authorization: {
-    //     params: {
-    //       access_type: "offline",
-    //       prompt: "consent",
-    //       response_type: "code",
-    //     },
-    //   },
-    // }),
-    // TwitterProvider({
-    //   clientId: env.AUTH_TWITTER_ID,
-    //   clientSecret: env.AUTH_TWITTER_SECRET,
-    // }),
-    PasskeyProvider,
-  ],
+  providers: [GoogleProvider],
   adapter: DrizzleAdapter(db, {
     usersTable,
     accountsTable,
     sessionsTable,
     verificationTokensTable,
   }),
-  experimental: {
-    enableWebAuthn: true,
-  },
-  // session: {
-  //   strategy: "jwt",
-  // },
-  callbacks: {
-    async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.sub,
-        },
-      };
-    },
-  },
   events: {
-    // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
     createUser: async ({ user }) => {
       if (!user.id) return;
       console.log("createUser event triggered for user:", user.id);
@@ -98,12 +64,4 @@ export const authConfig = {
     },
   },
   debug: true,
-  logger: {
-    error: (code, ...rest) => {
-      console.error(code, ...rest);
-    },
-    debug: (code, ...rest) => {
-      console.debug(code, ...rest);
-    },
-  },
 } satisfies NextAuthConfig;
