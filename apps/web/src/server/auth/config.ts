@@ -1,13 +1,12 @@
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import type { DefaultSession, NextAuthConfig } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-
-import { env } from "@/env";
 import { generateSolanaWalletAddress } from "@/utils";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
 import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
 import { sql } from "drizzle-orm";
-
+import type { DefaultSession, NextAuthConfig } from "next-auth";
+// import GoogleProvider from "next-auth/providers/google";
+// import TwitterProvider from "next-auth/providers/twitter";
+import PasskeyProvider from "next-auth/providers/passkey";
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
  * object and keep type safety.
@@ -39,17 +38,22 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    GoogleProvider({
-      clientId: env.AUTH_GOOGLE_ID,
-      clientSecret: env.AUTH_GOOGLE_SECRET,
-      authorization: {
-        params: {
-          access_type: "offline",
-          prompt: "consent",
-          response_type: "code",
-        },
-      },
-    }),
+    // GoogleProvider({
+    //   clientId: env.AUTH_GOOGLE_ID,
+    //   clientSecret: env.AUTH_GOOGLE_SECRET,
+    //   authorization: {
+    //     params: {
+    //       access_type: "offline",
+    //       prompt: "consent",
+    //       response_type: "code",
+    //     },
+    //   },
+    // }),
+    // TwitterProvider({
+    //   clientId: env.AUTH_TWITTER_ID,
+    //   clientSecret: env.AUTH_TWITTER_SECRET,
+    // }),
+    PasskeyProvider,
   ],
   adapter: DrizzleAdapter(db, {
     usersTable,
@@ -57,9 +61,12 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
-  session: {
-    strategy: "jwt",
+  experimental: {
+    enableWebAuthn: true,
   },
+  // session: {
+  //   strategy: "jwt",
+  // },
   callbacks: {
     async session({ session, token }) {
       return {

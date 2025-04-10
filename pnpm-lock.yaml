@@ -106,7 +106,7 @@ importers:
     dependencies:
       '@auth/drizzle-adapter':
         specifier: ^1.8.0
-        version: 1.8.0
+        version: 1.8.0(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)
       '@daiko-ai/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -146,6 +146,12 @@ importers:
       '@serwist/next':
         specifier: ^9.0.13
         version: 9.0.13(next@15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(typescript@5.8.3)
+      '@simplewebauthn/browser':
+        specifier: 9.0.1
+        version: 9.0.1
+      '@simplewebauthn/server':
+        specifier: 9.0.3
+        version: 9.0.3
       '@solana/wallet-adapter-base':
         specifier: ^0.9.24
         version: 0.9.24(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -214,7 +220,7 @@ importers:
         version: 15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-auth:
         specifier: 5.0.0-beta.25
-        version: 5.0.0-beta.25(next@15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+        version: 5.0.0-beta.25(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)(next@15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -2234,6 +2240,9 @@ packages:
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
 
+  '@hexagon/base64@1.1.28':
+    resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
+
   '@hono/node-server@1.14.0':
     resolution: {integrity: sha512-YUCxJwgHRKSqjrdTk9e4VMGKN27MK5r4+MGPyZTgKH+IYbK+KtYbHeOcPGJ91KGGD6RIQiz2dAHxvjauNhOS8g==}
     engines: {node: '>=18.14.1'}
@@ -3033,6 +3042,9 @@ packages:
   '@ledgerhq/logs@6.12.0':
     resolution: {integrity: sha512-ExDoj1QV5eC6TEbMdLUMMk9cfvNKhhv5gXol4SmULRVCx/3iyCPhJ74nsb3S0Vb+/f+XujBEj3vQn5+cwS0fNA==}
 
+  '@levischuck/tiny-cbor@0.2.11':
+    resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
+
   '@lightprotocol/compressed-token@0.17.1':
     resolution: {integrity: sha512-493KCmZGw1BcHVRJaeRm8EEs+L7gX8dwY7JG13w2pfgOMtZXZ7Wxt261jFJxQJzRLTrUSlrbRJOmfW1+S1Y8SQ==}
     peerDependencies:
@@ -3541,6 +3553,21 @@ packages:
     peerDependencies:
       '@solana/web3.js': ^1.50.1
       bs58: ^4.0.1
+
+  '@peculiar/asn1-android@2.3.16':
+    resolution: {integrity: sha512-a1viIv3bIahXNssrOIkXZIlI2ePpZaNmR30d4aBL99mu2rO+mT9D6zBsp7H6eROWGtmwv0Ionp5olJurIo09dw==}
+
+  '@peculiar/asn1-ecc@2.3.15':
+    resolution: {integrity: sha512-/HtR91dvgog7z/WhCVdxZJ/jitJuIu8iTqiyWVgRE9Ac5imt2sT/E4obqIVGKQw7PIy+X6i8lVBoT6wC73XUgA==}
+
+  '@peculiar/asn1-rsa@2.3.15':
+    resolution: {integrity: sha512-p6hsanvPhexRtYSOHihLvUUgrJ8y0FtOM97N5UEpC+VifFYyZa0iZ5cXjTkZoDwxJ/TTJ1IJo3HVTB2JJTpXvg==}
+
+  '@peculiar/asn1-schema@2.3.15':
+    resolution: {integrity: sha512-QPeD8UA8axQREpgR5UTAfu2mqQmm97oUqahDtNdBcfj3qAnoXzFdQW+aNf/tD2WVXF8Fhmftxoj0eMIT++gX2w==}
+
+  '@peculiar/asn1-x509@2.3.15':
+    resolution: {integrity: sha512-0dK5xqTqSLaxv1FHXIcd4Q/BZNuopg+u1l23hT9rOmQ1g4dNtw0g/RnEi+TboB0gOwGtrWn269v27cMgchFIIg==}
 
   '@petamoriken/float16@3.9.2':
     resolution: {integrity: sha512-VgffxawQde93xKxT3qap3OH+meZf7VaSB5Sqd4Rqc+FP5alWbpOyan/7tRbOAvynjpG3GpdtAuGU/NdhQpmrog==}
@@ -4317,6 +4344,16 @@ packages:
 
   '@sideway/pinpoint@2.0.0':
     resolution: {integrity: sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==}
+
+  '@simplewebauthn/browser@9.0.1':
+    resolution: {integrity: sha512-wD2WpbkaEP4170s13/HUxPcAV5y4ZXaKo1TfNklS5zDefPinIgXOpgz1kpEvobAsaLPa2KeH7AKKX/od1mrBJw==}
+
+  '@simplewebauthn/server@9.0.3':
+    resolution: {integrity: sha512-FMZieoBosrVLFxCnxPFD9Enhd1U7D8nidVDT4MsHc6l4fdVcjoeHjDueeXCloO1k5O/fZg1fsSXXPKbY2XTzDA==}
+    engines: {node: '>=16.0.0'}
+
+  '@simplewebauthn/types@9.0.1':
+    resolution: {integrity: sha512-tGSRP1QvsAvsJmnOlRQyw/mvK9gnPtjEc5fg2+m8n+QUa+D7rvrKkOYyfpy42GTs90X3RDOnqJgfHt+qO67/+w==}
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
@@ -6428,6 +6465,10 @@ packages:
 
   asn1.js@5.4.1:
     resolution: {integrity: sha512-+I//4cYPccV8LdmBLiX8CYvf9Sp3vQsrqu2QNXRcrbiWvcx/UdlFiqUJJzxRQxgsZmvhXhn4cSKeSmoFjVdupA==}
+
+  asn1js@3.0.6:
+    resolution: {integrity: sha512-UOCGPYbl0tv8+006qks/dTgV9ajs97X2p0FAbyS2iyCRrmLSRolDaHdp+v/CLgnzHc3fVB+CwYiUmei7ndFcgA==}
+    engines: {node: '>=12.0.0'}
 
   assert@2.1.0:
     resolution: {integrity: sha512-eLHpSK/Y4nhMJ07gDaAzoX/XAKS8PSaojml3M0DM4JpV1LAi5JOJ/p6H/XWrl8L+DzVEvVCW1z3vWAaB9oTsQw==}
@@ -10487,6 +10528,13 @@ packages:
   pushdata-bitcoin@1.0.1:
     resolution: {integrity: sha512-hw7rcYTJRAl4olM8Owe8x0fBuJJ+WGbMhQuLWOXEMN3PxPCKQHRkhfL+XG0+iXUmSHjkMmb3Ba55Mt21cZc9kQ==}
 
+  pvtsutils@1.3.6:
+    resolution: {integrity: sha512-PLgQXQ6H2FWCaeRak8vvk1GW462lMxB5s3Jm673N82zI4vqtVUPuZdffdZbPDFRoU8kAhItWFtPCWiPpp4/EDg==}
+
+  pvutils@1.1.3:
+    resolution: {integrity: sha512-pMpnA0qRdFp32b1sJl1wOJNxZLQ2cbQx+k6tjNtZ8CpvVhNqEPRgivZ2WOUev2YMajecdH7ctUPDvEe87nariQ==}
+    engines: {node: '>=6.0.0'}
+
   qr.js@0.0.0:
     resolution: {integrity: sha512-c4iYnWb+k2E+vYpRimHqSu575b1/wKl4XFeJGpFmrJQz5I88v9aY2czh7s0w36srfCM1sXgC/xpoJz5dJfq+OQ==}
 
@@ -12664,7 +12712,7 @@ snapshots:
       - axios
       - got
 
-  '@auth/core@0.37.2':
+  '@auth/core@0.37.2(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)':
     dependencies:
       '@panva/hkdf': 1.2.1
       '@types/cookie': 0.6.0
@@ -12673,18 +12721,24 @@ snapshots:
       oauth4webapi: 3.4.0
       preact: 10.11.3
       preact-render-to-string: 5.2.3(preact@10.11.3)
+    optionalDependencies:
+      '@simplewebauthn/browser': 9.0.1
+      '@simplewebauthn/server': 9.0.3
 
-  '@auth/core@0.38.0':
+  '@auth/core@0.38.0(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)':
     dependencies:
       '@panva/hkdf': 1.2.1
       jose: 6.0.10
       oauth4webapi: 3.4.0
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
+    optionalDependencies:
+      '@simplewebauthn/browser': 9.0.1
+      '@simplewebauthn/server': 9.0.3
 
-  '@auth/drizzle-adapter@1.8.0':
+  '@auth/drizzle-adapter@1.8.0(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)':
     dependencies:
-      '@auth/core': 0.38.0
+      '@auth/core': 0.38.0(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)
     transitivePeerDependencies:
       - '@simplewebauthn/browser'
       - '@simplewebauthn/server'
@@ -14826,6 +14880,8 @@ snapshots:
     dependencies:
       '@hapi/hoek': 9.3.0
 
+  '@hexagon/base64@1.1.28': {}
+
   '@hono/node-server@1.14.0(hono@4.7.5)':
     dependencies:
       hono: 4.7.5
@@ -15718,6 +15774,8 @@ snapshots:
       events: 3.3.0
 
   '@ledgerhq/logs@6.12.0': {}
+
+  '@levischuck/tiny-cbor@0.2.11': {}
 
   '@lightprotocol/compressed-token@0.17.1(@lightprotocol/stateless.js@0.17.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.0-dev.20250408)(utf-8-validate@5.0.10)':
     dependencies:
@@ -16821,6 +16879,39 @@ snapshots:
       '@solana/web3.js': 1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       bs58: 5.0.0
 
+  '@peculiar/asn1-android@2.3.16':
+    dependencies:
+      '@peculiar/asn1-schema': 2.3.15
+      asn1js: 3.0.6
+      tslib: 2.8.1
+
+  '@peculiar/asn1-ecc@2.3.15':
+    dependencies:
+      '@peculiar/asn1-schema': 2.3.15
+      '@peculiar/asn1-x509': 2.3.15
+      asn1js: 3.0.6
+      tslib: 2.8.1
+
+  '@peculiar/asn1-rsa@2.3.15':
+    dependencies:
+      '@peculiar/asn1-schema': 2.3.15
+      '@peculiar/asn1-x509': 2.3.15
+      asn1js: 3.0.6
+      tslib: 2.8.1
+
+  '@peculiar/asn1-schema@2.3.15':
+    dependencies:
+      asn1js: 3.0.6
+      pvtsutils: 1.3.6
+      tslib: 2.8.1
+
+  '@peculiar/asn1-x509@2.3.15':
+    dependencies:
+      '@peculiar/asn1-schema': 2.3.15
+      asn1js: 3.0.6
+      pvtsutils: 1.3.6
+      tslib: 2.8.1
+
   '@petamoriken/float16@3.9.2': {}
 
   '@pkgjs/parseargs@0.11.0':
@@ -17768,6 +17859,26 @@ snapshots:
   '@sideway/formula@3.0.1': {}
 
   '@sideway/pinpoint@2.0.0': {}
+
+  '@simplewebauthn/browser@9.0.1':
+    dependencies:
+      '@simplewebauthn/types': 9.0.1
+
+  '@simplewebauthn/server@9.0.3':
+    dependencies:
+      '@hexagon/base64': 1.1.28
+      '@levischuck/tiny-cbor': 0.2.11
+      '@peculiar/asn1-android': 2.3.16
+      '@peculiar/asn1-ecc': 2.3.15
+      '@peculiar/asn1-rsa': 2.3.15
+      '@peculiar/asn1-schema': 2.3.15
+      '@peculiar/asn1-x509': 2.3.15
+      '@simplewebauthn/types': 9.0.1
+      cross-fetch: 4.1.0
+    transitivePeerDependencies:
+      - encoding
+
+  '@simplewebauthn/types@9.0.1': {}
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -21519,6 +21630,12 @@ snapshots:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
       safer-buffer: 2.1.2
+
+  asn1js@3.0.6:
+    dependencies:
+      pvtsutils: 1.3.6
+      pvutils: 1.1.3
+      tslib: 2.8.1
 
   assert@2.1.0:
     dependencies:
@@ -25701,11 +25818,14 @@ snapshots:
     optionalDependencies:
       '@rollup/rollup-linux-x64-gnu': 4.39.0
 
-  next-auth@5.0.0-beta.25(next@15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
+  next-auth@5.0.0-beta.25(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)(next@15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
     dependencies:
-      '@auth/core': 0.37.2
+      '@auth/core': 0.37.2(@simplewebauthn/browser@9.0.1)(@simplewebauthn/server@9.0.3)
       next: 15.3.0-canary.13(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(@playwright/test@1.51.1)(babel-plugin-react-compiler@19.0.0-beta-3229e95-20250315)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
+    optionalDependencies:
+      '@simplewebauthn/browser': 9.0.1
+      '@simplewebauthn/server': 9.0.3
 
   next-themes@0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
@@ -26412,6 +26532,12 @@ snapshots:
   pushdata-bitcoin@1.0.1:
     dependencies:
       bitcoin-ops: 1.4.1
+
+  pvtsutils@1.3.6:
+    dependencies:
+      tslib: 2.8.1
+
+  pvutils@1.1.3: {}
 
   qr.js@0.0.0: {}
 

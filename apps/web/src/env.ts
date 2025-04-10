@@ -11,6 +11,8 @@ export const env = createEnv({
     NODE_ENV: z.enum(["development", "production"]),
     AUTH_GOOGLE_ID: z.string(),
     AUTH_GOOGLE_SECRET: z.string(),
+    // AUTH_TWITTER_ID: z.string(),
+    // AUTH_TWITTER_SECRET: z.string(),
     WEB_PUSH_VAPID_PRIVATE_KEY: z.string(),
   },
   client: {
@@ -28,6 +30,8 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
+    // AUTH_TWITTER_ID: process.env.AUTH_TWITTER_ID,
+    // AUTH_TWITTER_SECRET: process.env.AUTH_TWITTER_SECRET,
     NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY,
     WEB_PUSH_VAPID_PRIVATE_KEY: process.env.WEB_PUSH_VAPID_PRIVATE_KEY,
   },
