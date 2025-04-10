@@ -6,10 +6,12 @@ import {
   userBalancesTable,
   usersTable,
 } from "@daiko-ai/shared";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
-import { z } from "zod";
-// Import BigNumber from local installation
+import type { NeonHttpDatabase } from "@daiko-ai/shared/src/db";
+import { tokenPriceHistory } from "@daiko-ai/shared/src/db/schema";
 import BigNumber from "bignumber.js";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+
+import { z } from "zod";
 
 // Define a type for the token price data (adjust based on your actual schema)
 type TokenPrice = {
@@ -18,6 +20,48 @@ type TokenPrice = {
   // Include other relevant fields from your tokenPricesTable schema
   timestamp?: Date; // Example: if you need timestamp
 };
+
+// 24時間前の価格を取得する関数
+async function get24hPriceHistory(db: NeonHttpDatabase, tokenAddresses: string[]): Promise<Map<string, string>> {
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const priceHistory = await db
+    .select({
+      token_address: tokenPriceHistory.token_address,
+      price_usd: tokenPriceHistory.price_usd,
+    })
+    .from(tokenPriceHistory)
+    .where(
+      and(
+        inArray(tokenPriceHistory.token_address, tokenAddresses),
+        gte(tokenPriceHistory.timestamp, twentyFourHoursAgo),
+        lte(tokenPriceHistory.timestamp, now),
+      ),
+    )
+    .orderBy(tokenPriceHistory.timestamp);
+
+  // 各トークンの24時間前に最も近い価格を取得
+  const priceMap = new Map<string, string>();
+  for (const record of priceHistory) {
+    priceMap.set(record.token_address, record.price_usd);
+  }
+
+  return priceMap;
+}
+
+// 価格変動率を計算する関数
+function calculatePriceChange(currentPrice: string, oldPrice: string): string {
+  const current = parseFloat(currentPrice);
+  const old = parseFloat(oldPrice);
+
+  if (old === 0 || isNaN(old) || isNaN(current)) {
+    return "0";
+  }
+
+  const changePercent = ((current - old) / old) * 100;
+  return changePercent.toFixed(2);
+}
 
 export const portfolioRouter = createTRPCRouter({
   /**
@@ -76,22 +120,39 @@ export const portfolioRouter = createTRPCRouter({
 
       // Calculate total value and build portfolio
       let totalValue = new BigNumber(0);
-      const portfolio = balances.map((balance) => {
-        const tokenPrice = priceMap[balance.tokenAddress] || "0";
-        const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
+      const portfolio = await Promise.all(
+        balances.map(async (balance) => {
+          const tokenPrice = priceMap[balance.tokenAddress] || "0";
+          const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
 
-        // Add to total
-        totalValue = totalValue.plus(valueUsd);
+          // Add to total
+          totalValue = totalValue.plus(valueUsd);
 
-        return {
-          token: balance.token.symbol,
-          token_address: balance.tokenAddress,
-          balance: balance.balance,
-          price_usd: tokenPrice,
-          value_usd: valueUsd,
-          icon_url: balance.token.iconUrl,
-        };
-      });
+          return {
+            token: balance.token.symbol,
+            token_address: balance.tokenAddress,
+            balance: balance.balance,
+            price_usd: tokenPrice,
+            value_usd: valueUsd,
+            price_change_24h: "0",
+            icon_url: balance.token.iconUrl,
+          };
+        }),
+      );
+
+      // 24時間の価格変動を計算
+      const oldPrices = await get24hPriceHistory(ctx.db, tokenAddresses);
+
+      const tokensWithPriceChange = await Promise.all(
+        portfolio.map(async (token) => {
+          const oldPrice = oldPrices.get(token.token_address);
+          const priceChange = oldPrice ? calculatePriceChange(token.price_usd, oldPrice) : "0";
+          return {
+            ...token,
+            price_change_24h: priceChange,
+          };
+        }),
+      );
 
       // Get open perp positions
       const perpPositions = await ctx.db.query.perpPositionsTable.findMany({
@@ -131,7 +192,7 @@ export const portfolioRouter = createTRPCRouter({
       return {
         wallet_address: input.walletAddress,
         total_value_usd: totalValue.toString(),
-        tokens: portfolio,
+        tokens: tokensWithPriceChange,
         perp_positions: perpPositionsData,
         last_updated: new Date(),
       };

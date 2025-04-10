@@ -6,7 +6,6 @@ type TokensTabProps = {
 };
 
 export const TokensTabComponent: React.FC<TokensTabProps> = async ({ walletAddress }) => {
-
   // tRPCのAPIを使用して資産情報を取得 (RSCでの呼び出し)
   const portfolioData = await api.portfolio.getUserPortfolio({
     walletAddress,

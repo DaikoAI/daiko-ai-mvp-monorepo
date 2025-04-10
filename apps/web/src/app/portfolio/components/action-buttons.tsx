@@ -1,10 +1,11 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useHaptic } from "use-haptic";
-
+import { revalidatePortfolio } from "../../actions";
 type ActionButtonsProps = {
   onRefresh?: () => Promise<void>;
 };
@@ -13,6 +14,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
   const router = useRouter();
   const { triggerHaptic } = useHaptic();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data: session } = useSession();
 
   // const handleAddClick = () => {
   //   triggerHaptic();
@@ -32,6 +34,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onRefresh }) => {
       }
       // フォールバックとして画面を更新
       router.refresh();
+      revalidatePortfolio(session?.user.walletAddress);
     } catch (error) {
       console.error("Refresh failed:", error);
     } finally {

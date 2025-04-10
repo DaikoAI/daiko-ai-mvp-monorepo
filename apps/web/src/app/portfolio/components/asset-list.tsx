@@ -37,19 +37,19 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
                       maximumFractionDigits: 4,
                     })}
                   </p>
-                  {asset.price_usd && (
+                  {asset.price_change_24h && (
                     <div
                       className={cn(
                         "text-xs font-medium px-2 py-0.5 rounded-md truncate flex-shrink-0",
-                        parseFloat(asset.price_usd) > 0
+                        parseFloat(asset.price_change_24h) > 0
                           ? "bg-[#2DD48B]/8 text-[#2DD48B]"
-                          : parseFloat(asset.price_usd) < 0
+                          : parseFloat(asset.price_change_24h) < 0
                             ? "bg-[#CD2828]/12 text-[#CD2828]"
                             : "",
                       )}
                     >
-                      {parseFloat(asset.price_usd) > 0 ? "+" : ""}
-                      {parseFloat(asset.price_usd).toFixed(2)}%
+                      {parseFloat(asset.price_change_24h) > 0 ? "+" : ""}
+                      {parseFloat(asset.price_change_24h).toFixed(2)}%
                     </div>
                   )}
                 </div>
