@@ -2,7 +2,7 @@
 
 import { cn } from "@/utils";
 // import { useWallet } from "@solana/wallet-adapter-react";
-import { FileText, MessageSquare, Wallet } from "lucide-react";
+import { FileText, MessageSquare, RefreshCcw, Wallet } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +24,11 @@ export const GlobalFooter: React.FC = () => {
       name: "News",
       href: "/proposals",
       icon: FileText,
+    },
+    {
+      name: "Trade",
+      href: "/trade",
+      icon: RefreshCcw,
     },
     {
       name: "Chat",

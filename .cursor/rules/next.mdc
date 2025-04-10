@@ -45,6 +45,7 @@ export const Component: React.FC<ComponentProps> = ({ prop }) => {
 - client componentの大きさはできる限り小さく、userのinteractする部分のみを切り出す事を考える
 - Composition Patternをうまく活用しClient componentを最小限にして下さい。
   - 例えば`Tab`などuserのinteractによってその子コンポーネントが切り替わるような場合は、Composition Patternを使い、Tabの部分をclient componentにその中身はServer componentにする
+- ファイル名は基本的に`kebab-case`で作成して下さい
 
 ## 3. Composition Pattern
 
