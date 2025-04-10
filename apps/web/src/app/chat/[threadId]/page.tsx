@@ -13,6 +13,7 @@ interface ChatThreadPageProps {
 
 const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
   const { threadId } = await params;
+  console.log(threadId);
 
   const thread = await api.chat.getThread({
     threadId,
@@ -34,7 +35,7 @@ const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
 
       {/* Chat Interface takes full height minus header */}
       <div className="flex-1 relative">
-        <ChatInterface threadId={threadId} />
+        <ChatInterface thread={thread} />
       </div>
     </main>
   );

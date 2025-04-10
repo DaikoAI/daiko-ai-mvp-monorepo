@@ -14,6 +14,8 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
     query: searchQuery,
   });
 
+  console.log(threads);
+
   return (
     <div className="flex-1 overflow-y-auto">
       <ul className="space-y-2 p-4">

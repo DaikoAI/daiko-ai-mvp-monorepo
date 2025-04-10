@@ -1,4 +1,4 @@
-import { asc, desc, eq, like } from "drizzle-orm";
+import { and, asc, desc, eq, like } from "drizzle-orm";
 import { z } from "zod";
 
 import { env } from "@/env";
@@ -68,7 +68,7 @@ export const chatRouter = createTRPCRouter({
     const [thread] = await ctx.db
       .select()
       .from(chatThreadsTable)
-      .where(eq(chatThreadsTable.id, threadId) && eq(chatThreadsTable.userId, userId))
+      .where(and(eq(chatThreadsTable.id, threadId), eq(chatThreadsTable.userId, userId)))
       .limit(1);
 
     if (!thread) {
@@ -294,9 +294,6 @@ Title:`;
         // Remove the line below if you uncomment and use the actual LLM call
         console.log("LLM call is currently a placeholder.");
 
-        revalidatePath(`/chat`);
-        revalidatePath(`/chat/${threadId}`);
-
         console.log(`LLM proposed title for thread ${threadId}: ${summarizedTitle}`);
       } catch (error) {
         console.error(`LLM summarization failed for thread ${threadId}:`, error);
@@ -318,6 +315,9 @@ Title:`;
         .where(eq(chatThreadsTable.id, threadId));
 
       console.log(`Updated title for thread ${threadId} to: ${summarizedTitle}`);
+
+      revalidatePath(`/chat`);
+      revalidatePath(`/chat/${threadId}`);
 
       return { success: true, updated: true, title: summarizedTitle };
     }),

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import type { RouterOutputs } from "@/trpc/react";
 import { api } from "@/trpc/react";
 import type { ApiChatMessage } from "@/types/chat";
 import { cn } from "@/utils";
@@ -11,24 +12,29 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 
-export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }> = ({ threadId, threadTitle }) => {
+export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"] }> = ({ thread }) => {
   const {
     data: messages,
     isLoading: isMessagesLoading,
     error: messagesError,
   } = api.chat.getMessages.useQuery({
-    threadId,
+    threadId: thread.id,
   });
 
-  const utils = api.useContext();
+  console.log(thread);
+
+  const trpc = api.useUtils();
 
   const { mutate: sendMessage, isPending: isSending } = api.chat.sendMessage.useMutation({
     onSuccess: (newMessage) => {
       // キャッシュを最適化的に更新
-      utils.chat.getMessages.setData({ threadId }, (oldMessages) => {
-        if (!oldMessages) return [newMessage];
-        return [...oldMessages, newMessage];
-      });
+      trpc.chat.getMessages.setData(
+        { threadId: thread.id },
+        (oldMessages: RouterOutputs["chat"]["getMessages"] | undefined) => {
+          if (!oldMessages) return [newMessage];
+          return [...oldMessages, newMessage];
+        },
+      );
     },
   });
 
@@ -65,13 +71,13 @@ export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }>
     // 1. threadId exists
     // 2. There are at least 3 messages (e.g., User, AI, User/AI)
     // 3. Summarization hasn't been scheduled yet for this thread instance
-    if (threadId && messages && messages.length >= 3 && !titleSummarizationScheduled && threadTitle === "New Chat") {
-      console.log("Scheduling title summarization for thread:", threadId);
+    if (thread.id && messages && messages.length >= 3 && !titleSummarizationScheduled && thread.title === "New Chat") {
+      console.log("Scheduling title summarization for thread:", thread.id);
 
       // Define the task function that calls the backend mutation
       const summarizeTask = () => {
-        console.log("Running title summarization task for thread:", threadId);
-        summarizeAndUpdateTitle({ threadId });
+        console.log("Running title summarization task for thread:", thread.id);
+        summarizeAndUpdateTitle({ threadId: thread.id });
       };
 
       // Schedule the task to run when the browser is idle
@@ -80,7 +86,7 @@ export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }>
       // Mark summarization as scheduled to prevent rescheduling in this component instance
       setTitleSummarizationScheduled(true);
     }
-  }, [messages, threadId, titleSummarizationScheduled, summarizeAndUpdateTitle]);
+  }, [messages, thread.id, titleSummarizationScheduled, summarizeAndUpdateTitle]);
 
   // クライアント側でチャットAPIを呼び出す関数
   const chatWithAI = async (messages: ApiChatMessage[], onUpdate?: (text: string) => void) => {
@@ -142,7 +148,7 @@ export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }>
     sendMessage({
       content: textToSend,
       role: "user",
-      threadId,
+      threadId: thread.id,
     });
 
     try {
@@ -167,7 +173,7 @@ export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }>
       sendMessage({
         content: result.content,
         role: "assistant",
-        threadId,
+        threadId: thread.id,
       });
     } catch (error) {
       console.error("APIエラー:", error);
@@ -175,7 +181,7 @@ export const ChatInterface: React.FC<{ threadId: string; threadTitle?: string }>
       sendMessage({
         content: "申し訳ありません、エラーが発生しました。もう一度お試しください。",
         role: "assistant",
-        threadId,
+        threadId: thread.id,
       });
     } finally {
       setIsAiTyping(false);
