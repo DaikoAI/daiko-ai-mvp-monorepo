@@ -26,3 +26,4 @@ export function createDbConnection(connectionString?: string) {
 
 // デフォルトのデータベース接続をエクスポート
 export const db = createDbConnection();
+export type NeonHttpDatabase = typeof db;
