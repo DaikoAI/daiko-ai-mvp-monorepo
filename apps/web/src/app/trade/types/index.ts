@@ -1,5 +1,5 @@
 import { type TokenSelect as Token } from "@daiko-ai/shared";
-import { Result } from "neverthrow";
+import type { Result } from "neverthrow";
 export interface TokenBalance {
   symbol: string;
   amount: number;
