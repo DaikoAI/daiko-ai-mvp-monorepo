@@ -22,7 +22,9 @@ export const AuthStep: React.FC = () => {
   };
 
   const handleSignIn = async () => {
-    await signIn("google");
+    await signIn("google", {
+      redirect: false,
+    });
   };
 
   return (

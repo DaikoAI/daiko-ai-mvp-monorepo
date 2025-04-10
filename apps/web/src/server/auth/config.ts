@@ -72,6 +72,13 @@ export const authConfig = {
         },
       };
     },
+    async redirect({ url, baseUrl }) {
+      // onboardingへのリダイレクトを適切に処理
+      if (url.startsWith("/onboarding")) {
+        return `${baseUrl}${url}`;
+      }
+      return baseUrl;
+    },
   },
   events: {
     // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
@@ -92,8 +99,17 @@ export const authConfig = {
     //   }
     // },
   },
-  // session: {
-  //   strategy: "jwt",
-  // },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   debug: true,
+  logger: {
+    error: (code, ...rest) => {
+      console.error(code, ...rest);
+    },
+    debug: (code, ...rest) => {
+      console.debug(code, ...rest);
+    },
+  },
 } satisfies NextAuthConfig;
