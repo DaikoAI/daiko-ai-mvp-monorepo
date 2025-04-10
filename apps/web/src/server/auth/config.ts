@@ -3,7 +3,10 @@ import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 import { env } from "@/env";
+import { generateSolanaWalletAddress } from "@/utils";
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
+import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
+import { sql } from "drizzle-orm";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -39,16 +42,14 @@ export const authConfig = {
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
+      authorization: {
+        params: {
+          access_type: "offline",
+          prompt: "consent",
+          response_type: "code",
+        },
+      },
     }),
-    /**
-     * ...add more providers here.
-     *
-     * Most other providers require a bit more work than the Discord provider. For example, the
-     * GitHub provider requires you to add the `refresh_token_expires_in` field to the Account
-     * model. Refer to the NextAuth.js docs for the provider you want to use. Example:
-     *
-     * @see https://next-auth.js.org/providers/github
-     */
   ],
   adapter: DrizzleAdapter(db, {
     usersTable,
@@ -57,12 +58,6 @@ export const authConfig = {
     verificationTokensTable,
   }),
   callbacks: {
-    // async jwt({ token, account }) {
-    //   if (account) {
-    //     token.accessToken = account.access_token;
-    //   }
-    //   return token;
-    // },
     async session({ session, user }) {
       return {
         ...session,
@@ -72,36 +67,25 @@ export const authConfig = {
         },
       };
     },
-    async redirect({ url, baseUrl }) {
-      // onboardingへのリダイレクトを適切に処理
-      if (url.startsWith("/onboarding")) {
-        return `${baseUrl}${url}`;
-      }
-      return baseUrl;
-    },
   },
   events: {
     // ユーザー作成時のイベントハンドラ - ユーザーがDBに作成された直後に1回だけ実行される
-    // createUser: async ({ user }) => {
-    //   if (!user.id) return;
-    //   console.log("createUser event triggered for user:", user.id);
-    //   try {
-    //     await Promise.all([
-    //       await db
-    //         .update(usersTable)
-    //         .set({ walletAddress: generateSolanaWalletAddress() })
-    //         .where(sql`${usersTable.id} = ${user.id}`),
-    //       setupInitialPortfolio(user.id),
-    //     ]);
-    //     console.log(`Initialized portfolio for user ${user.id}`);
-    //   } catch (error) {
-    //     console.error(`Error during createUser event for user ${user.id}:`, error);
-    //   }
-    // },
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    createUser: async ({ user }) => {
+      if (!user.id) return;
+      console.log("createUser event triggered for user:", user.id);
+      try {
+        await Promise.all([
+          await db
+            .update(usersTable)
+            .set({ walletAddress: generateSolanaWalletAddress() })
+            .where(sql`${usersTable.id} = ${user.id}`),
+          setupInitialPortfolio(user.id),
+        ]);
+        console.log(`Initialized portfolio for user ${user.id}`);
+      } catch (error) {
+        console.error(`Error during createUser event for user ${user.id}:`, error);
+      }
+    },
   },
   debug: true,
   logger: {
