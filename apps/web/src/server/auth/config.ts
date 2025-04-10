@@ -45,15 +45,15 @@ export const authConfig = {
     sessionsTable,
     verificationTokensTable,
   }),
-  callbacks: {
-    // session: ({ session, user }) => ({
-    //   ...session,
-    //   user: {
-    //     ...session.user,
-    //     id: user.id,
-    //   },
-    // }),
-  },
+  // callbacks: {
+  // session: ({ session, user }) => ({
+  //   ...session,
+  //   user: {
+  //     ...session.user,
+  //     id: user.id,
+  //   },
+  // }),
+  // },
   events: {
     createUser: async ({ user }) => {
       if (!user.id) return;
