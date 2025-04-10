@@ -1,4 +1,4 @@
-import { TokenSelect, db, tokenPricesTable } from "@daiko-ai/shared";
+import { TokenSelect, db, tokenPriceHistory, tokenPricesTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
 
 // Jupiterの価格レスポンスの型定義
@@ -96,6 +96,8 @@ export class TokenPriceService {
    */
   private async updateTokenPrice(tokenAddress: string, priceUsd: string): Promise<void> {
     try {
+      const now = new Date();
+
       // 既存の価格レコードを確認
       const existingPrice = await db.query.tokenPricesTable.findFirst({
         where: eq(tokenPricesTable.tokenAddress, tokenAddress),
@@ -107,7 +109,7 @@ export class TokenPriceService {
           .update(tokenPricesTable)
           .set({
             priceUsd,
-            lastUpdated: new Date(),
+            lastUpdated: now,
             source: "jupiter",
           })
           .where(eq(tokenPricesTable.tokenAddress, tokenAddress));
@@ -116,10 +118,18 @@ export class TokenPriceService {
         await db.insert(tokenPricesTable).values({
           tokenAddress,
           priceUsd,
-          lastUpdated: new Date(),
+          lastUpdated: now,
           source: "jupiter",
         });
       }
+
+      // 価格履歴にも記録
+      await db.insert(tokenPriceHistory).values({
+        token_address: tokenAddress,
+        price_usd: priceUsd,
+        timestamp: now,
+        source: "jupiter",
+      });
     } catch (error) {
       console.error(`トークン ${tokenAddress} の価格更新中にエラーが発生しました:`, error);
       throw error;
