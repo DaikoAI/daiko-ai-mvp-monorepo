@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { signIn, useSession } from "next-auth/react";
-import Link from "next/link";
 import { useEffect } from "react";
 
 export const AuthStep: React.FC = () => {
