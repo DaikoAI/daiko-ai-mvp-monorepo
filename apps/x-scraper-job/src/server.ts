@@ -1,6 +1,6 @@
+import { processXScraping } from "@daiko-ai/x-scraper";
 import * as dotenv from "dotenv";
 import cron from "node-cron";
-import { processXScraping } from "./process";
 
 dotenv.config();
 

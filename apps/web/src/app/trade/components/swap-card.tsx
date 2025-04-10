@@ -20,7 +20,7 @@ const SwapCardComponent: React.FC = async () => {
     <Card className="w-full max-w-md">
       <CardContent className="p-6">
         <AlphaWalletProvider>
-          <SwapForm tokens={tokens} portfolio={portfolio.tokens} />
+          <SwapForm tokens={tokens} balances={portfolio.tokens} />
         </AlphaWalletProvider>
       </CardContent>
     </Card>

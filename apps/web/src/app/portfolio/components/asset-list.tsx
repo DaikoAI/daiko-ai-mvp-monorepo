@@ -13,43 +13,43 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
     <section className="space-y-2">
       {assets.map((asset, index) => (
         <Card
-          key={asset.token_address || index}
+          key={asset.tokenAddress || index}
           className="backdrop-blur-sm bg-white/12 rounded-2xl border-none transition-all duration-200 hover:shadow-md"
         >
           <div className="flex cursor-pointer items-center justify-between p-4">
             <div className="flex items-center">
               <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 p-0.5">
                 <Image
-                  src={asset.icon_url}
-                  alt={asset.token}
+                  src={asset.iconUrl}
+                  alt={asset.symbol}
                   height={40}
                   width={40}
                   className="h-full w-full object-cover rounded-full"
                 />
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold text-white truncate">{asset.token}</h3>
+                <h3 className="font-semibold text-white truncate">{asset.symbol}</h3>
                 <div className="flex items-center gap-1">
                   <p className="text-sm text-[#9DA4AE] truncate">
                     $
-                    {parseFloat(asset.price_usd || "0").toLocaleString("en-US", {
+                    {parseFloat(asset.priceUsd || "0").toLocaleString("en-US", {
                       minimumFractionDigits: 4,
                       maximumFractionDigits: 4,
                     })}
                   </p>
-                  {asset.price_change_24h && (
+                  {asset.priceChange24h && (
                     <div
                       className={cn(
                         "text-xs font-medium px-2 py-0.5 rounded-md truncate flex-shrink-0",
-                        parseFloat(asset.price_change_24h) > 0
+                        parseFloat(asset.priceChange24h) > 0
                           ? "bg-[#2DD48B]/8 text-[#2DD48B]"
-                          : parseFloat(asset.price_change_24h) < 0
+                          : parseFloat(asset.priceChange24h) < 0
                             ? "bg-[#CD2828]/12 text-[#CD2828]"
                             : "",
                       )}
                     >
-                      {parseFloat(asset.price_change_24h) > 0 ? "+" : ""}
-                      {parseFloat(asset.price_change_24h).toFixed(2)}%
+                      {parseFloat(asset.priceChange24h) > 0 ? "+" : ""}
+                      {parseFloat(asset.priceChange24h).toFixed(2)}%
                     </div>
                   )}
                 </div>
@@ -59,10 +59,10 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
             <div className="flex items-center min-w-0 ml-2">
               <div className="text-right min-w-0">
                 <p className="font-medium text-base text-white truncate">
-                  ${parseFloat(asset.value_usd).toLocaleString()}
+                  ${parseFloat(asset.valueUsd).toLocaleString()}
                 </p>
                 <p className="text-sm text-[#9DA4AE] truncate">
-                  {parseFloat(asset.balance).toLocaleString()} {asset.token}
+                  {parseFloat(asset.balance).toLocaleString()} {asset.symbol}
                 </p>
               </div>
             </div>
