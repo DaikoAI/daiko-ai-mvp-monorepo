@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { boolean, index, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { accountsTable } from "./accounts";
 
@@ -25,10 +25,6 @@ export const usersTable = pgTable(
       .default("1nc1nerator11111111111111111111111111111111")
       .notNull(),
     riskTolerance: varchar("risk_tolerance", { length: 20 }).default("medium"),
-    stakingEnabled: boolean("staking_enabled").default(true),
-    birthday: timestamp("birthday"),
-    twitterConnected: boolean("twitter_connected").default(false),
-    twitterUsername: varchar("twitter_username", { length: 255 }),
   },
   (table) => [index("idx_users_email").on(table.email), index("idx_users_wallet_address").on(table.walletAddress)],
 );
