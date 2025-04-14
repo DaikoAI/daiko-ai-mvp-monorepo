@@ -34,7 +34,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
           {children}
           {/* </ViewTransition> */}
           <PwaFooter />
-          <Toaster richColors position="bottom-right" />
+          <Toaster richColors position="bottom-right" theme="dark" />
 
           {/* </WalletModalProvider>
               </WalletProvider>

@@ -9,7 +9,6 @@ import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, ExternalLink, Loader2, Plus, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AskAIButton } from "./ask-ai-button";
@@ -122,8 +121,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
   const [isAccepting, setIsAccepting] = useState(false);
   const [detailHeight, setDetailHeight] = useState<number | undefined>(undefined);
   const detailRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const [showShareDialog, setShowShareDialog] = useState(false);
+
   const { requestTransaction } = useAlphaWallet();
 
   // User preferences state remains the same
@@ -143,11 +141,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
       setUserPreferences(JSON.parse(savedPrefs));
     }
   }, [proposal.id]);
-
-  const saveUserPreferences = (prefs: { hideProposal: boolean; holdToken: boolean; holdUntil: string }) => {
-    setUserPreferences(prefs);
-    localStorage.setItem(`proposal_prefs_${proposal.id}`, JSON.stringify(prefs));
-  };
 
   useEffect(() => {
     if (expanded && detailRef.current) {
@@ -187,15 +180,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
       if (result.success) {
         const tweetText = `I just accepted a proposal to "${proposal.title}" with Daiko AI. 🚀 Managing my crypto portfolio is getting smarter! #DaikoAI #CryptoPortfolio`;
         const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-        toast.success("Proposal accepted", {
-          description: "You can check your portfolio for updated positions.",
-          action: {
-            label: "Tweet",
-            onClick: () => window.open(tweetUrl, "_blank"),
-          },
-          icon: <Check className="h-4 w-4" />,
-          duration: 8000,
-        });
 
         if (onRemove) {
           onRemove(proposal.id);
