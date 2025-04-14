@@ -9,8 +9,9 @@ const nextConfig: NextConfig = {
     // ppr: "incremental",
     reactCompiler: true,
     // useCache: true,
+    inlineCss: true,
     staleTimes: {
-      dynamic: 60 * 5, // 5 minutes = batch update interval
+      dynamic: 60 * 10, // 5 minutes = batch update interval
     },
     // optimizePackageImports: ["solana-agent-kit"],
   },
