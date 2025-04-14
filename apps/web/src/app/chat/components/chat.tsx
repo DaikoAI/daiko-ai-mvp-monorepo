@@ -34,7 +34,7 @@ export const Chat: React.FC<ChatProps> = ({ thread, initialMessages, selectedCha
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
 
   return (
-    <div className="flex flex-col min-w-0 h-dvh bg-[#080808]">
+    <div className="flex flex-col min-w-0 h-dvh bg-[#080808] relative">
       <ChatHeader title={thread.title} />
 
       <Messages
@@ -46,23 +46,28 @@ export const Chat: React.FC<ChatProps> = ({ thread, initialMessages, selectedCha
         isReadonly={isReadonly}
       />
 
-      <form className="flex mx-auto gap-2 w-full max-w-3xl sticky bottom-0 bg-white/10 backdrop-blur-[64px] rounded-t-2xl">
-        {!isReadonly && (
-          <MultimodalInput
-            threadId={thread.id}
-            input={input}
-            setInput={setInput}
-            handleSubmit={handleSubmit}
-            status={status}
-            stop={stop}
-            attachments={attachments}
-            setAttachments={setAttachments}
-            messages={messages}
-            setMessages={setMessages}
-            append={append}
-          />
-        )}
-      </form>
+      <div className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-3xl">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/10 backdrop-blur-[64px] border-t border-white/10 flex flex-col gap-3 rounded-t-2xl"
+        >
+          {!isReadonly && (
+            <MultimodalInput
+              threadId={thread.id}
+              input={input}
+              setInput={setInput}
+              handleSubmit={handleSubmit}
+              status={status}
+              stop={stop}
+              attachments={attachments}
+              setAttachments={setAttachments}
+              messages={messages}
+              setMessages={setMessages}
+              append={append}
+            />
+          )}
+        </form>
+      </div>
     </div>
   );
 };
