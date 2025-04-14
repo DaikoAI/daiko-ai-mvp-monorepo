@@ -40,6 +40,10 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
         <div
           className={cn(
             "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",
+            {
+              "w-full": true,
+              "group-data-[role=user]/message:w-fit": message.role === "user",
+            },
           )}
         >
           {message.role === "assistant" && (
@@ -56,15 +60,16 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
               const key = `message-${message.id}-part-${index}`;
 
               if (type === "text") {
+                const text = typeof part.text === "string" ? part.text : message.content || "";
                 return (
                   <div key={key} className="flex flex-row gap-2 items-start">
                     <div
                       data-testid="message-content"
                       className={cn("flex flex-col gap-4", {
-                        "bg-primary text-primary-foreground px-3 py-2 rounded-xl": message.role === "user",
+                        "bg-primary text-primary-foreground px-3 py-2 rounded-xl ml-auto": message.role === "user",
                       })}
                     >
-                      <Markdown>{part.text}</Markdown>
+                      <Markdown>{text}</Markdown>
                     </div>
                   </div>
                 );

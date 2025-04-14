@@ -5,8 +5,8 @@ import { SendIcon, Square } from "lucide-react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
-import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
+import { Button } from "../../../components/ui/button";
+import { Textarea } from "../../../components/ui/textarea";
 
 interface MultimodalInputProps {
   threadId: string;

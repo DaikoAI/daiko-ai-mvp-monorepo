@@ -5,7 +5,7 @@ import { cn } from "@/utils";
 import type { UIMessage } from "ai";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { memo } from "react";
-import { Button } from "./ui/button";
+import { Button } from "../../../components/ui/button";
 
 interface MessageActionsProps {
   chatId: string;

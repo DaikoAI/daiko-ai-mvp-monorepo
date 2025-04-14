@@ -5,6 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import type { Attachment, UIMessage } from "ai";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ChatHeader } from "./chat-header";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 
@@ -32,6 +33,8 @@ export const Chat: React.FC<ChatProps> = ({ id, initialMessages, selectedChatMod
 
   return (
     <div className="flex flex-col min-w-0 h-dvh bg-background">
+      <ChatHeader />
+
       <Messages
         threadId={id}
         status={status}

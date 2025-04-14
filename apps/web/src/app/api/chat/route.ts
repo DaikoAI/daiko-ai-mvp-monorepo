@@ -24,12 +24,23 @@ export async function POST(request: Request) {
       return new Response("No user message found", { status: 400 });
     }
 
+    // Ensure proper format for user message parts
+    const userMessageParts = userMessage.parts?.map((part) => {
+      if (part.type === "text") {
+        return {
+          type: "text",
+          text: typeof part.text === "string" ? part.text : "",
+        };
+      }
+      return part;
+    }) ?? [{ type: "text", text: userMessage.content || "" }];
+
     // Save message to database
     await api.chat.createMessage({
       id: generateUUID(),
       threadId: id,
       role: userMessage.role,
-      parts: userMessage.parts,
+      parts: userMessageParts,
       attachments: userMessage.experimental_attachments ?? [],
     });
 
@@ -49,11 +60,19 @@ export async function POST(request: Request) {
                   throw new Error("No assistant message found!");
                 }
 
+                // Ensure proper format for assistant message parts
+                const assistantMessageParts = [
+                  {
+                    type: "text",
+                    text: assistantMessage.content || "",
+                  },
+                ];
+
                 await api.chat.createMessage({
                   id: assistantMessage.id,
                   threadId: id,
                   role: assistantMessage.role,
-                  parts: assistantMessage.parts,
+                  parts: assistantMessageParts,
                   attachments: assistantMessage.experimental_attachments ?? [],
                 });
               } catch (error) {
