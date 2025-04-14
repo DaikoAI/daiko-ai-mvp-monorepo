@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { api, RouterOutputs } from "@/trpc/react";
+import { api, type RouterOutputs } from "@/trpc/react";
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
