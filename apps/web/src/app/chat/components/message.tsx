@@ -4,7 +4,6 @@ import { cn } from "@/utils";
 import type { UIMessage } from "ai";
 import type { UseChatHelpers } from "ai/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { SparklesIcon } from "lucide-react";
 import { memo } from "react";
 import { Markdown } from "./markdown";
 import { MessageActions } from "./message-actions";
@@ -37,25 +36,19 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
     <AnimatePresence>
       <motion.div
         data-testid={`message-${message.role}`}
-        className="w-full mx-auto max-w-3xl px-4 py-4 group/message"
+        className={cn("w-full mx-auto max-w-3xl px-3 py-3 group/message", {
+          "flex justify-end": message.role === "user",
+        })}
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role={message.role}
       >
         <div
-          className={cn("flex gap-4 w-full", {
-            "group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:w-fit":
-              message.role === "user",
+          className={cn("flex gap-4 rounded-2xl backdrop-blur-[4px]", {
+            "bg-white/12 w-full p-3": message.role === "assistant",
+            "bg-white/24 max-w-2xl py-2 px-3": message.role === "user",
           })}
         >
-          {message.role === "assistant" && (
-            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background/12 backdrop-blur-[4px]">
-              <div className="translate-y-px">
-                <SparklesIcon className="size-4" />
-              </div>
-            </div>
-          )}
-
           <div className="flex flex-col gap-4 w-full">
             {message.parts?.map((part, index) => {
               const { type } = part;
@@ -65,7 +58,7 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
                 const text = typeof part.text === "string" ? part.text : message.content || "";
                 return (
                   <div key={key} className="flex flex-row gap-2 items-start">
-                    <div className="flex flex-col gap-4 text-[14px] leading-[1.286] font-normal">
+                    <div className="flex flex-col gap-4 text-[14px] leading-[1.286] font-normal text-white">
                       <Markdown>{text}</Markdown>
                     </div>
                   </div>
@@ -96,25 +89,14 @@ export const ThinkingMessage: React.FC = () => {
   return (
     <motion.div
       data-testid="message-assistant-loading"
-      className="w-full mx-auto max-w-3xl px-4 group/message "
+      className="w-full mx-auto max-w-3xl px-3 group/message"
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
       data-role={role}
     >
-      <div
-        className={cn(
-          "flex gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
-          {
-            "group-data-[role=user]/message:bg-muted": true,
-          },
-        )}
-      >
-        <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-          <SparklesIcon size={14} />
-        </div>
-
-        <div className="flex flex-col gap-2 w-full">
-          <div className="flex flex-col gap-4 text-muted-foreground">Hmm...</div>
+      <div className="flex gap-4 w-full rounded-2xl backdrop-blur-[4px] p-4 bg-white/12">
+        <div className="flex flex-col gap-2 w-full animate-pulse">
+          <div className="flex flex-col gap-4 text-white/40">Hmm...</div>
         </div>
       </div>
     </motion.div>

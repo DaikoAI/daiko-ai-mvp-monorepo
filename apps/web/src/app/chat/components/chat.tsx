@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ChatHeader } from "./chat-header";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+
 interface ChatProps {
   thread: RouterOutputs["chat"]["getThread"];
   initialMessages: Array<UIMessage>;
@@ -33,7 +34,7 @@ export const Chat: React.FC<ChatProps> = ({ thread, initialMessages, selectedCha
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
 
   return (
-    <div className="flex flex-col min-w-0 h-dvh bg-background">
+    <div className="flex flex-col min-w-0 h-dvh bg-[#080808]">
       <ChatHeader title={thread.title} />
 
       <Messages
@@ -45,7 +46,7 @@ export const Chat: React.FC<ChatProps> = ({ thread, initialMessages, selectedCha
         isReadonly={isReadonly}
       />
 
-      <form className="sticky bottom-0 flex mx-auto bg-background pb-safe pt-2 gap-2 w-full md:max-w-3xl">
+      <form className="flex mx-auto pb-safe gap-2 w-full max-w-3xl sticky bottom-0 bg-white/10 backdrop-blur-[64px] rounded-t-2xl">
         {!isReadonly && (
           <MultimodalInput
             threadId={thread.id}

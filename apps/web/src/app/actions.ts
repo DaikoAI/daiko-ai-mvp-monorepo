@@ -1,7 +1,7 @@
 "use server";
 
 import { myProvider } from "@/lib/ai/provider";
-import { generateText, Message } from "ai";
+import { generateText, type Message } from "ai";
 import { revalidatePath } from "next/cache";
 
 // チャット関連の再検証

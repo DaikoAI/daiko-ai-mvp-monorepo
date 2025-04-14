@@ -28,7 +28,7 @@ export const PureMessageActions = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              className="py-1 px-2 h-fit text-muted-foreground bg-background/8 hover:bg-accent/12 backdrop-blur-[4px]"
+              className="p-1 h-fit text-muted-foreground bg-background/8 hover:bg-accent/12 backdrop-blur-[4px] rounded-md"
               variant="outline"
               onClick={async () => {
                 const textFromParts = message.parts

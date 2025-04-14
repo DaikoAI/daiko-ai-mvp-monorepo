@@ -26,12 +26,13 @@ interface MultimodalInputProps {
 const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
   threadId,
   input,
+  status,
+  messages,
+  className,
   setInput,
   handleSubmit,
-  status,
   stop,
   setMessages,
-  className,
 }: MultimodalInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -96,29 +97,29 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
       />
 
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
-        {status === "in_progress" ? (
+        {status === "submitted" && messages.length > 0 && messages[messages.length - 1]?.role === "user" ? (
           <Button
             data-testid="stop-button"
-            className="rounded-full p-1.5 h-fit border dark:border-zinc-600"
+            className="rounded-full p-1.5 h-fit border bg-white hover:bg-white/90"
             onClick={(event) => {
               event.preventDefault();
               stop();
               setMessages((messages) => messages);
             }}
           >
-            <Square className="size-4" />
+            <Square className="size-3 text-black" fill="black" />
           </Button>
         ) : (
           <Button
             data-testid="send-button"
-            className="rounded-full p-1.5 h-fit border dark:border-zinc-600"
+            className="rounded-full p-1.5 h-fit border bg-white hover:bg-white/90"
             onClick={(event) => {
               event.preventDefault();
               submitForm();
             }}
             disabled={input.length === 0}
           >
-            <ArrowUp className="size-4 stroke-2" />
+            <ArrowUp className="size-4 stroke-3 text-black" />
           </Button>
         )}
       </div>
