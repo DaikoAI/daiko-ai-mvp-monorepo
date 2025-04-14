@@ -24,19 +24,21 @@ export const Messages: React.FC<MessagesProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto pb-4" ref={containerRef}>
-      {messages.map((message) => (
+      {messages.map((message, index) => (
         <PreviewMessage
           key={message.id}
           threadId={threadId}
           message={message}
-          isLoading={status === "in_progress"}
+          isLoading={status === "streaming" && messages.length - 1 === index}
           setMessages={setMessages}
           reload={reload}
           isReadonly={isReadonly}
         />
       ))}
 
-      {status === "in_progress" && <ThinkingMessage />}
+      {status === "submitted" && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+        <ThinkingMessage />
+      )}
 
       <div ref={messagesEndRef} />
     </div>

@@ -28,7 +28,7 @@ export const PureMessageActions = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              className="py-1 px-2 h-fit text-muted-foreground"
+              className="py-1 px-2 h-fit text-muted-foreground bg-background/8 hover:bg-accent/12 backdrop-blur-[4px]"
               variant="outline"
               onClick={async () => {
                 const textFromParts = message.parts
@@ -46,7 +46,7 @@ export const PureMessageActions = ({
                 toast.success("Copied to clipboard!");
               }}
             >
-              <CopyIcon />
+              <CopyIcon size={15} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Copy</TooltipContent>
@@ -56,48 +56,13 @@ export const PureMessageActions = ({
           <TooltipTrigger asChild>
             <Button
               data-testid="message-upvote"
-              className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
-              disabled={vote?.isUpvoted}
+              className="py-1 px-2 h-fit text-muted-foreground bg-background/8 hover:bg-accent/12 backdrop-blur-[4px] !pointer-events-auto"
               variant="outline"
-              onClick={async () => {
-                const upvote = fetch("/api/vote", {
-                  method: "PATCH",
-                  body: JSON.stringify({
-                    chatId,
-                    messageId: message.id,
-                    type: "up",
-                  }),
-                });
-
-                toast.promise(upvote, {
-                  loading: "Upvoting Response...",
-                  success: () => {
-                    mutate<Array<Vote>>(
-                      `/api/vote?chatId=${chatId}`,
-                      (currentVotes) => {
-                        if (!currentVotes) return [];
-
-                        const votesWithoutCurrent = currentVotes.filter((vote) => vote.messageId !== message.id);
-
-                        return [
-                          ...votesWithoutCurrent,
-                          {
-                            chatId,
-                            messageId: message.id,
-                            isUpvoted: true,
-                          },
-                        ];
-                      },
-                      { revalidate: false },
-                    );
-
-                    return "Upvoted Response!";
-                  },
-                  error: "Failed to upvote response.",
-                });
+              onClick={() => {
+                toast.success("Thanks for the feedback!");
               }}
             >
-              <ThumbUpIcon />
+              <ThumbsUpIcon size={15} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Upvote Response</TooltipContent>
@@ -107,48 +72,13 @@ export const PureMessageActions = ({
           <TooltipTrigger asChild>
             <Button
               data-testid="message-downvote"
-              className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
+              className="py-1 px-2 h-fit text-muted-foreground bg-background/8 hover:bg-accent/12 backdrop-blur-[4px] !pointer-events-auto"
               variant="outline"
-              disabled={vote && !vote.isUpvoted}
-              onClick={async () => {
-                const downvote = fetch("/api/vote", {
-                  method: "PATCH",
-                  body: JSON.stringify({
-                    chatId,
-                    messageId: message.id,
-                    type: "down",
-                  }),
-                });
-
-                toast.promise(downvote, {
-                  loading: "Downvoting Response...",
-                  success: () => {
-                    mutate<Array<Vote>>(
-                      `/api/vote?chatId=${chatId}`,
-                      (currentVotes) => {
-                        if (!currentVotes) return [];
-
-                        const votesWithoutCurrent = currentVotes.filter((vote) => vote.messageId !== message.id);
-
-                        return [
-                          ...votesWithoutCurrent,
-                          {
-                            chatId,
-                            messageId: message.id,
-                            isUpvoted: false,
-                          },
-                        ];
-                      },
-                      { revalidate: false },
-                    );
-
-                    return "Downvoted Response!";
-                  },
-                  error: "Failed to downvote response.",
-                });
+              onClick={() => {
+                toast.success("Thanks for the feedback!");
               }}
             >
-              <ThumbDownIcon />
+              <ThumbsDownIcon size={15} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Downvote Response</TooltipContent>

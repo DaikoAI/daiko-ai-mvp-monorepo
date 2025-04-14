@@ -28,7 +28,7 @@ const ChatPage: NextPage<ChatPageProps> = async ({ params }) => {
 
   return (
     <Chat
-      id={thread.id}
+      thread={thread}
       initialMessages={convertToUIMessages(messages)}
       selectedChatModel={DEFAULT_CHAT_MODEL}
       isReadonly={session?.user?.id !== thread.userId}

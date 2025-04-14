@@ -7,6 +7,7 @@ import { chatMessageSelectSchema } from "@daiko-ai/shared/src/db";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+
 export const chatRouter = createTRPCRouter({
   getUserThreads: protectedProcedure
     .input(

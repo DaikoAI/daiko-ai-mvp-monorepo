@@ -104,12 +104,13 @@ export async function POST(request: Request) {
         result.consumeStream();
         result.mergeIntoDataStream(dataStream);
       },
-      onError: () => {
-        return "申し訳ありません。エラーが発生しました。";
+      onError: (error) => {
+        console.error(error);
+        return "sorry, something went wrong";
       },
     });
   } catch (error) {
-    console.error("API エラー:", error);
-    return new Response("リクエスト処理中にエラーが発生しました", { status: 500 });
+    console.error("API error:", error);
+    return new Response("An error occurred while processing the request", { status: 500 });
   }
 }
