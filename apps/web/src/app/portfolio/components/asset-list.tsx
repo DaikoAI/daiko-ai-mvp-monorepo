@@ -76,12 +76,24 @@ export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
 const AssetListSkeleton: React.FC = () => {
   return (
     <section className="space-y-2">
-      {[...Array(5)].map((_, index) => (
+      {[...Array(6)].map((_, index) => (
         <Card key={index} className="backdrop-blur-sm bg-white/12 rounded-2xl border-none transition-all duration-200">
           <div className="flex cursor-pointer items-center justify-between p-4">
-            <div className="flex items-center">
-              <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 p-0.5">
+            <div className="flex items-center flex-1 min-w-0">
+              <div className="mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-black/20 p-0.5">
                 <Skeleton className="h-full w-full rounded-full" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-6 w-20 mb-1" />
+                <div className="flex items-center gap-1 min-w-0">
+                  <Skeleton className="h-4 w-16 flex-shrink-0" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center ml-2 flex-shrink-0">
+              <div className="text-right">
+                <Skeleton className="h-5 w-24 mb-1" />
+                <Skeleton className="h-4 w-32" />
               </div>
             </div>
           </div>

@@ -1,11 +1,15 @@
+import { auth } from "@/server/auth";
 import { api } from "@/trpc/server";
+import { redirect } from "next/navigation";
 import { AssetList } from "./asset-list";
 
-type TokensTabProps = {
-  walletAddress: string;
-};
+export const TokensTabComponent: React.FC = async () => {
+  const session = await auth();
+  if (!session) {
+    redirect("/");
+  }
+  const walletAddress = session.user.walletAddress;
 
-export const TokensTabComponent: React.FC<TokensTabProps> = async ({ walletAddress }) => {
   // tRPCのAPIを使用して資産情報を取得 (RSCでの呼び出し)
   const portfolioData = await api.portfolio.getUserPortfolio({
     walletAddress,

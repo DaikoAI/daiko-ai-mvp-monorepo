@@ -1,10 +1,18 @@
 import { Card } from "@/components/ui/card";
+import { auth } from "@/server/auth";
+import { api } from "@/trpc/server";
+import { redirect } from "next/navigation";
 
-type CollectiblesTabProps = {
-  nfts: any[]; // 適切な型定義がある場合は置き換えてください
-};
+export const CollectiblesTab: React.FC = async () => {
+  const session = await auth();
+  if (!session) {
+    redirect("/");
+  }
+  const walletAddress = session.user.walletAddress;
+  const nfts = await api.portfolio.getUserNfts({
+    walletAddress,
+  });
 
-export const CollectiblesTab: React.FC<CollectiblesTabProps> = ({ nfts }) => {
   if (nfts.length === 0) {
     return (
       <div className="text-center py-8">

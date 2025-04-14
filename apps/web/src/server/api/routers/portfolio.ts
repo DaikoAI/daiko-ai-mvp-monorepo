@@ -304,4 +304,27 @@ export const portfolioRouter = createTRPCRouter({
         },
       };
     }),
+
+  getUserNfts: publicProcedure.input(z.object({ walletAddress: z.string() })).query(async ({ ctx, input }) => {
+    const user = await ctx.db.query.usersTable.findFirst({
+      where: eq(usersTable.walletAddress, input.walletAddress),
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // const nfts = await ctx.db.query.nftsTable.findMany({
+    //   where: eq(nftsTable.userId, user.id),
+    // });
+
+    return [] as {
+      id: string;
+      name: string;
+      image_url: string;
+      collection: {
+        name: string;
+      };
+    }[];
+  }),
 });

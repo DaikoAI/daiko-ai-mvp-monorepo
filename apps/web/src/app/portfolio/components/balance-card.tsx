@@ -1,11 +1,16 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { auth } from "@/server/auth";
 import { api } from "@/trpc/server";
+import { redirect } from "next/navigation";
 
-type BalanceCardProps = {
-  walletAddress: string;
-};
+export const BalanceCardComponent: React.FC = async () => {
+  const session = await auth();
+  if (!session) {
+    redirect("/");
+  }
 
-export const BalanceCardComponent: React.FC<BalanceCardProps> = async ({ walletAddress }) => {
+  const walletAddress = session.user.walletAddress;
+
   // tRPCのAPIを使用してPnLデータを取得 (RSCでの呼び出し)
   const pnlData = await api.portfolio.getUserPnl({
     walletAddress,

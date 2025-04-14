@@ -7,24 +7,11 @@ import type { NextPage } from "next";
 
 import { AuthAvatar } from "@/components/auth-avater";
 import { Skeleton } from "@/components/ui/skeleton";
-import { auth } from "@/server/auth";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { BalanceCard } from "./components/balance-card";
 
-// export const experimental_ppr = true;
-
 const PortfolioPage: NextPage = async () => {
-  const session = await auth();
-  if (!session) {
-    redirect("/");
-  }
-  const walletAddress = session.user.walletAddress;
-
-  // NFTsは現在APIから返されていない場合は空配列を使用
-  const nfts: any[] = [];
-
   return (
     <main className="safe-main-container px-4 pt-6 flex flex-col gap-6">
       <header className="flex items-center justify-between">
@@ -39,17 +26,17 @@ const PortfolioPage: NextPage = async () => {
       </header>
 
       <Suspense fallback={<BalanceCard.Skeleton />}>
-        <BalanceCard walletAddress={walletAddress} />
+        <BalanceCard />
       </Suspense>
 
       {/* Use Tabs component with Composition Pattern */}
       <Tabs
         tokensTab={
           <Suspense fallback={<TokensTab.Skeleton />}>
-            <TokensTab walletAddress={walletAddress} />
+            <TokensTab />
           </Suspense>
         }
-        collectiblesTab={<CollectiblesTab nfts={nfts} />}
+        collectiblesTab={<CollectiblesTab />}
       />
     </main>
   );

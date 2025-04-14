@@ -6,14 +6,21 @@ const nextConfig: NextConfig = {
   experimental: {
     // typedRoutes: true,
     viewTransition: true,
-    // ppr: "incremental",
+    ppr: true,
     reactCompiler: true,
     // useCache: true,
     inlineCss: true,
     staleTimes: {
       dynamic: 60 * 10, // 5 minutes = batch update interval
     },
-    // optimizePackageImports: ["solana-agent-kit"],
+    optimizePackageImports: [
+      "lucide-react",
+      "zod",
+      "recharts",
+      "recharts-scale",
+      "recharts-scale-utils",
+      "framer-motion",
+    ],
   },
   devIndicators: false,
   images: {
