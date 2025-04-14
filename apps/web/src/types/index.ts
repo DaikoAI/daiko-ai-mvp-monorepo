@@ -1,3 +1,5 @@
+import type { UIMessage } from "ai";
+
 // src/types/portfolio.ts
 
 // 共通のインターフェース・タイプ
@@ -151,4 +153,36 @@ export interface Portfolio {
   assets: Asset[];
   totalValue: number;
   walletAddress: string;
+}
+
+export type VisibilityType = "public" | "private";
+
+export interface Message {
+  id: string;
+  threadId: string;
+  userId: string;
+  role: UIMessage["role"];
+  parts: UIMessage["parts"];
+  attachments?: Array<{
+    url: string;
+    name: string;
+    contentType: string;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Vote {
+  id: string;
+  threadId: string;
+  messageId: string;
+  userId: string;
+  type: "up" | "down";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ApplicationError extends Error {
+  info: string;
+  status: number;
 }

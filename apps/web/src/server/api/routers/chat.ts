@@ -4,6 +4,7 @@ import { z } from "zod";
 import { env } from "@/env";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { chatMessagesTable, chatThreadsTable } from "@daiko-ai/shared";
+import { chatMessageSelectSchema } from "@daiko-ai/shared/src/db";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -46,7 +47,13 @@ export const chatRouter = createTRPCRouter({
       const threadsWithLastMessage = await Promise.all(
         threadsData.map(async (thread) => {
           const [lastMessage] = await ctx.db
-            .select()
+            .select({
+              id: chatMessagesTable.id,
+              role: chatMessagesTable.role,
+              parts: chatMessagesTable.parts,
+              attachments: chatMessagesTable.attachments,
+              createdAt: chatMessagesTable.createdAt,
+            })
             .from(chatMessagesTable)
             .where(eq(chatMessagesTable.threadId, thread.id))
             .orderBy(desc(chatMessagesTable.createdAt))
@@ -147,16 +154,10 @@ export const chatRouter = createTRPCRouter({
       return messages;
     }),
 
-  sendMessage: protectedProcedure
-    .input(
-      z.object({
-        threadId: z.string().uuid(),
-        content: z.string().min(1).max(2000), // Limit message length
-        role: z.enum(["user", "assistant"]),
-      }),
-    )
+  createMessage: protectedProcedure
+    .input(chatMessageSelectSchema.pick({ id: true, threadId: true, role: true, parts: true, attachments: true }))
     .mutation(async ({ ctx, input }) => {
-      const { threadId, content, role } = input;
+      const { id, threadId, role, parts, attachments } = input;
       const userId = ctx.session.user.id;
 
       // 1. Verify user owns the thread using standard select
@@ -180,9 +181,11 @@ export const chatRouter = createTRPCRouter({
       const [insertedMessage] = await ctx.db // Use ctx.db directly
         .insert(chatMessagesTable)
         .values({
+          id,
           threadId,
-          content,
           role,
+          parts,
+          attachments,
         })
         .returning();
 
@@ -237,7 +240,7 @@ export const chatRouter = createTRPCRouter({
       const messages = await ctx.db
         .select({
           role: chatMessagesTable.role,
-          content: chatMessagesTable.content,
+          parts: chatMessagesTable.parts,
         })
         .from(chatMessagesTable)
         .where(eq(chatMessagesTable.threadId, threadId))
@@ -251,7 +254,13 @@ export const chatRouter = createTRPCRouter({
       }
 
       // 3. Construct prompt for LLM
-      const conversationHistory = messages.map((msg) => `${msg.role}: ${msg.content}`).join("\n\n");
+      const conversationHistory = messages
+        .map((msg) => {
+          const parts = msg.parts as Array<{ type: string; text?: string }>;
+          const text = parts[0]?.type === "text" ? parts[0].text : "";
+          return `${msg.role}: ${text}`;
+        })
+        .join("\n\n");
 
       // Define the prompt string
       const prompt = `Generate a very short, concise title (less than 5 words) for the following conversation. Only output the title itself, with no preamble or explanation.

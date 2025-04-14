@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1744010719778,
-      "tag": "0000_happy_the_santerians",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1744058347035,
-      "tag": "0001_known_dagger",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1744130248530,
-      "tag": "0002_big_zombie",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1744281842013,
-      "tag": "0003_blue_the_order",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1744642721859,
-      "tag": "0004_opposite_chameleon",
+      "when": 1744657208042,
+      "tag": "0000_black_shooting_star",
       "breakpoints": true
     }
   ]

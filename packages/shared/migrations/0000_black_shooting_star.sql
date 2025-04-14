@@ -1,4 +1,4 @@
-CREATE TYPE "public"."sender" AS ENUM('user', 'ai', 'system');--> statement-breakpoint
+CREATE TYPE "public"."role" AS ENUM('user', 'assistant', 'system');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"user_id" varchar(255) NOT NULL,
 	"type" varchar(255) NOT NULL,
@@ -30,8 +30,9 @@ CREATE TABLE "authenticators" (
 CREATE TABLE "chat_messages" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"thread_id" varchar NOT NULL,
-	"sender" "sender" NOT NULL,
-	"content" text NOT NULL,
+	"role" varchar NOT NULL,
+	"parts" json NOT NULL,
+	"attachments" json NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -129,10 +130,30 @@ CREATE TABLE "proposals" (
 	"updated_at" timestamp DEFAULT NOW() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "push_subscriptions" (
+	"user_id" varchar(255) NOT NULL,
+	"endpoint" text NOT NULL,
+	"p256dh" text NOT NULL,
+	"auth" text NOT NULL,
+	"user_agent" text,
+	"os" varchar(100),
+	"browser" varchar(100),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "sessions" (
 	"session_token" varchar(255) PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,
 	"expires" timestamp with time zone NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "token_price_history" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"token_address" varchar(255) NOT NULL,
+	"price_usd" varchar(78) NOT NULL,
+	"timestamp" timestamp NOT NULL,
+	"source" varchar(50) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "token_prices" (
@@ -195,10 +216,7 @@ CREATE TABLE "users" (
 	"crypto_investment_usd" integer,
 	"wallet_address" varchar(255) DEFAULT '1nc1nerator11111111111111111111111111111111' NOT NULL,
 	"risk_tolerance" varchar(20) DEFAULT 'medium',
-	"staking_enabled" boolean DEFAULT true,
-	"birthday" timestamp,
-	"twitter_connected" boolean DEFAULT false,
-	"twitter_username" varchar(255)
+	"notification_enabled" boolean DEFAULT false
 );
 --> statement-breakpoint
 CREATE TABLE "verification_tokens" (
@@ -229,7 +247,9 @@ ALTER TABLE "investments" ADD CONSTRAINT "investments_token_address_tokens_addre
 ALTER TABLE "perp_positions" ADD CONSTRAINT "perp_positions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "perp_positions" ADD CONSTRAINT "perp_positions_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "portfolio_snapshots" ADD CONSTRAINT "portfolio_snapshots_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "push_subscriptions" ADD CONSTRAINT "push_subscriptions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "token_price_history" ADD CONSTRAINT "token_price_history_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "token_prices" ADD CONSTRAINT "token_prices_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_from_token_address_tokens_address_fk" FOREIGN KEY ("from_token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -255,6 +275,8 @@ CREATE INDEX "idx_perp_token_address" ON "perp_positions" USING btree ("token_ad
 CREATE INDEX "idx_perp_liquidation" ON "perp_positions" USING btree ("liquidation_price","status");--> statement-breakpoint
 CREATE INDEX "user_timestamp_idx" ON "portfolio_snapshots" USING btree ("user_id","timestamp");--> statement-breakpoint
 CREATE INDEX "timestamp_idx" ON "portfolio_snapshots" USING btree ("timestamp");--> statement-breakpoint
+CREATE UNIQUE INDEX "endpoint_unique_idx" ON "push_subscriptions" USING btree ("endpoint");--> statement-breakpoint
+CREATE INDEX "push_subscription_user_idx" ON "push_subscriptions" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_sessions_user_id" ON "sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_token_prices_address" ON "token_prices" USING btree ("token_address");--> statement-breakpoint
 CREATE INDEX "idx_token_prices_updated" ON "token_prices" USING btree ("last_updated");--> statement-breakpoint

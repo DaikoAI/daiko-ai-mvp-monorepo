@@ -13,6 +13,7 @@
     "migrate": "tsx src/db/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "db:visualize": "tsx scripts/visualizeSchema.ts && dbml-renderer -i ../../docs/db/schema.dbml -o ../../docs/db/erd.svg",

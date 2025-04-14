@@ -34,7 +34,9 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
                     </time>
                   </div>
                   <p className="text-sm text-white/60 line-clamp-2">
-                    {thread.lastMessage?.content ?? "No messages yet"}
+                    {(thread.lastMessage?.parts as Array<{ type: string; text?: string }>)?.[0]?.type === "text"
+                      ? (thread.lastMessage?.parts as Array<{ type: string; text?: string }>)?.[0]?.text
+                      : "No messages yet"}
                   </p>
                 </div>
               </Link>

@@ -1,5 +1,7 @@
+import type { ApplicationError } from "@/types";
 import { Keypair } from "@solana/web3.js";
-import { clsx, type ClassValue } from "clsx";
+import type { ClassValue } from "clsx";
+import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
@@ -50,4 +52,53 @@ export function generateSolanaWalletAddress(): string {
   const keypair = Keypair.generate();
   // 公開鍵（ウォレットアドレス）を文字列として返す
   return keypair.publicKey.toString();
+}
+
+export function generateUUID(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+export const fetcher = async (url: string) => {
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    const error = new Error("An error occurred while fetching the data.") as ApplicationError;
+
+    error.info = await res.json();
+    error.status = res.status;
+
+    throw error;
+  }
+
+  return res.json();
+};
+
+export function smoothStream(text: string): string {
+  return text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function createDataStreamResponse(stream: AsyncIterable<string>) {
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+        }
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    }),
+    {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    },
+  );
 }
