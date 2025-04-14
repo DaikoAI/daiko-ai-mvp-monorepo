@@ -635,27 +635,27 @@ const seedProposals = async (userIds: string[]) => {
 async function seed() {
   console.log("シードデータ挿入を開始します...");
 
-  const generatedUsers = await seedUsers();
+  // const generatedUsers = await seedUsers();
 
-  // トークン挿入
-  console.log("トークンデータを挿入中...");
-  await seedTokens();
+  // // トークン挿入
+  // console.log("トークンデータを挿入中...");
+  // await seedTokens();
 
-  // ユーザートークン残高挿入
-  console.log("ユーザートークン残高データを挿入中...");
-  await seedUserTokenBalances(generatedUsers);
+  // // ユーザートークン残高挿入
+  // console.log("ユーザートークン残高データを挿入中...");
+  // await seedUserTokenBalances(generatedUsers);
 
-  // staking tokenの金利データ挿入
-  console.log("staking tokenの金利データを挿入中...");
-  await seedStakingTokenInterestRates();
+  // // staking tokenの金利データ挿入
+  // console.log("staking tokenの金利データを挿入中...");
+  // await seedStakingTokenInterestRates();
 
-  // Xアカウント挿入
-  console.log("Xアカウントデータを挿入中...");
-  await seedXAccounts(generatedUsers);
+  // // Xアカウント挿入
+  // console.log("Xアカウントデータを挿入中...");
+  // await seedXAccounts(generatedUsers);
 
-  // ニュースサイト挿入
-  console.log("ニュースサイトデータを挿入中...");
-  await seedNewsSites(generatedUsers);
+  // // ニュースサイト挿入
+  // console.log("ニュースサイトデータを挿入中...");
+  // await seedNewsSites(generatedUsers);
 
   // 提案データ挿入 (New)
   console.log("提案データを挿入中...");
