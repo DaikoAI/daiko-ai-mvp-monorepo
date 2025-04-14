@@ -191,7 +191,7 @@ export const portfolioRouter = createTRPCRouter({
       return {
         wallet_address: input.walletAddress,
         total_value_usd: totalValue.toString(),
-        tokens: tokensWithPriceChange.sort((a, b) => new BigNumber(b.priceUsd).minus(a.priceUsd).toNumber()),
+        tokens: tokensWithPriceChange.sort((a, b) => new BigNumber(b.valueUsd).minus(a.valueUsd).toNumber()),
         perp_positions: perpPositionsData,
         last_updated: new Date(),
       };

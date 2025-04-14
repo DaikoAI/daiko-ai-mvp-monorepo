@@ -21,7 +21,7 @@ export const useAlphaSwap = () => {
         requestedBy: "user",
         timestamp: Date.now(),
         instruction: contractCallToInstruction({
-          type: "swap",
+          type: params.type,
           description: `Swap ${params.fromAmount} ${params.fromToken} for ${params.toToken}`,
           params: {
             fromToken: params.fromToken,

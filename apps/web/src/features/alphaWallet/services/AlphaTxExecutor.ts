@@ -52,7 +52,8 @@ export function useExecuteInstruction() {
         };
       } else if (instruction.type === "stake") {
         const result = await stake.mutateAsync({
-          token: instruction.fromToken.symbol,
+          fromToken: instruction.fromToken.symbol,
+          toToken: instruction.toToken.symbol,
           amount: instruction.fromAmount,
           walletAddress,
         });

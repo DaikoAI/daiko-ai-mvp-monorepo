@@ -3,7 +3,7 @@ import { portfolioRouter } from "@/server/api/routers/portfolio";
 import { proposalRouter } from "@/server/api/routers/proposal";
 import { pushRouter } from "@/server/api/routers/push";
 import { transactionsRouter } from "@/server/api/routers/transactions";
-import { usersRouter } from "@/server/api/routers/users";
+import { usersRouter } from "@/server/api/routers/user";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { perpRouter } from "./routers/perp";
 import { tokenRouter } from "./routers/token";

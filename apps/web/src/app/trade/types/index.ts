@@ -6,9 +6,11 @@ export interface TokenBalance {
 }
 
 export interface SwapParams {
+  type: "swap" | "stake";
   fromToken: Token;
   toToken: Token;
   fromAmount: number;
+  toAmount?: number;
 }
 
 export type SwapError =

@@ -122,25 +122,33 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
     const fetchPrices = async () => {
       if (!tx || !tx.instruction) return;
 
+      const instruction = tx.instruction;
+      console.log("instruction", instruction);
+
+      // ステーキング取引の場合は1:1のレートを設定
+      if (instruction.type === "stake" || instruction.metadata?.tokenType === "staking") {
+        instruction.toAmount = instruction.fromAmount;
+        // 1:1のレートを設定
+        setTokenPrices({
+          [instruction.fromToken.address]: "1",
+          [instruction.toToken.address]: "1",
+        });
+        return;
+      }
+
       setIsLoadingPrices(true);
       try {
-        const instruction = tx.instruction;
         const tokenAddresses = [instruction.fromToken.address, instruction.toToken.address];
         const prices = await getTokenPrices(tokenAddresses);
         console.log("prices", prices);
         setTokenPrices(prices);
 
-        // Update toToken amount to match fromToken price or handle stake
-        if (instruction.type === "stake") {
-          instruction.toAmount = instruction.fromAmount;
-        } else {
-          const fromPrice = parseFloat(prices[instruction.fromToken.address] || "0");
-          const toPrice = parseFloat(prices[instruction.toToken.address] || "0");
-          const fromAmount = parseFloat(instruction.fromAmount || "0");
+        const fromPrice = parseFloat(prices[instruction.fromToken.address] || "0");
+        const toPrice = parseFloat(prices[instruction.toToken.address] || "0");
+        const fromAmount = parseFloat(instruction.fromAmount || "0");
 
-          const equivalentToAmount = (fromAmount * fromPrice) / toPrice;
-          instruction.toAmount = equivalentToAmount.toFixed(6);
-        }
+        const equivalentToAmount = (fromAmount * fromPrice) / toPrice;
+        instruction.toAmount = equivalentToAmount.toFixed(6);
       } catch (error) {
         console.error("Failed to fetch token prices:", error);
       } finally {

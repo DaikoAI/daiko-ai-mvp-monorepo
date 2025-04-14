@@ -9,6 +9,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useAlphaSwap } from "../hooks/use-alpha-swap";
 import { useTokenPrice } from "../hooks/use-token-price";
+import { canSwap, isInsufficientBalance, validateSwap } from "../utils/swap-validation";
+import { getAvailableTokens } from "../utils/token-filter";
 import { TokenSelect } from "./token-select";
 
 interface Balance {
@@ -38,30 +40,46 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
 
   const fromBalance = getBalance(fromToken);
 
+  // 利用可能なトークンのリストを取得
+  const availableFromTokens = getAvailableTokens(tokens, toToken, true);
+  const availableToTokens = getAvailableTokens(tokens, fromToken, false);
+
+  const handleFromTokenChange = (token: Token) => {
+    setFromToken(token);
+    // 新しい組み合わせが無効な場合、ToTokenをリセット
+    if (!getAvailableTokens(tokens, token, false).includes(toToken)) {
+      setToToken(availableToTokens[0]!);
+    }
+  };
+
+  const handleToTokenChange = (token: Token) => {
+    setToToken(token);
+    // 新しい組み合わせが無効な場合、FromTokenをリセット
+    if (!getAvailableTokens(tokens, token, true).includes(fromToken)) {
+      setFromToken(availableFromTokens[0]!);
+    }
+  };
+
   const handleSwap = async () => {
     if (!fromPrice || !toPrice) return;
 
-    const numericAmount = Number(fromAmount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      toast.error("Invalid amount");
-      return;
-    }
-
-    if (numericAmount > fromBalance) {
-      toast.error(`You don't have enough ${fromToken}`);
+    const validationResult = validateSwap(fromToken, toToken, fromAmount, fromBalance);
+    if (!validationResult.isValid) {
+      toast.error(validationResult.error?.message);
       return;
     }
 
     const result = await swap({
+      type: toToken.type === "liquid_staking" ? "stake" : "swap",
       fromToken: fromToken,
       toToken: toToken,
-      fromAmount: numericAmount,
+      fromAmount: Number(fromAmount),
     });
 
     result.match(
       (success) => {
         toast.success("Swap executed successfully", {
-          description: `Swapped ${success.fromAmount} ${fromToken} for ${success.toAmount} ${toToken}`,
+          description: `Swapped ${success.fromAmount} ${fromToken.symbol} for ${success.toAmount} ${toToken.symbol}`,
         });
         setFromAmount("");
       },
@@ -74,10 +92,11 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
   };
 
   const estimatedAmount =
-    fromPrice && toPrice && fromAmount ? ((Number(fromAmount) * fromPrice) / toPrice).toFixed(6) : "0";
-
-  const isInsufficientBalance = Number(fromAmount) > fromBalance;
-  const isValidAmount = Number(fromAmount) > 0;
+    fromPrice && toPrice && fromAmount
+      ? toToken.type === "liquid_staking"
+        ? fromAmount // 1:1 ratio for staking tokens
+        : ((Number(fromAmount) * fromPrice) / toPrice).toFixed(6)
+      : "0";
 
   return (
     <div className="space-y-4">
@@ -88,9 +107,9 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
             value={fromAmount}
             onChange={(e) => setFromAmount(e.target.value)}
             placeholder="0.0"
-            className={`flex-1 ${isInsufficientBalance ? "border-red-500" : ""}`}
+            className={`flex-1 ${isInsufficientBalance(fromAmount, fromBalance) ? "border-red-500" : ""}`}
           />
-          <TokenSelect tokens={tokens} value={fromToken} onChange={(value) => setFromToken(value)} />
+          <TokenSelect tokens={availableFromTokens} value={fromToken} onChange={handleFromTokenChange} />
         </div>
         <div className="flex justify-between text-sm">
           {isFromPriceLoading ? (
@@ -104,7 +123,7 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
             </>
           )}
         </div>
-        {isInsufficientBalance && <p className="text-sm text-red-500">Insufficient balance</p>}
+        {isInsufficientBalance(fromAmount, fromBalance) && <p className="text-sm text-red-500">Insufficient balance</p>}
       </div>
 
       <div className="flex justify-center">
@@ -112,8 +131,11 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
           variant="ghost"
           size="icon"
           onClick={() => {
-            setFromToken(toToken);
-            setToToken(fromToken);
+            // トークンの入れ替えが有効な場合のみ実行
+            if (getAvailableTokens(tokens, toToken, true).includes(fromToken)) {
+              setFromToken(toToken);
+              setToToken(fromToken);
+            }
           }}
         >
           <ArrowDownIcon className="h-4 w-4" />
@@ -123,19 +145,22 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
           <Input type="number" value={estimatedAmount} readOnly placeholder="0.0" className="flex-1" />
-          <TokenSelect tokens={tokens} value={toToken} onChange={(value) => setToToken(value)} />
+          <TokenSelect tokens={availableToTokens} value={toToken} onChange={handleToTokenChange} />
         </div>
         {isPriceLoading ? (
           <Skeleton className="h-4 w-24" />
         ) : (
-          <p className="text-sm text-muted-foreground">≈ ${(Number(estimatedAmount) * (toPrice || 0)).toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground">
+            ≈ $
+            {(Number(estimatedAmount) * (toToken.type === "liquid_staking" ? fromPrice || 0 : toPrice || 0)).toFixed(2)}
+          </p>
         )}
       </div>
 
       <Button
         className="w-full text-lg font-bold"
         onClick={handleSwap}
-        disabled={!isValidAmount || isInsufficientBalance || isSwapping || fromToken === toToken}
+        disabled={!canSwap(fromToken, toToken, fromAmount, fromBalance, isSwapping)}
       >
         {isSwapping ? (
           <>
