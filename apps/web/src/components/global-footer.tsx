@@ -3,13 +3,11 @@
 import { cn } from "@/utils";
 // import { useWallet } from "@solana/wallet-adapter-react";
 import { FileText, MessageSquare, RefreshCcw, Wallet } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useHaptic } from "use-haptic";
+import { HapticLink } from "./haptic-link";
 
 export const GlobalFooter: React.FC = () => {
   const pathname = usePathname();
-  const { triggerHaptic } = useHaptic();
   // const { publicKey } = useWallet();
 
   const navItems = [
@@ -43,17 +41,16 @@ export const GlobalFooter: React.FC = () => {
             (item.href.includes("/portfolio") && pathname.includes("/portfolio")) || item.href === pathname;
 
           return (
-            <Link
+            <HapticLink
               href={item.href}
               key={item.href}
               className={cn(
                 "flex h-full w-full flex-col items-center justify-center space-y-1",
                 isActive ? "text-white" : "text-white/50",
               )}
-              onClick={() => triggerHaptic()}
             >
               <item.icon size={24} className={cn("transition-opacity", isActive ? "opacity-100" : "opacity-50")} />
-            </Link>
+            </HapticLink>
           );
         })}
       </nav>

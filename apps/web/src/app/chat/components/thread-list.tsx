@@ -1,7 +1,7 @@
+import { HapticLink } from "@/components/haptic-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/trpc/server";
 import { formatChatListTimestamp } from "@/utils/date";
-import Link from "next/link";
 
 export const revalidate = 300;
 
@@ -14,8 +14,6 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
     query: searchQuery,
   });
 
-  console.log(threads);
-
   return (
     <div className="flex-1 overflow-y-auto">
       <ul className="space-y-2 p-4">
@@ -25,7 +23,7 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
               key={thread.id}
               className="rounded-xl bg-[rgba(255,255,255,0.12)] backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
             >
-              <Link href={`/chat/${thread.id}`} className="block p-4">
+              <HapticLink href={`/chat/${thread.id}`} className="block p-4">
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between items-start">
                     <p className="text-base font-semibold text-white truncate flex-1 mr-4">{thread.title}</p>
@@ -43,7 +41,7 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
                       : "No messages yet"}
                   </p>
                 </div>
-              </Link>
+              </HapticLink>
             </li>
           ))
         ) : (
