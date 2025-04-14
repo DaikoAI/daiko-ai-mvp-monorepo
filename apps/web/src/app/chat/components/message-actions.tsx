@@ -4,6 +4,7 @@ import { useCopyToClipboard } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatTime } from "@/utils/date";
 import { CopyIcon } from "lucide-react";
 import { memo } from "react";
 import { toast } from "sonner";
@@ -24,7 +25,7 @@ export const PureMessageActions = ({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-row gap-2 justify-between items-end">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -51,6 +52,10 @@ export const PureMessageActions = ({
           </TooltipTrigger>
           <TooltipContent>Copy</TooltipContent>
         </Tooltip>
+
+        <time className="text-muted-foreground text-xs" dateTime={message.createdAt?.toISOString()}>
+          {formatTime(message.createdAt)}
+        </time>
 
         {/* <Tooltip>
           <TooltipTrigger asChild>

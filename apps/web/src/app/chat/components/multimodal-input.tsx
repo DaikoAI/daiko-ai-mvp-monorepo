@@ -78,7 +78,7 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
           adjustHeight();
         }}
         className={cx(
-          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-t-2xl !text-base bg-muted pb-10 pt-4 px-4 dark:border-zinc-700",
+          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-t-2xl !text-base bg-muted pb-safe-offset-4 pt-4 px-4 dark:border-zinc-700",
           className,
         )}
         rows={2}
@@ -96,7 +96,7 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
         }}
       />
 
-      <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
+      <div className="absolute bottom-2 right-2 p-2 w-fit flex flex-row justify-end">
         {status === "submitted" && messages.length > 0 && messages[messages.length - 1]?.role === "user" ? (
           <Button
             data-testid="stop-button"
