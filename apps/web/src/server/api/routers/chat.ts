@@ -1,12 +1,12 @@
 import { and, asc, desc, eq, like } from "drizzle-orm";
 import { z } from "zod";
 
+import { revalidateChatList, revalidateThread } from "@/app/actions";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { chatMessagesTable, chatThreadsTable } from "@daiko-ai/shared";
 import { chatMessageSelectSchema } from "@daiko-ai/shared/src/db";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 
 export const chatRouter = createTRPCRouter({
   getUserThreads: protectedProcedure
@@ -111,7 +111,8 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
-      revalidatePath(`/chat`);
+      revalidateChatList();
+      revalidateThread(newThread.id);
 
       return newThread;
     }),
@@ -135,7 +136,7 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
-      revalidatePath(`/chat/${threadId}`);
+      revalidateThread(threadId);
 
       return updatedThread;
     }),
@@ -226,7 +227,7 @@ export const chatRouter = createTRPCRouter({
         .set({ updatedAt: new Date() })
         .where(eq(chatThreadsTable.id, threadId));
 
-      revalidatePath(`/chat/${threadId}`);
+      revalidateThread(threadId);
 
       return insertedMessage;
     }),

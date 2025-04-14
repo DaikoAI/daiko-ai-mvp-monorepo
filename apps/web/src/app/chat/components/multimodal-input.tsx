@@ -78,7 +78,7 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
           adjustHeight();
         }}
         className={cn(
-          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base bg-transparent mb-safe !pb-4 px-4 !border-none !rounded-t-2xl",
+          "min-h-[30px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base bg-transparent !pb-safe-offset-8 pt-4 px-4 !border-none !rounded-t-2xl",
           className,
         )}
         rows={2}
