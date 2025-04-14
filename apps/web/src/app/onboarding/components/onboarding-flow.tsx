@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { isPWA } from "@/utils/pwa";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthStep } from "./auth-step";
@@ -16,10 +17,15 @@ export const OnboardingFlow: React.FC = () => {
   const { state, setCurrentStep } = useOnboarding();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { data: session } = useSession();
 
   // Initialize after client-side mounting
   useEffect(() => {
     setMounted(true);
+
+    if (session) {
+      router.push("/proposals");
+    }
 
     // Skip welcome step if running as PWA and on initial step
     if (isPWA() && state.currentStep === "welcome") {
