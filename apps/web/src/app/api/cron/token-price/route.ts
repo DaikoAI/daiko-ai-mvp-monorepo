@@ -8,6 +8,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await processTokenPrices();
-  return NextResponse.json(result);
+  try {
+    const result = await processTokenPrices();
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
