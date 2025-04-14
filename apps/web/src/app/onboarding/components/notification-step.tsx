@@ -2,52 +2,63 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePushNotifications } from "@/hooks/use-push-notifications"; // Import the custom hook
 import { useOnboarding } from "@/lib/onboarding-context";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 
 export const NotificationStep: React.FC = () => {
   const { state, setNotificationEnabled, setCurrentStep } = useOnboarding();
-  const [isEnabling, setIsEnabling] = useState(false);
 
-  const handleEnable = async () => {
-    setIsEnabling(true);
+  // Use the custom hook
+  const {
+    isSupported,
+    permission,
+    subscribe,
+    isLoading,
+    error,
+    subscription, // Get the current subscription state
+  } = usePushNotifications();
 
-    try {
-      // Request push notification permission
-      if ("Notification" in window) {
-        const permission = await Notification.requestPermission();
-
-        if (permission === "granted") {
-          setNotificationEnabled(true);
-          toast.success("Notifications enabled successfully");
-        } else {
-          toast.error("Notification permission denied");
-        }
-      } else {
-        toast.error("Your browser does not support notifications");
-      }
-
-      // Proceed to next step
-      setCurrentStep("profile");
-    } catch (error) {
-      console.error("Notification permission error:", error);
-      toast.error("Error enabling notifications");
-    } finally {
-      setIsEnabling(false);
+  // Update onboarding context based on hook state
+  useEffect(() => {
+    // If a subscription exists (either initially or after subscribing)
+    // and notifications weren't already marked as enabled in context,
+    // update the context.
+    if (subscription && !state.notificationEnabled) {
+      setNotificationEnabled(true);
     }
-  };
 
-  // Skip handler
-  const handleSkip = () => {
-    setCurrentStep("profile");
-  };
+    if (state.notificationEnabled) {
+      setCurrentStep("profile");
+    }
+  }, [subscription, setNotificationEnabled, state.notificationEnabled, setCurrentStep]);
 
+  // Determine the button text and disabled state
+  const isNotificationAllowed = permission === "granted";
+  const buttonDisabled =
+    !isSupported || isLoading || (isNotificationAllowed && !!subscription) || permission === "denied";
+
+  let buttonText = "Enable Notifications";
+  if (!isSupported) {
+    buttonText = "Notifications Not Supported";
+  } else if (isLoading) {
+    buttonText = "Enabling...";
+  } else if (permission === "denied") {
+    buttonText = "Permission Denied";
+  } else if (isNotificationAllowed && !!subscription) {
+    buttonText = "Notifications Enabled";
+  }
+
+  // JSX - simplified using hook state
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Enable Notifications</CardTitle>
-        <CardDescription>Stay updated with important information</CardDescription>
+        <CardDescription>
+          {permission === "denied"
+            ? "Enable notifications in browser settings to proceed."
+            : "Stay updated with important information"}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center">
@@ -75,13 +86,16 @@ export const NotificationStep: React.FC = () => {
             <li>• Important news and updates</li>
           </ul>
         </div>
+        {/* Display hook error if any */}
+        {error && <p className="text-sm text-center text-destructive">Error: {error}</p>}
       </CardContent>
       <CardFooter className="flex-col space-y-2">
-        <Button onClick={handleEnable} className="w-full" disabled={isEnabling || state.notificationEnabled}>
-          {isEnabling ? "Enabling..." : state.notificationEnabled ? "Notifications Enabled" : "Enable Notifications"}
-        </Button>
-        <Button variant="ghost" onClick={handleSkip} className="w-full">
-          Later
+        <Button
+          onClick={subscribe} // Call the hook's subscribe function
+          className="w-full"
+          disabled={buttonDisabled}
+        >
+          {buttonText}
         </Button>
       </CardFooter>
     </Card>

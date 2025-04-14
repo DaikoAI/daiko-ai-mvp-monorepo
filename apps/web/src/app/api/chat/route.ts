@@ -1,5 +1,5 @@
 import { getChatCompletionStream } from "@/lib/openai";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 

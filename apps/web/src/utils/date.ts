@@ -38,3 +38,42 @@ export function isWithin24Hours(date: Date): boolean {
   const diffMs = date.getTime() - now.getTime();
   return diffMs > 0 && diffMs < 24 * 60 * 60 * 1000;
 }
+
+/**
+ * Formats a date for the chat list based on whether it's today, this year, or older.
+ * @param date The date to format.
+ * @returns Formatted date string (e.g., "14:30", "15 Jul", "15 Jul 2023").
+ */
+export function formatChatListTimestamp(date: Date | string | null | undefined): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false, // Use 24-hour format
+  };
+
+  const dayMonthOptions: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+  };
+
+  const fullDateOptions: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  };
+
+  if (now.toDateString() === d.toDateString()) {
+    // Today: Show time (HH:mm)
+    return d.toLocaleTimeString(undefined, timeOptions);
+  } else if (now.getFullYear() === d.getFullYear()) {
+    // This year: Show date and month (d MMM)
+    return d.toLocaleDateString(undefined, dayMonthOptions);
+  } else {
+    // Older: Show full date (d MMM yyyy)
+    return d.toLocaleDateString(undefined, fullDateOptions);
+  }
+}

@@ -1,7 +1,12 @@
-import { db } from "./connection";
-import { NewsSiteInsert, newsSiteTable } from "./schema/newsSites";
+import { eq } from "drizzle-orm";
+import { db } from ".";
+import { setupInitialPortfolio } from "../utils/portfolio";
+import { InterestRateInsert, interestRatesTable } from "./schema/interest_rates";
+import { NewsSiteInsert, newsSiteTable } from "./schema/news_sites";
+import { ProposalInsert, proposalTable } from "./schema/proposals";
+import { TokenInsert, tokensTable } from "./schema/tokens";
 import { UserInsert, UserSelect, usersTable } from "./schema/users";
-import { XAccountInsert, xAccountTable } from "./schema/xAccounts";
+import { XAccountInsert, xAccountTable } from "./schema/x_accounts";
 
 const seedUsers = async () => {
   try {
@@ -11,16 +16,28 @@ const seedUsers = async () => {
         name: "山田太郎",
         age: 30,
         email: "yamada@example.com",
+        tradeStyle: "conservative",
+        totalAssetUsd: 1000000,
+        cryptoInvestmentUsd: 100000,
+        walletAddress: "Fgkki5sVbKpdLF28nvahDyrYeUQ5Cn7VJ8WTXHzLWEB5",
       },
       {
         name: "佐藤花子",
         age: 25,
         email: "sato@example.com",
+        tradeStyle: "moderate",
+        totalAssetUsd: 1000000,
+        cryptoInvestmentUsd: 100000,
+        walletAddress: "6R57iMy4cxpMBWu6wNP8648HoTEbim8fDK2ZWFdYPJ5D",
       },
       {
         name: "鈴木一郎",
         age: 35,
         email: "suzuki@example.com",
+        tradeStyle: "aggressive",
+        totalAssetUsd: 1000000,
+        cryptoInvestmentUsd: 100000,
+        walletAddress: "6yVF82TqGTwvix2tCGzxUhWGKkBB185sTU7A2bvACnF2",
       },
     ];
 
@@ -49,6 +66,229 @@ const seedUsers = async () => {
     console.error("ユーザーデータの挿入中にエラーが発生しました:", error);
     throw error;
   }
+};
+
+const seedTokens = async () => {
+  try {
+    // トークンデータ
+    const tokens: TokenInsert[] = [
+      {
+        address: "So11111111111111111111111111111111111111112",
+        symbol: "SOL",
+        name: "Wrapped SOL",
+        decimals: 9,
+        type: "normal",
+        iconUrl: "/tokens/SOL.png",
+      },
+      {
+        address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        symbol: "USDC",
+        name: "USD Coin",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/USDC.png",
+      },
+      {
+        address: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+        symbol: "TRUMP",
+        name: "OFFICIAL TRUMP",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/TRUMP.png",
+      },
+      {
+        address: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+        symbol: "JUP",
+        name: "Jupiter",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/JUP.png",
+      },
+      {
+        address: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+        symbol: "WIF",
+        name: "dogwifhat",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/WIF.png",
+      },
+      {
+        address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+        symbol: "BONK",
+        name: "Bonk",
+        decimals: 5,
+        type: "normal",
+        iconUrl: "/tokens/BONK.png",
+      },
+      {
+        address: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+        symbol: "JTO",
+        name: "Jito",
+        decimals: 9,
+        type: "normal",
+        iconUrl: "/tokens/JTO.png",
+      },
+      {
+        address: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+        symbol: "RAY",
+        name: "Raydium",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/RAY.png",
+      },
+      {
+        address: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
+        symbol: "PYTH",
+        name: "Pyth Network",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/PYTH.png",
+      },
+      {
+        address: "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux",
+        symbol: "HNT",
+        name: "Helium Network Token",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/HNT.png",
+      },
+      {
+        address: "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
+        symbol: "W",
+        name: "Wormhole",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/W.png",
+      },
+      {
+        address: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+        symbol: "MEW",
+        name: "cat in a dogs world",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/MEW.png",
+      },
+      {
+        address: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
+        symbol: "POPCAT",
+        name: "Popcat (SOL)",
+        decimals: 9,
+        type: "normal",
+        iconUrl: "/tokens/POPCAT.png",
+      },
+      {
+        address: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+        symbol: "ORCA",
+        name: "Orca",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/ORCA.png",
+      },
+      {
+        address: "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq",
+        symbol: "ZEUS",
+        name: "Zeus Network",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/ZEUS.png",
+      },
+      {
+        address: "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
+        symbol: "KMNO",
+        name: "Kamino",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/KMNO.svg",
+      },
+      {
+        address: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+        symbol: "WBTC",
+        name: "Wrapped Bitcoin (Portal)",
+        decimals: 8,
+        type: "normal",
+        iconUrl: "/tokens/WBTC.png",
+      },
+      {
+        address: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
+        symbol: "jupSOL",
+        name: "Jupiter Staked SOL",
+        decimals: 9,
+        type: "liquid_staking",
+        iconUrl: "/tokens/jupSOL.png",
+      },
+      {
+        address: "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
+        symbol: "jitoSOL",
+        name: "Jito Staked SOL",
+        decimals: 9,
+        type: "liquid_staking",
+        iconUrl: "/tokens/jitoSOL.png",
+      },
+      {
+        address: "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm",
+        symbol: "INF",
+        name: "Infinity",
+        decimals: 9,
+        type: "liquid_staking",
+        iconUrl: "/tokens/INF.png",
+      },
+      {
+        address: "bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ",
+        symbol: "BIO",
+        name: "BIO",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/BIO.png",
+      },
+      {
+        address: "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc",
+        symbol: "LAYER",
+        name: "Solayer",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/LAYER.png",
+      },
+      {
+        address: "14zP2ToQ79XWvc7FQpm4bRnp9d6Mp1rFfsUW3gpLcRX",
+        symbol: "AIXBT",
+        name: "aixbt by Virtuals (Wormhole)",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/AIXBT.png",
+      },
+      {
+        address: "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
+        symbol: "ACT",
+        name: "Act I : The AI Prophecy",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/ACT.png",
+      },
+      {
+        address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+        symbol: "Fartcoin",
+        name: "Fartcoin",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/Fartcoin.png",
+      },
+    ];
+
+    const existingTokens = await db.select().from(tokensTable);
+
+    for (const token of tokens) {
+      const existingToken = existingTokens.find((t) => t.address === token.address);
+
+      if (!existingToken) {
+        await db.insert(tokensTable).values(token);
+        console.log(`トークン "${token.name}" (${token.symbol}) を挿入しました`);
+      } else {
+        console.log(`トークン "${token.name}" (${token.symbol}) は既に存在します。スキップします。`);
+      }
+    }
+
+    return tokens;
+  } catch (error) {}
 };
 
 const seedXAccounts = async (generatedUsers: UserSelect[]) => {
@@ -154,6 +394,241 @@ const seedNewsSites = async (generatedUsers: UserSelect[]) => {
   return newsSites;
 };
 
+const seedUserTokenBalances = async (generatedUsers: UserSelect[]): Promise<void> => {
+  try {
+    console.log("ユーザートークン残高データを挿入中...");
+
+    // ユーザーごとに setupInitialPortfolio を呼び出す
+    for (const user of generatedUsers) {
+      await setupInitialPortfolio(user.id);
+      // setupInitialPortfolio内でログが出力されるため、ここでの個別ログは不要
+    }
+
+    console.log(`全ユーザー (${generatedUsers.length}人) の初期トークン残高設定が完了しました。`);
+  } catch (error) {
+    console.error("ユーザートークン残高データの挿入中にエラーが発生しました:", error);
+    throw error;
+  }
+};
+
+/**
+ * staking tokenのinterest rate（金利）を設定するシード関数
+ */
+const seedStakingTokenInterestRates = async () => {
+  try {
+    console.log("staking tokenのinterest rate（金利）データを挿入中...");
+
+    // すべてのトークンを取得
+    const tokens = await db.select().from(tokensTable);
+
+    // stakingタイプのトークンのみをフィルタリング
+    const stakingTokens = tokens.filter((token) => token.type === "staking");
+
+    // 金利データ
+    const interestRates = [
+      { symbol: "INF", rate: 10.27 },
+      { symbol: "jitoSOL", rate: 7.87 },
+      { symbol: "jupSOL", rate: 8.48 },
+    ];
+
+    // すでに存在する金利データを確認
+    const existingRates = await db.select().from(interestRatesTable);
+
+    // 金利データを挿入
+    for (const stakingToken of stakingTokens) {
+      // 対応する金利データを検索
+      const rateData = interestRates.find((data) => data.symbol === stakingToken.symbol);
+
+      if (rateData) {
+        // 既存のデータを確認（トークンアドレスとアクションタイプで一致するものを検索）
+        const existingRate = existingRates.find(
+          (rate) => rate.tokenAddress === stakingToken.address && rate.actionType === "liquid_staking",
+        );
+
+        const interestRateData: InterestRateInsert = {
+          tokenAddress: stakingToken.address,
+          actionType: "liquid_staking", // Liquid Stakingに関連する金利
+          interestRate: rateData.rate,
+          effectiveDate: new Date(),
+        };
+
+        if (!existingRate) {
+          await db.insert(interestRatesTable).values(interestRateData);
+          console.log(`トークン "${stakingToken.symbol}" の金利 ${rateData.rate}% を挿入しました`);
+        } else {
+          // 既存のデータを更新
+          await db
+            .update(interestRatesTable)
+            .set({ interestRate: rateData.rate, effectiveDate: new Date() })
+            .where(eq(interestRatesTable.tokenAddress, stakingToken.address));
+          console.log(`トークン "${stakingToken.symbol}" の金利を ${rateData.rate}% に更新しました`);
+        }
+      } else {
+        console.log(`警告: トークン "${stakingToken.symbol}" の金利データが見つかりません`);
+      }
+    }
+
+    return interestRates;
+  } catch (error) {
+    console.error("staking tokenのinterest rate（金利）データの挿入中にエラーが発生しました:", error);
+    throw error;
+  }
+};
+
+/**
+ * proposalデータを挿入するシード関数
+ */
+const seedProposals = async (userIds: string[]) => {
+  try {
+    console.log("提案データを挿入中...");
+
+    const proposals: ProposalInsert[] = [
+      {
+        title: "Take Profit SOL 5x Long Position on Jupiter",
+        summary: "Close 50% of your 5x leveraged SOL long position on Jupiter Exchange to secure profits",
+        reason: [
+          "Your position is currently up 12.3% ($615) with potential for reversal",
+          "On-chain data shows 23% decrease in SOL perpetual open interest over past 12 hours",
+          "Whale wallets reduced leveraged long positions by 18% in last 6 hours",
+        ],
+        sources: [
+          { name: "Jupiter Exchange On-Chain Data", url: "#" },
+          { name: "Solana Whale Wallet Tracker", url: "#" },
+          { name: "Perpetual Market Open Interest Analysis", url: "#" },
+        ],
+        type: "trade",
+        proposedBy: "Daiko AI",
+        userId: userIds[0],
+        expires_at: new Date(Date.now() + 1000 * 40),
+        financialImpact: {
+          currentValue: 5000,
+          projectedValue: 5615,
+          percentChange: 12.3,
+          timeFrame: "immediate",
+          riskLevel: "medium",
+        },
+        status: "active",
+        contractCall: {
+          type: "swap",
+          description: "Close 50% of leveraged SOL position",
+          params: {
+            fromToken: {
+              symbol: "SOL",
+              address: "So11111111111111111111111111111111111111112",
+            },
+            toToken: {
+              symbol: "USDC",
+              address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            },
+            fromAmount: 2.5,
+          },
+        },
+      },
+      {
+        title: "Reduce 80% $BONK Exposure Due to Whale Selling",
+        summary: "Sell 75% of your 150M BONK tokens ($1,500) to protect against imminent price decline",
+        reason: [
+          "Top 20 wallets reduced holdings by 18.7% in the past 36 hours",
+          "$BONK founder left the project",
+          "$BONK already experienced 2.1% price decline",
+        ],
+        sources: [
+          { name: "$BONK Whale Wallet Movement Analysis", url: "#" },
+          { name: "$BONK Founder's Exit Announcement", url: "#" },
+          { name: "DEX Order Book Depth Analysis", url: "#" },
+        ],
+        type: "risk",
+        proposedBy: "Daiko AI",
+        userId: userIds[0],
+        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        financialImpact: {
+          currentValue: 1500,
+          projectedValue: 900,
+          percentChange: -40,
+          timeFrame: "7 days",
+          riskLevel: "high",
+        },
+        status: "active",
+        contractCall: {
+          type: "swap",
+          description: "Sell 75% of BONK holdings for USDC",
+          params: {
+            fromToken: {
+              symbol: "BONK",
+              address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+            },
+            toToken: {
+              symbol: "USDC",
+              address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            },
+            fromAmount: 112500000,
+          },
+        },
+      },
+      {
+        title: "Stake 15.8 SOL in Jupiter's JupSOL for Enhanced Yields",
+        summary:
+          "Earn 8.24% APY by converting your idle 15.8 SOL ($3,243) to JupSOL, Jupiter's high-yield liquid staking token",
+        reason: [
+          "You have 15.8 SOL ($3,243) sitting idle in your wallet",
+          "JupSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+          "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
+        ],
+        sources: [
+          { name: "Jupiter JupSOL Documentation", url: "#" },
+          { name: "Solana LST Comparison Analysis", url: "#" },
+          { name: "JupSOL Performance Metrics", url: "#" },
+        ],
+        type: "stake",
+        proposedBy: "Daiko AI",
+        userId: userIds[0],
+        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72),
+        financialImpact: {
+          currentValue: 3243,
+          projectedValue: 3510,
+          percentChange: 8.24,
+          timeFrame: "1 year",
+          riskLevel: "low",
+        },
+        status: "active",
+        contractCall: {
+          type: "stake",
+          description: "Stake SOL to jupSOL for higher yields",
+          params: {
+            fromToken: {
+              symbol: "SOL",
+              address: "So11111111111111111111111111111111111111112",
+            },
+            toToken: {
+              symbol: "jupSOL",
+              address: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
+            },
+            fromAmount: 15.8,
+          },
+        },
+      },
+    ];
+
+    // すでに存在する提案を確認
+    const existingProposals = await db.select().from(proposalTable);
+
+    for (const proposal of proposals) {
+      // タイトルによる重複チェック
+      const existingProposal = existingProposals.find((p) => p.title === proposal.title);
+
+      if (!existingProposal) {
+        await db.insert(proposalTable).values(proposal);
+        console.log(`提案 "${proposal.title}" を挿入しました`);
+      } else {
+        console.log(`提案 "${proposal.title}" は既に存在します。スキップします。`);
+      }
+    }
+  } catch (error) {
+    console.error("提案データの挿入中にエラーが発生しました:", error);
+    throw error;
+  }
+};
+
 /**
  * データベースにシードデータを挿入
  */
@@ -162,15 +637,29 @@ async function seed() {
 
   const generatedUsers = await seedUsers();
 
+  // トークン挿入
+  console.log("トークンデータを挿入中...");
+  await seedTokens();
+
+  // ユーザートークン残高挿入
+  console.log("ユーザートークン残高データを挿入中...");
+  await seedUserTokenBalances(generatedUsers);
+
+  // staking tokenの金利データ挿入
+  console.log("staking tokenの金利データを挿入中...");
+  await seedStakingTokenInterestRates();
+
   // Xアカウント挿入
   console.log("Xアカウントデータを挿入中...");
-
   await seedXAccounts(generatedUsers);
 
   // ニュースサイト挿入
   console.log("ニュースサイトデータを挿入中...");
-
   await seedNewsSites(generatedUsers);
+
+  // 提案データ挿入 (New)
+  console.log("提案データを挿入中...");
+  await seedProposals(["614d9720-b18e-462b-8032-003ccc6cb819"]);
 
   console.log("シードデータの挿入が完了しました！");
 }

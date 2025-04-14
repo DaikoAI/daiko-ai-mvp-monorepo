@@ -8,7 +8,7 @@ export interface OnboardingState {
 
 export type OnboardingStep = "welcome" | "wallet" | "notification" | "profile" | "complete";
 
-export type TradeStyle = "conservative" | "moderate" | "aggressive";
+export type TradeStyle = "day" | "swing" | "long";
 
 export interface UserProfile {
   age?: number;

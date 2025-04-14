@@ -5,13 +5,14 @@ alwaysApply: true
 ---
 # Basic Rules
 
-- **絶対に**いきなりコードを書き始めず、最初に実装方針を伝えて、こちらがコードを書き始めて下さい、と言うまでコードは書かないで！！
+- **絶対に**コードを書き始める前に、実装方針をこちらに伝えてOKをもらってから実装を始めて下さい
 - `npm`ではなく**必ず**`pnpm`を使って下さい！！
+- `node`はv22以降defaultでtsファイルを実行できます、`package.json`でtsファイルを実行する場合は`node --experimental-strip-types --experimental-transform-types --experimental-detect-module --no-warnings=ExperimentalWarning`で実行して下さい
 - `Turborepo`, `pnpm`を用いた monorepo 構成を効果的に使用し、package の切り分けや、型の共通化などを考えながらコードを書いて下さい
-- `pnpm build`が通るようにして下さい、この時あまり勝手に`tsup`とかをinstallし始めるのはやめて下さい
+- build errorの解決などは勝手に`tsup`などの依存をいれるのではなく根本原因を考え、`pnpm build`が通るようにして下さい、
 - errorを直す時はどういう意図・仮説でどういう処理を施すのかをちゃんと考えながら対処して下さい。
-- package には apps 以下の application やその他のインフラやツールでも portable に使えるような core 機能の package を提供し保守性の高いコード、アーキテクチャを保って下さい。
-- 注意点として、dir 構造には気をつけて下さい。project 全体で使うようなものは`shared/`以下に、package 固有の概念が関わるものは package の dir 以下にコードを書いて、適切にスコープと責務を考えてコードの粒度や場所を考えて下さい。
+- `packages/` 以下には `apps/` 以下の application やその他のインフラやツールでも portable に使えるような core 機能の package を提供し保守性の高いコード、アーキテクチャを保って下さい。
+- 注意点として、ディレクトリ構造には気をつけて下さい。プロジェクト全体で使うようなものは`packages/shared/`以下に、package固有の概念が関わるものは `packages/package-name/`以下にコードを書いて、適切にスコープと責務を考えてコードの粒度や場所を考えて下さい。
 
 ## Practices
 
@@ -59,19 +60,32 @@ alwaysApply: true
 ```zsh
 .
 ├── README.md
-├── apps
-│   ├── news-scraper-job
-│   ├── web
-│   └── x-scraper-job
 ├── package.json
-├── packages
-│   ├── news-scraper
-│   ├── proposal-agent
-│   ├── shared
-│   └── x-scraper
-├── pnpm-lock.yaml
+├── turbo.json
 ├── pnpm-workspace.yaml
-├── scripts
-│   └── clean-packages.sh
-└── turbo.json
+├── apps
+│   ├── news-scraper-job      # ニュースサイトスクレイパージョブ
+│   ├── web                  # メインのウェブアプリケーション (Next.js)
+│   │   ├── src
+│   │   ├── public
+│   │   └── package.json
+│   └── x-scraper-job        # Xスクレイパージョブ
+├── docs                     # ドキュメント
+│   ├── db                   # データベースドキュメント
+│   │   ├── schema.dbml      # データベーススキーマ
+│   │   └── erd.svg          # データベースER図
+│   └── graph.png            # エージェントアーキテクチャ図
+│   └── specs                # 要件定義などを格納
+├── packages
+│   ├── shared               # 共有コード、型定義、ユーティリティ
+│   │   ├── src
+│   │   └── package.json
+│   ├── news-scraper         # ニュースサイトスクレイパー
+│   │   ├── src
+│   │   └── package.json
+│   └── x-scraper            # X (Twitter) スクレイパー
+│       ├── src
+│       └── package.json
+└── scripts
+    └── clean-packages.sh    # ビルドファイルのクリーンアップ
 ```

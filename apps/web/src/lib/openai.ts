@@ -1,9 +1,9 @@
 "use server";
 
 import { env } from "@/env";
-import { ApiChatMessage } from "@/types/chat";
+import type { ApiChatMessage } from "@/types/chat";
 import OpenAI from "openai";
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 // OpenAIクライアントインスタンスを作成
 const openai = new OpenAI({
@@ -19,10 +19,18 @@ const openai = new OpenAI({
 export async function getChatCompletionStream(messages: ApiChatMessage[]) {
   try {
     // メッセージをOpenAI形式に変換
-    const openAiMessages: ChatCompletionMessageParam[] = messages.map(({ content, role }) => ({
-      content,
-      role,
-    }));
+    const systemPrompt =
+      "You are a specialized expert in Solana DeFi, meme coins, and DEX perpetual trading. You provide comprehensive investment advice and market insights tailored to the user's portfolio. Your responses should be data-driven, technically accurate, and consider both short-term opportunities and long-term strategies in the Solana ecosystem.";
+    const openAiMessages: ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      ...messages.map(({ content, role }) => ({
+        content,
+        role,
+      })),
+    ];
 
     // OpenAI APIを呼び出し、ストリーミングレスポンスを取得
     const response = await openai.chat.completions.create({

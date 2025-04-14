@@ -6,16 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useOnboarding } from "@/lib/onboarding-context";
-import { TradeStyle } from "@/types/onboarding";
+import { api } from "@/trpc/react";
+import type { TradeStyle } from "@/types/onboarding";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const ProfileStep: React.FC = () => {
-  const { setUserProfile, setCurrentStep, completeOnboarding } = useOnboarding();
+  const { setCurrentStep, completeOnboarding } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { mutate: updateUserSettings } = api.users.updateUserSettings.useMutation();
   const [formData, setFormData] = useState({
     age: "",
-    tradeStyle: "moderate" as TradeStyle,
+    tradeStyle: "swing" as TradeStyle,
     totalAssetUsd: "",
     cryptoInvestmentUsd: "",
   });
@@ -33,25 +35,40 @@ export const ProfileStep: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Convert to numbers
+      // Convert to numbers and validate trade style
       const profile = {
         age: formData.age ? parseInt(formData.age) : undefined,
         tradeStyle: formData.tradeStyle,
-        totalAssetUsd: formData.totalAssetUsd ? parseFloat(formData.totalAssetUsd) : undefined,
-        cryptoInvestmentUsd: formData.cryptoInvestmentUsd ? parseFloat(formData.cryptoInvestmentUsd) : undefined,
+        totalAssetUsd: formData.totalAssetUsd ? parseInt(formData.totalAssetUsd) : undefined,
+        cryptoInvestmentUsd: formData.cryptoInvestmentUsd ? parseInt(formData.cryptoInvestmentUsd) : undefined,
       };
 
-      // Save profile
-      setUserProfile(profile);
-
-      // Complete onboarding
-      completeOnboarding();
-      setCurrentStep("complete");
-      toast.success("Profile saved successfully");
+      // Save to database
+      updateUserSettings(
+        {
+          age: profile.age?.toString(),
+          tradeStyle: profile.tradeStyle,
+          totalAssetUsd: profile.totalAssetUsd?.toString(),
+          cryptoInvestmentUsd: profile.cryptoInvestmentUsd?.toString(),
+        },
+        {
+          onSuccess: () => {
+            // Complete onboarding
+            completeOnboarding();
+            setCurrentStep("complete");
+            toast.success("Profile saved successfully");
+            setIsSubmitting(false);
+          },
+          onError: (error: any) => {
+            console.error("Profile save error:", error);
+            toast.error("An error occurred while saving your profile");
+            setIsSubmitting(false);
+          },
+        },
+      );
     } catch (error) {
       console.error("Profile save error:", error);
       toast.error("An error occurred while saving your profile");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -78,16 +95,16 @@ export const ProfileStep: React.FC = () => {
           <Label>Trading Style</Label>
           <RadioGroup value={formData.tradeStyle} onValueChange={handleRadioChange as (value: string) => void}>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="conservative" id="conservative" />
-              <Label htmlFor="conservative">Conservative (Low Risk)</Label>
+              <RadioGroupItem value="long" id="long" />
+              <Label htmlFor="long">Long-term Holding (Conservative)</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="moderate" id="moderate" />
-              <Label htmlFor="moderate">Moderate (Medium Risk)</Label>
+              <RadioGroupItem value="swing" id="swing" />
+              <Label htmlFor="swing">Swing Trading (Moderate)</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="aggressive" id="aggressive" />
-              <Label htmlFor="aggressive">Aggressive (High Risk)</Label>
+              <RadioGroupItem value="day" id="day" />
+              <Label htmlFor="day">Day Trading (Aggressive)</Label>
             </div>
           </RadioGroup>
         </div>

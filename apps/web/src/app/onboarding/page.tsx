@@ -1,4 +1,4 @@
-import { NextPage } from "next";
+import type { NextPage } from "next";
 import { OnboardingProvider } from "@/lib/onboarding-context";
 import { OnboardingFlow } from "./components/onboarding-flow";
 

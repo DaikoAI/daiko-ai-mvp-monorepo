@@ -1,6 +1,8 @@
 "use client";
 
-import { ProposalSelect } from "@daiko-ai/shared";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlphaWalletProvider } from "@/features/alphaWallet/AlphaWalletProvider";
+import type { ProposalSelect } from "@daiko-ai/shared";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProposalCard } from "./proposal-card";
@@ -9,7 +11,7 @@ type ProposalListProps = {
   initialProposals: ProposalSelect[];
 };
 
-export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) => {
+export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProposals }) => {
   const [proposals, setProposals] = useState(initialProposals);
   const [expiringProposals, setExpiringProposals] = useState<string[]>([]);
   // 通知済みの期限切れproposalを追跡するためのRef
@@ -77,10 +79,11 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
     setProposals(proposals.filter((proposal) => proposal.id !== id));
     setExpiringProposals((prev) => prev.filter((propId) => propId !== id));
   };
+
   return (
-    <>
+    <AlphaWalletProvider>
       {proposals.length > 0 ? (
-        <div className="space-y-4">
+        <div className="flex flex-col space-y-3">
           {proposals
             .filter((proposal) => proposal.id !== undefined)
             .map((proposal) => (
@@ -90,13 +93,23 @@ export const ProposalList: React.FC<ProposalListProps> = ({ initialProposals }) 
             ))}
         </div>
       ) : (
-        <div className="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
-          <p className="mb-2 text-lg font-medium">No active proposals</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed border-gray-700 p-8 text-center">
+          <p className="mb-2 text-lg font-semibold text-white">No active proposals</p>
+          <p className="text-sm text-gray-400">
             All proposals have been reviewed. Check back later for new suggestions.
           </p>
         </div>
       )}
-    </>
+    </AlphaWalletProvider>
   );
 };
+
+export const ProposalList = Object.assign(ProposalListComponent, {
+  Skeleton: () => (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+    </div>
+  ),
+});

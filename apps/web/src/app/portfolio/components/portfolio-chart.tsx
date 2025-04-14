@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "@/components/ui/chart";
-import { Asset } from "@/types";
+import type { Asset } from "@/types";
 import { cn } from "@/utils";
 import { useMemo, useState } from "react";
 
@@ -109,18 +109,20 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ assets }) => {
           // 通常のトークンの場合は画像を取得
           const representativeAsset = categoryData.assets[0];
           if (
-            representativeAsset.content &&
+            representativeAsset?.content &&
             representativeAsset.content.links &&
             representativeAsset.content.links.image
           ) {
             iconUrl = representativeAsset.content.links.image;
           } else if (
-            representativeAsset.content &&
-            representativeAsset.content.files &&
-            representativeAsset.content.files.length > 0
+            representativeAsset?.content &&
+            representativeAsset?.content.files &&
+            representativeAsset?.content.files.length > 0
           ) {
             iconUrl =
-              representativeAsset.content.files[0].uri || representativeAsset.content.files[0].cdn_uri || DEFAULT_ICON;
+              representativeAsset?.content?.files?.[0]?.uri ||
+              representativeAsset?.content?.files?.[0]?.cdn_uri ||
+              DEFAULT_ICON;
           }
         }
 
@@ -230,7 +232,8 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ assets }) => {
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
-                    const data = payload[0].payload;
+                    const data = payload[0]?.payload;
+                    if (!data) return null;
                     return (
                       <div className="rounded-xl p-3 shadow-md bg-card">
                         <div className="flex items-center mb-1">

@@ -1,3 +1,4 @@
+import { Keypair } from "@solana/web3.js";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -40,23 +41,13 @@ export function formatPrice(price?: number): string {
   })}`;
 }
 
-// グローバルCSSにno-scrollbarクラスが含まれていない場合に備えて、
-// 動的にスタイルを作成する関数を追加
-export function createNoScrollbarStyle() {
-  // すでにスタイルが存在する場合は追加しない
-  if (document.getElementById("no-scrollbar-style")) return;
-
-  const style = document.createElement("style");
-  style.id = "no-scrollbar-style";
-  style.innerHTML = `
-    .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;  /* Chrome, Safari, Opera */
-    }
-  `;
-  document.head.appendChild(style);
+/**
+ * Solanaのウォレットアドレスを生成する関数
+ * @returns ランダムに生成されたSolanaウォレットアドレス
+ */
+export function generateSolanaWalletAddress(): string {
+  // 新しいKeypairを生成
+  const keypair = Keypair.generate();
+  // 公開鍵（ウォレットアドレス）を文字列として返す
+  return keypair.publicKey.toString();
 }

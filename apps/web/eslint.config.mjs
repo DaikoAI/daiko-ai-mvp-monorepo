@@ -24,6 +24,8 @@ const eslintConfig = [
         ecmaFeatures: {
           jsx: true,
         },
+        project: "./tsconfig.json",
+        tsconfigRootDir: __dirname,
       },
     },
     plugins: {
@@ -40,6 +42,15 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-empty-object-type": "off",
+      // Import type rules to match verbatimModuleSyntax: true in tsconfig
+      "@typescript-eslint/consistent-type-imports": ["error", {
+        "prefer": "type-imports",
+        "disallowTypeAnnotations": true,
+        "fixStyle": "separate-type-imports"
+      }],
+      "@typescript-eslint/consistent-type-exports": ["error", {
+        "fixMixedExportsWithInlineTypeSpecifier": true
+      }],
       // Next.js specific rules
       "@next/next/no-img-element": "warn",
     },

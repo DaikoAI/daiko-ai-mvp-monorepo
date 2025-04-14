@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { json, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
-import { xAccountTable } from "./xAccounts";
+import { xAccountTable } from "./x_accounts";
 
 // ツイートテーブル定義 - ツイートの履歴を保存する
 export const tweetTable = pgTable("tweets", {

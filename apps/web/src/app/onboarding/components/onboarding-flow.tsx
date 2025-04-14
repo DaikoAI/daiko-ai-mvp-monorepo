@@ -4,34 +4,43 @@ import { Progress } from "@/components/ui/progress";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { isPWA } from "@/utils/pwa";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AuthStep } from "./auth-step";
 import { CompleteStep } from "./complete-step";
 import { NotificationStep } from "./notification-step";
 import { ProfileStep } from "./profile-step";
-import { WalletStep } from "./wallet-step";
 import { WelcomeStep } from "./welcome-step";
 
 export const OnboardingFlow: React.FC = () => {
   const { state, setCurrentStep } = useOnboarding();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { data: session } = useSession();
 
   // Initialize after client-side mounting
   useEffect(() => {
     setMounted(true);
 
+    // Skip onboarding if user has completed notification setup
+    if (session?.user?.notificationEnabled) {
+      router.replace("/proposals");
+      return;
+    }
+
     // Skip welcome step if running as PWA and on initial step
     if (isPWA() && state.currentStep === "welcome") {
       setCurrentStep("wallet");
     }
-  }, [state.currentStep, setCurrentStep]);
+  }, [state.currentStep, setCurrentStep, session, router]);
 
   // Redirect to main app if onboarding is complete
   useEffect(() => {
     if (state.isComplete && state.currentStep === "complete") {
       // Wait briefly before redirecting (to show completion screen)
       const timer = setTimeout(() => {
+        // alphaテストモードならポートフォリオページへ、そうでなければプロポーザルページへ
         router.replace("/proposals");
       }, 2000);
 
@@ -64,7 +73,8 @@ export const OnboardingFlow: React.FC = () => {
       case "welcome":
         return <WelcomeStep />;
       case "wallet":
-        return <WalletStep />;
+        // alphaテストモードならAuthStep、そうでなければWalletStep
+        return <AuthStep />;
       case "notification":
         return <NotificationStep />;
       case "profile":

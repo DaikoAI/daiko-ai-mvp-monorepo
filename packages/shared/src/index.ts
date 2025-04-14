@@ -6,7 +6,7 @@ export { TweetRepository } from "./repositories/interface/TweetRepository";
 export { XAccountRepository } from "./repositories/interface/XAccountRepository";
 
 // PostgreSQL実装のexport
-export { createDbConnection, db } from "./db/connection";
+export { db } from "./db/connection";
 
 export * from "./db/schema";
 
@@ -18,7 +18,7 @@ export { Logger } from "./utils/logger";
 export { CryptoAnalysis, Tweet } from "./types";
 
 // NewsSite型をここでエクスポート
-export type { NewsSiteInsert, NewsSiteSelect } from "./db/schema/newsSites";
+export type { NewsSiteInsert, NewsSiteSelect } from "./db/schema/news_sites";
 
 // Proposal型をここでエクスポート
 export type { ProposalInsert, ProposalSelect } from "./db/schema/proposals";

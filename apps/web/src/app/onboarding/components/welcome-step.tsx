@@ -8,15 +8,14 @@ export const WelcomeStep: React.FC = () => {
   const { setCurrentStep } = useOnboarding();
 
   const handleContinue = () => {
-    // Proceed to the next step
     setCurrentStep("wallet");
   };
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome to DAIKO!</CardTitle>
-        <CardDescription>Connecting investors with opportunities</CardDescription>
+        <CardTitle className="text-2xl">Welcome to DAIKO Alpha Test!</CardTitle>
+        <CardDescription>Experience virtual trading off-chain</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center">
@@ -38,10 +37,10 @@ export const WelcomeStep: React.FC = () => {
           </div>
         </div>
         <div className="text-center space-y-2">
-          <h3 className="font-medium">Discover Optimal Investments</h3>
+          <h3 className="font-medium">2-Week Trading Experience</h3>
           <p className="text-sm text-muted-foreground">
-            DAIKO helps you find the perfect investment opportunities tailored to your needs. Start simply and access
-            anytime.
+            During the alpha test period, we provide a virtual trading environment. Start with the same initial
+            portfolio and aim for the highest returns.
           </p>
         </div>
       </CardContent>

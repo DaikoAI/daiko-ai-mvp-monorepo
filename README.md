@@ -56,6 +56,12 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
 │   │   ├── public
 │   │   └── package.json
 │   └── x-scraper-job        # Xスクレイパージョブ
+├── docs                     # ドキュメント
+│   ├── db                   # データベースドキュメント
+│   │   ├── schema.dbml      # データベーススキーマ
+│   │   └── erd.svg          # データベースER図
+│   └── graph.png            # エージェントアーキテクチャ図
+│   └── specs                # 要件定義などを格納
 ├── packages
 │   ├── shared               # 共有コード、型定義、ユーティリティ
 │   │   ├── src

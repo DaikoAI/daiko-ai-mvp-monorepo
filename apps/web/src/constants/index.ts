@@ -1,4 +1,4 @@
-import { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const METADATA: Metadata = {
   title: "Daiko AI",
@@ -123,8 +123,8 @@ export const METADATA: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/pwa/manifest-icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/pwa/manifest-icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/pwa/manifest-icon-192.maskable.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa/manifest-icon-512.maskable.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/pwa/apple-icon-180.png", sizes: "180x180", type: "image/png" }],
   },
