@@ -25,9 +25,9 @@ export const LandingPage: React.FC = () => {
     const userAgent = window.navigator.userAgent.toLowerCase();
     setIsIOS(/iphone|ipad|ipod/.test(userAgent));
 
-    // Redirect to onboarding if accessed as PWA
+    // Redirect to proposals if notification is enabled, otherwise to onboarding
     if (isPWA()) {
-      if (session?.user) {
+      if (session?.user?.notificationEnabled) {
         router.replace("/proposals");
       } else {
         router.replace("/onboarding");

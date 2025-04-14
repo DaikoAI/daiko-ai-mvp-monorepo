@@ -18,6 +18,7 @@ declare module "next-auth" {
       cryptoInvestmentUsd: number;
       tradeStyle: "day" | "swing" | "long";
       age: number;
+      notificationEnabled: boolean;
     } & DefaultSession["user"];
   }
 }

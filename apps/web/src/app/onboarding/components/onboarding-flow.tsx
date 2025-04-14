@@ -23,8 +23,8 @@ export const OnboardingFlow: React.FC = () => {
   useEffect(() => {
     setMounted(true);
 
-    // If user has session and onboarding is already complete, redirect to proposals
-    if (session && state.notificationEnabled) {
+    // Skip onboarding if user has completed notification setup
+    if (session?.user?.notificationEnabled) {
       router.replace("/proposals");
       return;
     }
@@ -33,7 +33,7 @@ export const OnboardingFlow: React.FC = () => {
     if (isPWA() && state.currentStep === "welcome") {
       setCurrentStep("wallet");
     }
-  }, [state.currentStep, setCurrentStep, session, state.notificationEnabled]);
+  }, [state.currentStep, setCurrentStep, session, router]);
 
   // Redirect to main app if onboarding is complete
   useEffect(() => {

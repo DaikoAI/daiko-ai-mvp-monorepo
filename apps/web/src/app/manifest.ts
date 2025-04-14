@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Daiko AI",
     short_name: "Daiko AI",
     description: "Daiko AI",
-    start_url: "/",
+    start_url: "/proposals",
     display: "standalone",
     background_color: "#000000",
     theme_color: "#000000",

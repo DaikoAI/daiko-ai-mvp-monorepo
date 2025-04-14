@@ -1,9 +1,10 @@
 import { z } from "zod";
 
 // Adjust import path temporarily - check tsconfig paths later
-import { pushSubscriptions } from "@daiko-ai/shared";
+import { pushSubscriptions, usersTable } from "@daiko-ai/shared";
 import { UAParser } from "ua-parser-js"; // User agent parser
 
+import { eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 // Input schema for the subscribe procedure - ADD userAgent
@@ -82,6 +83,8 @@ export const pushRouter = createTRPCRouter({
             updatedAt: new Date(), // Explicitly set updated time
           },
         });
+
+      await ctx.db.update(usersTable).set({ notificationEnabled: true }).where(eq(usersTable.id, userId));
 
       console.log("Subscription saved successfully for user:", userId);
       return { success: true };
