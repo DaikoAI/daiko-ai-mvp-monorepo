@@ -317,13 +317,14 @@ export const tokenRouter = createTRPCRouter({
   stake: publicProcedure
     .input(
       z.object({
-        token: z.string(),
+        fromToken: z.string(),
+        toToken: z.string(),
         amount: z.string(),
         walletAddress: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { token: tokenSymbol, amount, walletAddress } = input;
+      const { fromToken: baseTokenSymbol, toToken: lstTokenSymbol, amount, walletAddress } = input;
 
       const user = await db.query.usersTable.findFirst({
         where: eq(schema.usersTable.walletAddress, walletAddress),
@@ -333,12 +334,22 @@ export const tokenRouter = createTRPCRouter({
         throw new Error("User not found");
       }
 
-      const tokenInfo = await db.query.tokensTable.findFirst({
-        where: eq(schema.tokensTable.symbol, tokenSymbol),
+      // ベーストークン（例：SOL）の情報を取得
+      const baseToken = await db.query.tokensTable.findFirst({
+        where: eq(schema.tokensTable.symbol, baseTokenSymbol),
       });
 
-      if (!tokenInfo) {
-        throw new Error("Token not found");
+      if (!baseToken) {
+        throw new Error(`Base token ${baseTokenSymbol} not found`);
+      }
+
+      // LSTトークン（例：jupSOL）の情報を取得
+      const lstToken = await db.query.tokensTable.findFirst({
+        where: and(eq(schema.tokensTable.symbol, lstTokenSymbol), eq(schema.tokensTable.type, "liquid_staking")),
+      });
+
+      if (!lstToken) {
+        throw new Error(`LST token ${lstTokenSymbol} not found`);
       }
 
       const interestRate = "5.0";
@@ -353,34 +364,36 @@ export const tokenRouter = createTRPCRouter({
       }
 
       try {
-        // 1. Get current balance
-        const balanceRecord = await db.query.userBalancesTable.findFirst({
+        // 1. ベーストークンの残高を確認
+        const baseBalanceRecord = await db.query.userBalancesTable.findFirst({
           where: and(
             eq(schema.userBalancesTable.userId, user.id),
-            eq(schema.userBalancesTable.tokenAddress, tokenInfo.address),
+            eq(schema.userBalancesTable.tokenAddress, baseToken.address),
           ),
         });
 
-        if (!balanceRecord) {
-          throw new Error("Balance record not found");
+        if (!baseBalanceRecord) {
+          throw new Error(`No balance record found for ${baseTokenSymbol}`);
         }
 
-        const currentBalance = new BigNumber(balanceRecord.balance || "0");
+        const currentBaseBalance = new BigNumber(baseBalanceRecord.balance || "0");
 
-        // 2. Validate balance
-        if (currentBalance.isLessThan(amountBN)) {
-          throw new Error(`Insufficient balance for ${tokenSymbol}`);
+        // 2. 残高の検証
+        if (currentBaseBalance.isLessThan(amountBN)) {
+          throw new Error(`Insufficient balance for ${baseTokenSymbol}`);
         }
 
-        // 3. Record transaction first
+        // 3. トランザクションを記録
         const transaction = (
           await db
             .insert(schema.transactionsTable)
             .values({
               userId: user.id,
               transactionType: "stake",
-              fromTokenAddress: tokenInfo.address,
+              fromTokenAddress: baseToken.address,
+              toTokenAddress: lstToken.address,
               amountFrom: amountBN.toString(),
+              amountTo: amountBN.toString(), // 1:1の交換レート
               details: {
                 ...input,
                 status: "pending",
@@ -395,17 +408,43 @@ export const tokenRouter = createTRPCRouter({
         }
 
         try {
-          // 4. Decrement balance
-          const newBalance = currentBalance.minus(amountBN).toString();
+          // 4. ベーストークンの残高を減少
+          const newBaseBalance = currentBaseBalance.minus(amountBN).toString();
           await db
             .update(schema.userBalancesTable)
-            .set({ balance: newBalance, updatedAt: new Date() })
-            .where(eq(schema.userBalancesTable.id, balanceRecord.id));
+            .set({ balance: newBaseBalance, updatedAt: new Date() })
+            .where(eq(schema.userBalancesTable.id, baseBalanceRecord.id));
 
-          // 5. Create investment record
+          // 5. LSTの残高を取得または作成
+          let lstBalanceRecord = await db.query.userBalancesTable.findFirst({
+            where: and(
+              eq(schema.userBalancesTable.userId, user.id),
+              eq(schema.userBalancesTable.tokenAddress, lstToken.address),
+            ),
+          });
+
+          if (lstBalanceRecord) {
+            // 既存のLST残高を更新
+            const currentLstBalance = new BigNumber(lstBalanceRecord.balance || "0");
+            const newLstBalance = currentLstBalance.plus(amountBN).toString();
+            await db
+              .update(schema.userBalancesTable)
+              .set({ balance: newLstBalance, updatedAt: new Date() })
+              .where(eq(schema.userBalancesTable.id, lstBalanceRecord.id));
+          } else {
+            // 新しいLST残高レコードを作成
+            await db.insert(schema.userBalancesTable).values({
+              userId: user.id,
+              tokenAddress: lstToken.address,
+              balance: amountBN.toString(),
+              updatedAt: new Date(),
+            });
+          }
+
+          // 6. 投資記録を作成
           await db.insert(schema.investmentsTable).values({
             userId: user.id,
-            tokenAddress: tokenInfo.address,
+            tokenAddress: baseToken.address,
             actionType: "staking",
             principal: amountBN.toString(),
             accruedInterest: "0",
@@ -415,7 +454,7 @@ export const tokenRouter = createTRPCRouter({
             status: "active",
           });
 
-          // 6. Update transaction status
+          // 7. トランザクションステータスを更新
           await db
             .update(schema.transactionsTable)
             .set({
@@ -431,7 +470,7 @@ export const tokenRouter = createTRPCRouter({
             txHash: `sim-tx-${Date.now()}`,
           };
         } catch (error) {
-          // Update transaction status
+          // トランザクションステータスを更新
           await db
             .update(schema.transactionsTable)
             .set({
