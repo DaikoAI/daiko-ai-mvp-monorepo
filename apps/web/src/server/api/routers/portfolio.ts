@@ -9,7 +9,7 @@ import {
 import type { NeonHttpDatabase } from "@daiko-ai/shared/src/db";
 import { tokenPriceHistory } from "@daiko-ai/shared/src/db/schema";
 import BigNumber from "bignumber.js";
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { z } from "zod";
 
@@ -26,25 +26,31 @@ async function get24hPriceHistory(db: NeonHttpDatabase, tokenAddresses: string[]
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+  // サブクエリで各トークンの24時間前に最も近い価格を取得
   const priceHistory = await db
     .select({
       token_address: tokenPriceHistory.token_address,
       price_usd: tokenPriceHistory.price_usd,
+      timestamp: tokenPriceHistory.timestamp,
     })
     .from(tokenPriceHistory)
     .where(
       and(
         inArray(tokenPriceHistory.token_address, tokenAddresses),
-        gte(tokenPriceHistory.timestamp, twentyFourHoursAgo),
-        lte(tokenPriceHistory.timestamp, now),
+        lte(tokenPriceHistory.timestamp, twentyFourHoursAgo),
       ),
     )
-    .orderBy(tokenPriceHistory.timestamp);
+    .orderBy((fields) => [desc(fields.timestamp)]);
 
-  // 各トークンの24時間前に最も近い価格を取得
+  // 各トークンの最初の（24時間前に最も近い）価格のみを使用
   const priceMap = new Map<string, string>();
+  const seenTokens = new Set<string>();
+
   for (const record of priceHistory) {
-    priceMap.set(record.token_address, record.price_usd);
+    if (!seenTokens.has(record.token_address)) {
+      priceMap.set(record.token_address, record.price_usd);
+      seenTokens.add(record.token_address);
+    }
   }
 
   return priceMap;

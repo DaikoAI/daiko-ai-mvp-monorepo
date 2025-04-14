@@ -12,29 +12,66 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 
-export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"] }> = ({ thread }) => {
+interface ChatInterfaceProps {
+  thread: RouterOutputs["chat"]["getThread"];
+  initialMessage?: string;
+}
+
+interface PendingMessage {
+  id: string;
+  content: string;
+  role: "assistant";
+  isStreaming: boolean;
+}
+
+interface Message {
+  id: string;
+  threadId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: Date;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ thread, initialMessage }) => {
   const {
     data: messages,
     isLoading: isMessagesLoading,
     error: messagesError,
-  } = api.chat.getMessages.useQuery({
-    threadId: thread.id,
-  });
-
-  console.log(thread);
+  } = api.chat.getMessages.useQuery(
+    {
+      threadId: thread.id,
+    },
+    {
+      // メッセージの自動更新を無効化（手動で制御）
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  );
 
   const trpc = api.useUtils();
 
   const { mutate: sendMessage, isPending: isSending } = api.chat.sendMessage.useMutation({
-    onSuccess: (newMessage) => {
-      // キャッシュを最適化的に更新
-      trpc.chat.getMessages.setData(
-        { threadId: thread.id },
-        (oldMessages: RouterOutputs["chat"]["getMessages"] | undefined) => {
-          if (!oldMessages) return [newMessage];
-          return [...oldMessages, newMessage];
-        },
-      );
+    onMutate: async (newMessage) => {
+      const prevMessages = trpc.chat.getMessages.getData({ threadId: thread.id });
+
+      // Optimistically update the cache
+      trpc.chat.getMessages.setData({ threadId: thread.id }, (old) => {
+        if (!old) return [newMessage as Message];
+        return [...old, newMessage as Message];
+      });
+
+      return { prevMessages };
+    },
+    onError: (err, newMessage, context) => {
+      if (context?.prevMessages) {
+        trpc.chat.getMessages.setData({ threadId: thread.id }, context.prevMessages);
+      }
+    },
+    onSettled: () => {
+      // キャッシュの再検証を遅延させる
+      setTimeout(() => {
+        trpc.chat.getMessages.invalidate({ threadId: thread.id });
+      }, 100);
     },
   });
 
@@ -51,19 +88,59 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
     },
   });
 
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(initialMessage || "");
   const [isAiTyping, setIsAiTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [pendingMessage, setPendingMessage] = useState("");
+  const [pendingAiMessage, setPendingAiMessage] = useState<PendingMessage | null>(null);
   const [titleSummarizationScheduled, setTitleSummarizationScheduled] = useState(false);
+  const [shouldPreventScroll, setShouldPreventScroll] = useState(false);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    if (messagesEndRef.current && !shouldPreventScroll) {
+      const container = messagesContainerRef.current;
+      const endElement = messagesEndRef.current;
+
+      if (container) {
+        const containerHeight = container.clientHeight;
+        const scrollPosition = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const isNearBottom = scrollHeight - (scrollPosition + containerHeight) < 100;
+
+        // Only scroll if we're already near the bottom or it's a forced scroll
+        if (isNearBottom || behavior === "instant") {
+          endElement.scrollIntoView({ behavior, block: "end" });
+        }
+      }
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (pendingAiMessage?.isStreaming) {
+      scrollToBottom("smooth");
     }
-  }, [messages, pendingMessage]);
+  }, [pendingAiMessage?.content]);
+
+  // Handle DB updates
+  useEffect(() => {
+    if (!pendingAiMessage && messages?.length) {
+      // Set a brief pause before allowing scrolling again
+      setShouldPreventScroll(true);
+      const timer = setTimeout(() => {
+        setShouldPreventScroll(false);
+        scrollToBottom("instant");
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages?.length, pendingAiMessage]);
+
+  // Ensure immediate scroll on first load
+  useEffect(() => {
+    if (messages && !pendingAiMessage) {
+      scrollToBottom("instant");
+    }
+  }, []);
 
   // Effect to schedule title summarization using idle-task
   useEffect(() => {
@@ -142,50 +219,80 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
 
     setInputValue("");
     setIsAiTyping(true);
-    setPendingMessage("");
-
-    // ユーザーメッセージを送信
-    sendMessage({
-      content: textToSend,
-      role: "user",
-      threadId: thread.id,
-    });
+    scrollToBottom("instant");
 
     try {
-      // メッセージをAPI形式に変換
-      const apiMessages: ApiChatMessage[] = [...(messages ?? []), { content: textToSend, role: "user" as const }].map(
+      // Send user message
+      await sendMessage({
+        content: textToSend,
+        role: "user",
+        threadId: thread.id,
+      });
+
+      // Prepare messages for AI
+      const currentMessages = messages ?? [];
+      const apiMessages: ApiChatMessage[] = [...currentMessages, { content: textToSend, role: "user" as const }].map(
         ({ content, role }) => ({
           content,
           role,
         }),
       );
 
-      // ローカルに実装したチャット関数を使用
+      // Create pending AI message
+      const pendingId = `pending-${Date.now()}`;
+      setPendingAiMessage({
+        id: pendingId,
+        content: "",
+        role: "assistant",
+        isStreaming: true,
+      });
+
+      // Get AI response with streaming
       const result = await chatWithAI(apiMessages, (streamContent) => {
-        setPendingMessage(streamContent);
+        setPendingAiMessage(
+          (prev) =>
+            prev && {
+              ...prev,
+              content: streamContent,
+              isStreaming: true,
+            },
+        );
       });
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      // AIの応答を送信
-      sendMessage({
+      // Update pending message with final content
+      setPendingAiMessage(
+        (prev) =>
+          prev && {
+            ...prev,
+            content: result.content,
+            isStreaming: false,
+          },
+      );
+
+      // Send AI response to backend and ensure smooth transition
+      await sendMessage({
         content: result.content,
         role: "assistant",
         threadId: thread.id,
       });
+
+      // Wait for the cache update before clearing pending message
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      setPendingAiMessage(null);
     } catch (error) {
       console.error("APIエラー:", error);
-      // エラー時のメッセージを送信
-      sendMessage({
+      setShouldPreventScroll(true);
+      await sendMessage({
         content: "申し訳ありません、エラーが発生しました。もう一度お試しください。",
         role: "assistant",
         threadId: thread.id,
       });
     } finally {
       setIsAiTyping(false);
-      setPendingMessage("");
     }
   };
 
@@ -203,6 +310,20 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
     }
 
     return <ReactMarkdown rehypePlugins={[rehypeRaw, rehypeSanitize]}>{content}</ReactMarkdown>;
+  };
+
+  // 安全な日時フォーマット関数
+  const formatTime = (date: Date | undefined) => {
+    if (!date) return "";
+    try {
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "";
+    }
   };
 
   return (
@@ -231,7 +352,7 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
             {/* Right padding for user messages: 36px, left padding: 12px */}
             {messages?.map((message) => (
               <div
-                key={message.id}
+                key={`message-${message.id}`}
                 className={cn(
                   "flex max-w-[80%] flex-col",
                   message.role === "user" ? "ml-auto pr-[8px] pl-[12px]" : "pr-[12px] pl-[8px]",
@@ -246,10 +367,7 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
                           className="text-sm text-white/40"
                           style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}
                         >
-                          {message.createdAt.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatTime(message.createdAt)}
                         </span>
                       </div>
                     )}
@@ -265,10 +383,7 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
                           className="text-sm text-white/40"
                           style={{ fontFamily: "Inter", fontWeight: 400, lineHeight: "1.286em" }}
                         >
-                          {message.createdAt.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatTime(message.createdAt)}
                         </span>
                       </div>
                     )}
@@ -277,29 +392,20 @@ export const ChatInterface: React.FC<{ thread: RouterOutputs["chat"]["getThread"
               </div>
             ))}
 
-            {/* ストリーミング中のメッセージを表示 */}
-            {pendingMessage && (
-              <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
+            {/* Pending AI Message */}
+            {pendingAiMessage && (
+              <div key={`pending-${pendingAiMessage.id}`} className="flex max-w-[80%] pl-[8px] pr-[12px]">
                 <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
-                  <div
-                    className="text-white"
-                    style={{ fontFamily: "Inter", fontWeight: 400, fontSize: "14px", lineHeight: "1.286em" }}
-                  >
-                    <MessageContent content={pendingMessage} isMarkdown={true} />
+                  <div className="text-white">
+                    <MessageContent content={pendingAiMessage.content} isMarkdown={true} />
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* AIの入力中表示 */}
-            {(isAiTyping || isSending) && !pendingMessage && (
-              <div className="flex max-w-[80%] pl-[36px] pr-[12px]">
-                <div className="w-full rounded-2xl p-4 bg-white/12 backdrop-blur-[4px]">
-                  <div className="flex space-x-1">
-                    <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce"></div>
-                    <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0.4s]"></div>
-                  </div>
+                  {pendingAiMessage.isStreaming && (
+                    <div className="flex space-x-1 mt-2">
+                      <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce"></div>
+                      <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0.4s]"></div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -9,11 +9,14 @@ interface ChatThreadPageProps {
   params: Promise<{
     threadId: string;
   }>;
+  searchParams?: Promise<{
+    msg?: string;
+  }>;
 }
 
-const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
+const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params, searchParams }) => {
   const { threadId } = await params;
-  console.log(threadId);
+  const { msg } = (await searchParams) || {};
 
   const thread = await api.chat.getThread({
     threadId,
@@ -35,7 +38,7 @@ const ChatThreadPage: NextPage<ChatThreadPageProps> = async ({ params }) => {
 
       {/* Chat Interface takes full height minus header */}
       <div className="flex-1 relative">
-        <ChatInterface thread={thread} />
+        <ChatInterface thread={thread} initialMessage={msg} />
       </div>
     </main>
   );

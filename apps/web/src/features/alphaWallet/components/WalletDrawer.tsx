@@ -108,15 +108,25 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) {
+      setIsConfirming(false);
+      setIsConfirmed(false);
+      setTokenPrices({});
+      setIsLoadingPrices(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setIsConfirming(false);
+    setIsConfirmed(false);
+  }, [tx?.id]);
+
+  useEffect(() => {
     if (externalError) {
       setIsConfirming(false);
       setIsConfirmed(false);
     }
   }, [externalError]);
-
-  useEffect(() => {
-    setIsConfirmed(false);
-  }, [tx]);
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -160,6 +170,8 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
   }, [tx]);
 
   const handleConfirm = async () => {
+    if (isConfirming) return;
+
     try {
       setIsConfirming(true);
       await onConfirm();
@@ -168,11 +180,18 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
       }
     } catch (err) {
       console.error("Error confirming transaction:", err);
+      setIsConfirming(false);
+    }
+  };
+
+  const handleReject = () => {
+    if (!isConfirming) {
+      onReject();
     }
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={() => !isConfirming && onReject()}>
+    <Drawer open={isOpen} onOpenChange={handleReject}>
       <DrawerContent className="bg-background text-foreground border-t border-gray-800 rounded-t-xl">
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
@@ -218,7 +237,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={onReject}
+                onClick={handleReject}
                 disabled={isConfirming}
                 className="flex-1 bg-transparent border-gray-700 text-white hover:bg-gray-800 font-bold text-md"
               >

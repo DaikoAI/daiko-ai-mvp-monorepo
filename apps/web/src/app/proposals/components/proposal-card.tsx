@@ -8,21 +8,11 @@ import { contractCallToInstruction } from "@/features/alphaWallet/types";
 import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
-import {
-  AlertCircle,
-  Bot,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  ExternalLink,
-  Loader2,
-  Plus,
-  X,
-} from "lucide-react";
+import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AskAIButton } from "./ask-ai-button";
 
 // Type styles - Adjusted for Glassmorphism & Figma
 const typeStyles = {
@@ -230,11 +220,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
     }
   };
 
-  const handleAskAI = () => {
-    const reasonText = proposal.reason.join(". ");
-    router.push(`/chat?q=${encodeURIComponent(`Tell me more about this proposal: ${proposal.title}. ${reasonText}`)}`);
-  };
-
   const currentTypeStyle = typeStyles[(proposal.type as keyof typeof typeStyles) || "opportunity"];
 
   return (
@@ -286,15 +271,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
                 </a>
               ))}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAskAI}
-              className="w-full justify-center items-center bg-white text-black font-bold rounded-full h-9 text-base hover:bg-gray-200 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
-            >
-              Ask AI for More Details
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+            <AskAIButton proposal={proposal} />
           </CardContent>
         </div>
       </div>

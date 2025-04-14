@@ -17,12 +17,22 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
   const { execute } = useExecuteInstruction();
   const [txError, setTxError] = useState<string | null>(null);
 
+  // Reset all states
+  const resetState = () => {
+    setPendingTx(null);
+    setPendingTxResolver(null);
+    setTxError(null);
+    setIsDrawerOpen(false);
+  };
+
   async function requestTransaction(tx: AlphaTx): Promise<AlphaTxResult> {
+    // Reset previous state before starting new transaction
+    resetState();
+
     return new Promise<AlphaTxResult>((resolve) => {
       setPendingTx(tx);
       setPendingTxResolver(() => resolve);
       setIsDrawerOpen(true);
-      setTxError(null); // Reset error state on new transaction
     });
   }
 
@@ -51,12 +61,8 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
         description: "Your transaction has been processed successfully.",
       });
 
-      // Close drawer after success
-      setTimeout(() => {
-        setIsDrawerOpen(false);
-        setPendingTx(null);
-        setPendingTxResolver(null);
-      }, 1500);
+      // Reset state immediately after successful transaction
+      setTimeout(resetState, 1500);
     } catch (err: any) {
       console.error("Transaction error:", err);
       const errorMessage = err?.message || "Transaction execution failed";
@@ -84,10 +90,7 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
         description: "You have rejected the transaction.",
       });
     }
-    setPendingTx(null);
-    setPendingTxResolver(null);
-    setTxError(null);
-    setIsDrawerOpen(false);
+    resetState();
   }
 
   const value: AlphaWalletInterface = {

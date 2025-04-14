@@ -27,13 +27,13 @@ export const LandingPage: React.FC = () => {
 
     // Redirect to onboarding if accessed as PWA
     if (isPWA()) {
-      if (session) {
+      if (session?.user) {
         router.replace("/proposals");
       } else {
         router.replace("/onboarding");
       }
     }
-  }, [router]);
+  }, [router, session]);
 
   // Monitor URL changes and return to landing page if not a PWA
   useEffect(() => {
