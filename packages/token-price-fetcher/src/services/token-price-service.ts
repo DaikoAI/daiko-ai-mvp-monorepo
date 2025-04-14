@@ -123,6 +123,7 @@ export class TokenPriceService {
         });
       }
 
+      console.log("価格履歴にも記録: ", tokenAddress, priceUsd);
       // 価格履歴にも記録
       await db.insert(tokenPriceHistory).values({
         token_address: tokenAddress,
