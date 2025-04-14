@@ -23,7 +23,7 @@ export const Messages: React.FC<MessagesProps> = ({
   const [containerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
 
   return (
-    <div className="flex-1 overflow-y-auto" ref={containerRef}>
+    <div className="flex-1 overflow-y-auto pb-4" ref={containerRef}>
       {messages.map((message) => (
         <PreviewMessage
           key={message.id}

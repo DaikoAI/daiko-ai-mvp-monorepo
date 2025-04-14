@@ -3,7 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Attachment, UIMessage } from "ai";
 import type { UseChatHelpers } from "ai/react";
 import cx from "classnames";
-import { SendIcon, Square } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
@@ -77,7 +77,7 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
           adjustHeight();
         }}
         className={cx(
-          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700",
+          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-t-2xl !text-base bg-muted pb-10 pt-4 px-4 dark:border-zinc-700",
           className,
         )}
         rows={2}
@@ -118,7 +118,7 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
             }}
             disabled={input.length === 0}
           >
-            <SendIcon className="size-4" />
+            <ArrowUp className="size-4 stroke-2" />
           </Button>
         )}
       </div>

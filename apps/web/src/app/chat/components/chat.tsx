@@ -44,7 +44,7 @@ export const Chat: React.FC<ChatProps> = ({ id, initialMessages, selectedChatMod
         isReadonly={isReadonly}
       />
 
-      <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+      <form className="sticky bottom-0 flex mx-auto bg-background pb-safe pt-2 gap-2 w-full md:max-w-3xl">
         {!isReadonly && (
           <MultimodalInput
             threadId={id}

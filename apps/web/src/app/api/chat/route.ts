@@ -1,3 +1,4 @@
+import { generateTitleFromUserMessage } from "@/app/actions";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/provider";
@@ -34,6 +35,23 @@ export async function POST(request: Request) {
       }
       return part;
     }) ?? [{ type: "text", text: userMessage.content || "" }];
+
+    const thread = await api.chat.getThread({ threadId: id });
+
+    if (!thread) {
+      return new Response("Thread not found", { status: 404 });
+    }
+
+    if (thread.userId !== session.user.id) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const title = await generateTitleFromUserMessage({ message: userMessage });
+
+    await api.chat.updateThread({
+      threadId: id,
+      title,
+    });
 
     // Save message to database
     await api.chat.createMessage({
