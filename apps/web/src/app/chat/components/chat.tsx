@@ -13,15 +13,23 @@ import { MultimodalInput } from "./multimodal-input";
 interface ChatProps {
   thread: RouterOutputs["chat"]["getThread"];
   initialMessages: Array<UIMessage>;
+  initialInput?: string;
   selectedChatModel: string;
   isReadonly: boolean;
 }
 
-export const Chat: React.FC<ChatProps> = ({ thread, initialMessages, selectedChatModel, isReadonly }: ChatProps) => {
+export const Chat: React.FC<ChatProps> = ({
+  thread,
+  initialMessages,
+  initialInput,
+  selectedChatModel,
+  isReadonly,
+}: ChatProps) => {
   const { messages, setMessages, handleSubmit, input, setInput, append, status, stop, reload } = useChat({
     id: thread.id,
     body: { id: thread.id, selectedChatModel },
     initialMessages,
+    initialInput,
     experimental_throttle: 100,
     sendExtraMessageFields: true,
     generateId: generateUUID,

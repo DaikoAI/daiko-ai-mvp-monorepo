@@ -8,10 +8,13 @@ import { notFound } from "next/navigation";
 
 interface ChatPageProps {
   params: Promise<{ threadId: string }>;
+  searchParams: Promise<{ msg: string }>;
 }
 
-const ChatPage: NextPage<ChatPageProps> = async ({ params }) => {
+const ChatPage: NextPage<ChatPageProps> = async ({ params, searchParams }) => {
   const { threadId } = await params;
+  const { msg } = await searchParams;
+
   const thread = await api.chat.getThread({
     threadId,
   });
@@ -30,6 +33,7 @@ const ChatPage: NextPage<ChatPageProps> = async ({ params }) => {
     <Chat
       thread={thread}
       initialMessages={convertToUIMessages(messages)}
+      initialInput={msg}
       selectedChatModel={DEFAULT_CHAT_MODEL}
       isReadonly={session?.user?.id !== thread.userId}
     />
