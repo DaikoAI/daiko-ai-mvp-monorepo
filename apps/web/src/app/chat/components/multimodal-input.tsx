@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/utils";
 import type { Attachment, UIMessage } from "ai";
 import type { UseChatHelpers } from "ai/react";
-import cx from "classnames";
 import { ArrowUp, Square } from "lucide-react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -77,8 +77,8 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
           setInput(e.target.value);
           adjustHeight();
         }}
-        className={cx(
-          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base bg-transparent pb-safe-offset-8 pt-4 px-4 !border-none !rounded-t-2xl",
+        className={cn(
+          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base bg-transparent mb-safe !pb-4 px-4 !border-none !rounded-t-2xl",
           className,
         )}
         rows={2}
@@ -96,7 +96,7 @@ const PureMultimodalInput: React.FC<MultimodalInputProps> = ({
         }}
       />
 
-      <div className="absolute bottom-2 right-2 p-2 w-fit flex flex-row justify-end">
+      <div className="absolute bottom-4 right-2 p-2 w-fit">
         {status === "submitted" && messages.length > 0 && messages[messages.length - 1]?.role === "user" ? (
           <Button
             data-testid="stop-button"
