@@ -1,8 +1,9 @@
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { systemPrompt } from "@/lib/ai/prompts";
+import { myProvider } from "@/lib/ai/provider";
 import { auth } from "@/server/auth";
 import { api } from "@/trpc/server";
 import { generateUUID } from "@/utils";
-import { openai } from "@ai-sdk/openai";
 import { type UIMessage, createDataStreamResponse, smoothStream, streamText } from "ai";
 
 export const runtime = "nodejs";
@@ -10,8 +11,7 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    const { id, messages, selectedChatModel }: { id: string; messages: Array<UIMessage>; selectedChatModel: string } =
-      await request.json();
+    const { id, messages }: { id: string; messages: Array<UIMessage> } = await request.json();
 
     const session = await auth();
 
@@ -47,7 +47,8 @@ export async function POST(request: Request) {
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: openai(DEFAULT_CHAT_MODEL),
+          model: myProvider.languageModel(DEFAULT_CHAT_MODEL),
+          system: systemPrompt({ selectedChatModel: DEFAULT_CHAT_MODEL }),
           messages,
           maxSteps: 5,
           experimental_transform: smoothStream({ chunking: "word" }),

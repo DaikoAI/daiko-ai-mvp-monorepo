@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SparklesIcon } from "lucide-react";
 import { memo } from "react";
 import { Markdown } from "./markdown";
+import { MessageActions } from "./message-actions";
 
 interface PreviewMessageProps {
   threadId: string;
@@ -20,6 +21,10 @@ interface PreviewMessageProps {
 const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
   threadId,
   message,
+  isLoading,
+  isReadonly,
+  setMessages,
+  reload,
 }: {
   threadId: string;
   message: UIMessage;
@@ -76,6 +81,10 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
               }
             })}
           </div>
+
+          {!isReadonly && (
+            <MessageActions key={`action-${message.id}`} threadId={threadId} message={message} isLoading={isLoading} />
+          )}
         </div>
       </motion.div>
     </AnimatePresence>

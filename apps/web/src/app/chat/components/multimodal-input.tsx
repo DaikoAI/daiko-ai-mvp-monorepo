@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import type { Attachment, UIMessage } from "ai";
 import type { UseChatHelpers } from "ai/react";
 import cx from "classnames";
@@ -5,8 +7,6 @@ import { SendIcon, Square } from "lucide-react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
-import { Button } from "../../../components/ui/button";
-import { Textarea } from "../../../components/ui/textarea";
 
 interface MultimodalInputProps {
   threadId: string;

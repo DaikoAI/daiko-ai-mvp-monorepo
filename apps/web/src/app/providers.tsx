@@ -11,6 +11,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { PwaFooter } from "@/components/pwa-footer";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
@@ -33,6 +34,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
           {children}
           {/* </ViewTransition> */}
           <PwaFooter />
+          <Toaster richColors position="bottom-right" />
 
           {/* </WalletModalProvider>
               </WalletProvider>
