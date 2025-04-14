@@ -15,7 +15,7 @@
         "AUTH_GOOGLE_SECRET",
         "AUTH_SECRET",
         "WEB_PUSH_VAPID_PRIVATE_KEY",
-        "CRON_TOKEN"
+        "CRON_SECRET"
       ],
       "cache": true
     },
