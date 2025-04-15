@@ -20,10 +20,6 @@ interface WalletDrawerProps {
   error?: string | null;
 }
 
-interface TokenPrice {
-  usdPrice: number;
-}
-
 const TokenIcon: React.FC<{ symbol: string; size?: number }> = ({ symbol, size = 24 }) => {
   return (
     <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-800 border border-gray-700 shadow-lg">
@@ -133,7 +129,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({
       if (!tx || !tx.instruction) return;
 
       const instruction = tx.instruction;
-      console.log("instruction", instruction);
 
       // ステーキング取引の場合は1:1のレートを設定
       if (instruction.type === "stake" || instruction.metadata?.tokenType === "staking") {

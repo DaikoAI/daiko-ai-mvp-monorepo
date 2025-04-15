@@ -1,5 +1,5 @@
 {
-  "id": "39a1b2dd-46b2-4e6c-8e4c-1c3d0bbb6023",
+  "id": "13d705e0-22a8-4f79-b231-5295c1c16969",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -244,16 +244,21 @@
           "primaryKey": false,
           "notNull": true
         },
-        "sender": {
-          "name": "sender",
-          "type": "sender",
-          "typeSchema": "public",
+        "role": {
+          "name": "role",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
-        "content": {
-          "name": "content",
-          "type": "text",
+        "parts": {
+          "name": "parts",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attachments": {
+          "name": "attachments",
+          "type": "json",
           "primaryKey": false,
           "notNull": true
         },
@@ -1212,6 +1217,120 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.push_subscriptions": {
+      "name": "push_subscriptions",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "p256dh": {
+          "name": "p256dh",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "auth": {
+          "name": "auth",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os": {
+          "name": "os",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "browser": {
+          "name": "browser",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "endpoint_unique_idx": {
+          "name": "endpoint_unique_idx",
+          "columns": [
+            {
+              "expression": "endpoint",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "push_subscription_user_idx": {
+          "name": "push_subscription_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "push_subscriptions_user_id_users_id_fk": {
+          "name": "push_subscriptions_user_id_users_id_fk",
+          "tableFrom": "push_subscriptions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.sessions": {
       "name": "sessions",
       "schema": "",
@@ -1262,6 +1381,64 @@
           ],
           "columnsTo": [
             "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.token_price_history": {
+      "name": "token_price_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price_usd": {
+          "name": "price_usd",
+          "type": "varchar(78)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "token_price_history_token_address_tokens_address_fk": {
+          "name": "token_price_history_token_address_tokens_address_fk",
+          "tableFrom": "token_price_history",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_address"
+          ],
+          "columnsTo": [
+            "address"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -1891,31 +2068,12 @@
           "notNull": false,
           "default": "'medium'"
         },
-        "staking_enabled": {
-          "name": "staking_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": true
-        },
-        "birthday": {
-          "name": "birthday",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "twitter_connected": {
-          "name": "twitter_connected",
+        "notification_enabled": {
+          "name": "notification_enabled",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false,
           "default": false
-        },
-        "twitter_username": {
-          "name": "twitter_username",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -2055,12 +2213,12 @@
     }
   },
   "enums": {
-    "public.sender": {
-      "name": "sender",
+    "public.role": {
+      "name": "role",
       "schema": "public",
       "values": [
         "user",
-        "ai",
+        "assistant",
         "system"
       ]
     }

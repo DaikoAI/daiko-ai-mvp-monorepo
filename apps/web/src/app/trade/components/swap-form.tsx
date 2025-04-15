@@ -78,9 +78,6 @@ export const SwapForm: React.FC<{ tokens: Token[]; balances: Balance[] }> = ({ t
 
     result.match(
       (success) => {
-        toast.success("Swap executed successfully", {
-          description: `Swapped ${success.fromAmount} ${fromToken.symbol} for ${success.toAmount} ${toToken.symbol}`,
-        });
         setFromAmount("");
       },
       (error) => {

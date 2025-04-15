@@ -57,10 +57,6 @@ export function AlphaWalletProvider({ children }: { children: React.ReactNode })
         txId: `tx-${Date.now()}`,
       });
 
-      toast.success("Transaction executed", {
-        description: "Your transaction has been processed successfully.",
-      });
-
       // Reset state immediately after successful transaction
       setTimeout(resetState, 1500);
     } catch (err: any) {

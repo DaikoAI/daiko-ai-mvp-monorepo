@@ -1,13 +1,13 @@
 import { and, asc, desc, eq, like } from "drizzle-orm";
 import { z } from "zod";
 
-import { env } from "@/env";
+import { revalidateChatList, revalidateThread } from "@/app/actions";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { chatMessagesTable, chatThreadsTable } from "@daiko-ai/shared";
+import { chatMessageSelectSchema } from "@daiko-ai/shared/src/db";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { OpenAI } from "openai";
+
 export const chatRouter = createTRPCRouter({
   getUserThreads: protectedProcedure
     .input(
@@ -46,7 +46,13 @@ export const chatRouter = createTRPCRouter({
       const threadsWithLastMessage = await Promise.all(
         threadsData.map(async (thread) => {
           const [lastMessage] = await ctx.db
-            .select()
+            .select({
+              id: chatMessagesTable.id,
+              role: chatMessagesTable.role,
+              parts: chatMessagesTable.parts,
+              attachments: chatMessagesTable.attachments,
+              createdAt: chatMessagesTable.createdAt,
+            })
             .from(chatMessagesTable)
             .where(eq(chatMessagesTable.threadId, thread.id))
             .orderBy(desc(chatMessagesTable.createdAt))
@@ -105,9 +111,34 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
-      revalidatePath(`/chat`);
+      revalidateChatList();
+      revalidateThread(newThread.id);
 
       return newThread;
+    }),
+
+  updateThread: protectedProcedure
+    .input(z.object({ threadId: z.string().uuid(), title: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const { threadId, title } = input;
+      const userId = ctx.session.user.id;
+
+      const [updatedThread] = await ctx.db
+        .update(chatThreadsTable)
+        .set({ title })
+        .where(and(eq(chatThreadsTable.id, threadId), eq(chatThreadsTable.userId, userId)))
+        .returning();
+
+      if (!updatedThread) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update thread.",
+        });
+      }
+
+      revalidateThread(threadId);
+
+      return updatedThread;
     }),
 
   getMessages: protectedProcedure
@@ -147,16 +178,10 @@ export const chatRouter = createTRPCRouter({
       return messages;
     }),
 
-  sendMessage: protectedProcedure
-    .input(
-      z.object({
-        threadId: z.string().uuid(),
-        content: z.string().min(1).max(2000), // Limit message length
-        role: z.enum(["user", "assistant"]),
-      }),
-    )
+  createMessage: protectedProcedure
+    .input(chatMessageSelectSchema.pick({ id: true, threadId: true, role: true, parts: true, attachments: true }))
     .mutation(async ({ ctx, input }) => {
-      const { threadId, content, role } = input;
+      const { id, threadId, role, parts, attachments } = input;
       const userId = ctx.session.user.id;
 
       // 1. Verify user owns the thread using standard select
@@ -180,9 +205,11 @@ export const chatRouter = createTRPCRouter({
       const [insertedMessage] = await ctx.db // Use ctx.db directly
         .insert(chatMessagesTable)
         .values({
+          id,
           threadId,
-          content,
           role,
+          parts,
+          attachments,
         })
         .returning();
 
@@ -200,126 +227,9 @@ export const chatRouter = createTRPCRouter({
         .set({ updatedAt: new Date() })
         .where(eq(chatThreadsTable.id, threadId));
 
-      revalidatePath(`/chat/${threadId}`);
+      revalidateThread(threadId);
 
       return insertedMessage;
-    }),
-
-  // New mutation for summarizing thread title
-  summarizeAndUpdateThreadTitle: protectedProcedure
-    .input(z.object({ threadId: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const { threadId } = input;
-      const userId = ctx.session.user.id;
-      const MESSAGES_FOR_SUMMARY = 6; // Number of messages to use for summary context
-
-      // 1. Verify user owns the thread
-      const [thread] = await ctx.db
-        .select({ id: chatThreadsTable.id, title: chatThreadsTable.title })
-        .from(chatThreadsTable)
-        .where(eq(chatThreadsTable.id, threadId) && eq(chatThreadsTable.userId, userId))
-        .limit(1);
-
-      if (!thread) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Thread not found or access denied for summarization.",
-        });
-      }
-
-      // Optional: Avoid summarizing if title seems manually set (or not the default)
-      // if (thread.title !== "New Chat") {
-      //   console.log(`Thread ${threadId} already has a custom title. Skipping summarization.`);
-      //   return { success: true, updated: false, title: thread.title };
-      // }
-
-      // 2. Fetch the first few messages for context
-      const messages = await ctx.db
-        .select({
-          role: chatMessagesTable.role,
-          content: chatMessagesTable.content,
-        })
-        .from(chatMessagesTable)
-        .where(eq(chatMessagesTable.threadId, threadId))
-        .orderBy(asc(chatMessagesTable.createdAt))
-        .limit(MESSAGES_FOR_SUMMARY);
-
-      if (messages.length === 0) {
-        console.warn(`No messages found for thread ${threadId}. Cannot summarize.`);
-        // Or throw an error if preferred
-        return { success: false, updated: false, message: "No messages to summarize." };
-      }
-
-      // 3. Construct prompt for LLM
-      const conversationHistory = messages.map((msg) => `${msg.role}: ${msg.content}`).join("\n\n");
-
-      // Define the prompt string
-      const prompt = `Generate a very short, concise title (less than 5 words) for the following conversation. Only output the title itself, with no preamble or explanation.
-
-Conversation:
----
-${conversationHistory}
----
-
-Title:`;
-
-      let summarizedTitle = "Summarized Chat"; // Default/fallback title
-
-      try {
-        // 4. Call LLM API (Placeholder - replace with your actual LLM call)
-        console.log(`Calling LLM to summarize thread: ${threadId}`);
-
-        // TODO: Implement LLM API call here using your chosen provider
-        // Ensure you have initialized the client (e.g., openai) and handled API keys securely.
-
-        const openai = new OpenAI({
-          apiKey: env.OPENAI_API_KEY,
-        });
-
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o-mini", // Or another suitable model
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.5,
-          max_tokens: 20, // Limit title length
-          n: 1,
-          stop: ["\n"], // Stop generation at newline
-        });
-
-        const potentialTitle = response.choices[0]?.message?.content?.trim();
-        if (potentialTitle) {
-          // Remove surrounding quotes if LLM adds them
-          summarizedTitle = potentialTitle.replace(/^[\"']|[\"']$/g, "");
-        }
-
-        // Remove the line below if you uncomment and use the actual LLM call
-        console.log("LLM call is currently a placeholder.");
-
-        console.log(`LLM proposed title for thread ${threadId}: ${summarizedTitle}`);
-      } catch (error) {
-        console.error(`LLM summarization failed for thread ${threadId}:`, error);
-        // Decide how to handle LLM errors (e.g., log, use fallback, throw)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to generate title summary.",
-          cause: error,
-        });
-      }
-
-      // 5. Update the thread title in the database
-      await ctx.db
-        .update(chatThreadsTable)
-        .set({
-          title: summarizedTitle,
-          updatedAt: new Date(), // Also update timestamp
-        })
-        .where(eq(chatThreadsTable.id, threadId));
-
-      console.log(`Updated title for thread ${threadId} to: ${summarizedTitle}`);
-
-      revalidatePath(`/chat`);
-      revalidatePath(`/chat/${threadId}`);
-
-      return { success: true, updated: true, title: summarizedTitle };
     }),
 });
 

@@ -76,11 +76,7 @@ export const LandingPage: React.FC = () => {
       <div className="flex-1 flex flex-col justify-center items-center px-6 text-center relative z-10">
         <div className="max-w-md mx-auto">
           <h1 className="text-4xl md:text-6xl font-bold mb-8 text-white leading-tight">
-            The First
-            <br />
             <span className="text-primary">Exit Strategy Agent</span>
-            <br />
-            For Your Portfolio
           </h1>
           <p className="text-md mb-10 text-white/80">
             An AI-powered trading assistant for busy investors. No constant monitoring or Twitter scrolling
@@ -104,9 +100,9 @@ export const LandingPage: React.FC = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-1">Trading as Enjoyment</h3>
+                <h3 className="font-semibold text-white mb-1">Vibe Trading for Beginners</h3>
                 <p className="text-white/70 text-sm">
-                  Focus on innovation, family, and social impact while Daiko optimizes your trading.
+                  Just hit Accept or Decline. AI monitors your portfolio and gives you personalized proposals.
                 </p>
               </div>
             </div>
@@ -127,9 +123,9 @@ export const LandingPage: React.FC = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-1">AI Enhances Your Expertise</h3>
+                <h3 className="font-semibold text-white mb-1">Talk Trading for Pros</h3>
                 <p className="text-white/70 text-sm">
-                  Receive tailored investment strategies that amplify your existing knowledge.
+                  Understand the “why” behind every proposal with sources and smart chats
                 </p>
               </div>
             </div>

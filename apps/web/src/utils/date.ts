@@ -77,3 +77,16 @@ export function formatChatListTimestamp(date: Date | string | null | undefined):
     return d.toLocaleDateString(undefined, fullDateOptions);
   }
 }
+
+export const formatTime = (date: Date | undefined) => {
+  if (!date) return "";
+  try {
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    console.error("Date formatting error:", error);
+    return "";
+  }
+};
