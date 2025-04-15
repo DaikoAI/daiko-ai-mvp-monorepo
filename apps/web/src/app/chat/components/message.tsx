@@ -45,7 +45,7 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
       >
         <div
           className={cn("flex gap-4 rounded-2xl backdrop-blur-[4px]", {
-            "bg-white/12 w-full p-3": message.role === "assistant",
+            "bg-white/12 w-full p-2": message.role === "assistant",
             "bg-white/24 max-w-2xl py-2 px-3": message.role === "user",
           })}
         >
@@ -57,8 +57,8 @@ const PurePreviewMessage: React.FC<PreviewMessageProps> = ({
               if (type === "text") {
                 const text = typeof part.text === "string" ? part.text : message.content || "";
                 return (
-                  <div key={key} className="flex flex-row gap-2 items-start">
-                    <div className="flex flex-col gap-4 text-[14px] leading-[1.286] font-normal text-white">
+                  <div key={key} className="flex flex-row gap-2 items-start w-full">
+                    <div className="flex flex-col gap-4 text-[14px] leading-[1.286] font-normal text-white w-full">
                       <Markdown>{text}</Markdown>
                     </div>
                   </div>
