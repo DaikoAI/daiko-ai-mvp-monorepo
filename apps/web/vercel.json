@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/token-price",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/portfolio-snapshot",
+      "schedule": "0 0 * * *"
     }
   ]
 }

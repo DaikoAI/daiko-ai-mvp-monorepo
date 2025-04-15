@@ -35,8 +35,9 @@ const components: Partial<Components> = {
                 customStyle={{
                   fontSize: "12px",
                 }}
-                children={String(children).replace(/\n$/, "")}
-              />
+              >
+                {String(children).replace(/\n$/, "")}
+              </SyntaxHighlighter>
             ) : (
               <code className={cn("relative font-mono text-sm whitespace-pre", language && `language-${language}`)}>
                 {children}

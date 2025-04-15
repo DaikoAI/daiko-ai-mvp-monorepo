@@ -2,6 +2,9 @@ import { env } from "@/env";
 import { processTokenPrices } from "@daiko-ai/token-price-fetcher";
 import type { NextRequest } from "next/server";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
 

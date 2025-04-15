@@ -185,12 +185,6 @@ export const portfolioRouter = createTRPCRouter({
           collateralAmount: position.collateralAmount,
           liquidationPrice: position.liquidationPrice,
           valueUsd: positionValue.toString(),
-          // PnL calculation (simplified)
-          pnl: new BigNumber(currentPrice)
-            .minus(position.entryPrice)
-            .multipliedBy(position.positionDirection === "long" ? 1 : -1)
-            .multipliedBy(position.positionSize)
-            .toString(),
         };
       });
 
