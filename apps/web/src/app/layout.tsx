@@ -11,7 +11,7 @@ export const viewport = VIEWPORT;
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} dark bg-gradient-subtle`}>
+      <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>
     </html>
