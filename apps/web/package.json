@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "generate-pwa-assets": "npx pwa-asset-generator src/app/icon.jpg public/pwa --background '#000000'"
+    "generate-pwa-assets": "npx pwa-asset-generator src/app/icon.jpg public/pwa --background '#1b1b1b'"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.11",
