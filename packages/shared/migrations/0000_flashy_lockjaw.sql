@@ -44,6 +44,48 @@ CREATE TABLE "chat_threads" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "farcaster_casts" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"hash" text NOT NULL,
+	"author" text,
+	"author_fid" integer,
+	"text" text NOT NULL,
+	"reply_to" text,
+	"timestamp" timestamp NOT NULL,
+	"fetched_at" timestamp NOT NULL,
+	"is_latest" boolean DEFAULT false,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	CONSTRAINT "farcaster_casts_hash_unique" UNIQUE("hash")
+);
+--> statement-breakpoint
+CREATE TABLE "farcaster_keywords" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"keyword" text NOT NULL,
+	"description" text,
+	"is_active" boolean DEFAULT true,
+	"last_scanned_at" timestamp,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	CONSTRAINT "farcaster_keywords_keyword_unique" UNIQUE("keyword")
+);
+--> statement-breakpoint
+CREATE TABLE "farcaster_users" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"fid" integer NOT NULL,
+	"username" text NOT NULL,
+	"display_name" text,
+	"avatar_url" text,
+	"bio" text,
+	"followers_count" integer DEFAULT 0,
+	"following_count" integer DEFAULT 0,
+	"last_fetched_at" timestamp,
+	"is_monitored" boolean DEFAULT false,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	CONSTRAINT "farcaster_users_fid_unique" UNIQUE("fid")
+);
+--> statement-breakpoint
 CREATE TABLE "funding_rates" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"token_address" varchar(255) NOT NULL,
@@ -139,7 +181,8 @@ CREATE TABLE "push_subscriptions" (
 	"os" varchar(100),
 	"browser" varchar(100),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "push_subscriptions_user_id_endpoint_pk" PRIMARY KEY("user_id","endpoint")
 );
 --> statement-breakpoint
 CREATE TABLE "sessions" (
@@ -262,6 +305,10 @@ CREATE INDEX "authenticator_user_id_idx" ON "authenticators" USING btree ("user_
 CREATE INDEX "idx_chat_messages_thread" ON "chat_messages" USING btree ("thread_id");--> statement-breakpoint
 CREATE INDEX "idx_chat_threads_user" ON "chat_threads" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_chat_threads_created" ON "chat_threads" USING btree ("created_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "farcaster_casts_hash_idx" ON "farcaster_casts" USING btree ("hash");--> statement-breakpoint
+CREATE UNIQUE INDEX "farcaster_casts_author_idx" ON "farcaster_casts" USING btree ("author");--> statement-breakpoint
+CREATE UNIQUE INDEX "farcaster_users_fid_idx" ON "farcaster_users" USING btree ("fid");--> statement-breakpoint
+CREATE UNIQUE INDEX "farcaster_users_username_idx" ON "farcaster_users" USING btree ("username");--> statement-breakpoint
 CREATE INDEX "idx_funding_rates_token" ON "funding_rates" USING btree ("token_address");--> statement-breakpoint
 CREATE INDEX "idx_funding_rates_timestamp" ON "funding_rates" USING btree ("timestamp");--> statement-breakpoint
 CREATE INDEX "idx_interest_rates_token" ON "interest_rates" USING btree ("token_address","action_type");--> statement-breakpoint
@@ -275,8 +322,8 @@ CREATE INDEX "idx_perp_token_address" ON "perp_positions" USING btree ("token_ad
 CREATE INDEX "idx_perp_liquidation" ON "perp_positions" USING btree ("liquidation_price","status");--> statement-breakpoint
 CREATE INDEX "user_timestamp_idx" ON "portfolio_snapshots" USING btree ("user_id","timestamp");--> statement-breakpoint
 CREATE INDEX "timestamp_idx" ON "portfolio_snapshots" USING btree ("timestamp");--> statement-breakpoint
-CREATE UNIQUE INDEX "endpoint_unique_idx" ON "push_subscriptions" USING btree ("endpoint");--> statement-breakpoint
 CREATE INDEX "push_subscription_user_idx" ON "push_subscriptions" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "user_os_browser_unique_idx" ON "push_subscriptions" USING btree ("user_id","os","browser");--> statement-breakpoint
 CREATE INDEX "idx_sessions_user_id" ON "sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_token_prices_address" ON "token_prices" USING btree ("token_address");--> statement-breakpoint
 CREATE INDEX "idx_token_prices_updated" ON "token_prices" USING btree ("last_updated");--> statement-breakpoint

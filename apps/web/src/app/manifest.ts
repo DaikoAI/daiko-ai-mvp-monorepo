@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Daiko AI",
     start_url: "/proposals",
     display: "standalone",
-    background_color: "#000000",
-    theme_color: "#000000",
+    background_color: "#1b1b1b",
+    theme_color: "#1b1b1b",
     icons: [
       {
         src: "/pwa/apple-icon-180.png",

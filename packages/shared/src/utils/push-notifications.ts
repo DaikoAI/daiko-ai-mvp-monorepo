@@ -1,7 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
 import webpush from "web-push";
 import { db } from "../db";
-import { pushSubscriptions } from "../db/schema/push_subscriptions";
+import { pushSubscriptionTable } from "../db/schema/push_subscriptions";
 
 // Push通知のペイロードの型定義
 interface ProposalNotificationPayload {
@@ -135,7 +135,10 @@ export const sendPushNotification = async (subscription: PushSubscription, paylo
 export async function sendPushNotifications({ userIds, notification }: SendPushNotificationParams): Promise<void> {
   try {
     // ユーザーIDに紐づくプッシュ通知サブスクリプションを取得
-    const subscriptions = await db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
+    const subscriptions = await db
+      .select()
+      .from(pushSubscriptionTable)
+      .where(inArray(pushSubscriptionTable.userId, userIds));
 
     // 各サブスクリプションに対して通知を送信
     await Promise.all(
@@ -159,7 +162,7 @@ export async function sendPushNotifications({ userIds, notification }: SendPushN
         } catch (error: any) {
           // 無効なサブスクリプションの場合は削除を検討
           if (error.statusCode === 410 || error.statusCode === 404) {
-            await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, subscription.endpoint));
+            await db.delete(pushSubscriptionTable).where(eq(pushSubscriptionTable.endpoint, subscription.endpoint));
           }
           console.error(`Failed to send notification to subscription ${subscription.endpoint}:`, error);
         }

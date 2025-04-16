@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Adjust import path temporarily - check tsconfig paths later
-import { pushSubscriptions, usersTable } from "@daiko-ai/shared";
+import { pushSubscriptionTable, usersTable } from "@daiko-ai/shared";
 import { UAParser } from "ua-parser-js"; // User agent parser
 
 import { eq } from "drizzle-orm";
@@ -56,7 +56,7 @@ export const pushRouter = createTRPCRouter({
     try {
       // Example: Insert or update logic (using endpoint as unique identifier)
       await ctx.db
-        .insert(pushSubscriptions)
+        .insert(pushSubscriptionTable)
         .values({
           userId: userId,
           endpoint: endpoint,
@@ -68,7 +68,7 @@ export const pushRouter = createTRPCRouter({
           // createdAt and updatedAt will default to now()
         })
         .onConflictDoUpdate({
-          target: pushSubscriptions.endpoint, // Use endpoint as the conflict target
+          target: pushSubscriptionTable.endpoint, // Use endpoint as the conflict target
           set: {
             // Update keys and timestamp if endpoint already exists for *any* user
             // Consider security implications: should only update if userId matches?

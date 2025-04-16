@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { index, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { index, pgTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 import { usersTable } from "./users"; // 既存のusersスキーマをインポート
 
@@ -7,8 +7,10 @@ import { usersTable } from "./users"; // 既存のusersスキーマをインポ�
  * push_subscriptions テーブル
  * Web Push 通知の購読情報を保存します。
  * 各行は、特定のユーザーの特定のブラウザ/デバイスでの購読を表します。
+ * プライマリーキー: (userId, endpoint)の組み合わせ
+ * リレーション: users(1) - (n)push_subscriptions
  */
-export const pushSubscriptions = pgTable(
+export const pushSubscriptionTable = pgTable(
   "push_subscriptions",
   {
     userId: varchar("user_id", { length: 255 })
@@ -24,19 +26,19 @@ export const pushSubscriptions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(), // 更新日時
   },
   (table) => [
-    // endpointは購読ごとに一意であるため、unique制約を追加
-    uniqueIndex("endpoint_unique_idx").on(table.endpoint),
+    // userId と endpoint の組み合わせをプライマリーキーとして設定
+    primaryKey({ columns: [table.userId, table.endpoint] }),
     // 特定ユーザーの購読を検索することが多いため、userIdにインデックスを追加
     index("push_subscription_user_idx").on(table.userId),
-    // オプション: 特定ユーザーが同じOS/ブラウザで重複購読しないようにする場合
-    // userOsBrowserUnique: uniqueIndex("user_os_browser_unique_idx").on(table.userId, table.os, table.browser),
+    // 同じユーザーが同じOS/ブラウザの組み合わせで重複購読しないようにする
+    uniqueIndex("user_os_browser_unique_idx").on(table.userId, table.os, table.browser),
   ],
 );
 
 // usersテーブルとのリレーション定義
-export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one }) => ({
+export const pushSubscriptionsRelations = relations(pushSubscriptionTable, ({ one }) => ({
   user: one(usersTable, {
-    fields: [pushSubscriptions.userId],
+    fields: [pushSubscriptionTable.userId],
     references: [usersTable.id],
   }),
 }));
