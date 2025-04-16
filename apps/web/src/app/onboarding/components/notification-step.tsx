@@ -97,6 +97,11 @@ export const NotificationStep: React.FC = () => {
         >
           {buttonText}
         </Button>
+        {process.env.NODE_ENV === "development" && (
+          <Button variant="outline" className="w-full" onClick={() => setCurrentStep("profile")}>
+            Skip for Development
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

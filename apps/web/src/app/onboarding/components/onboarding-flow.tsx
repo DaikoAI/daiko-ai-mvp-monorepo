@@ -87,7 +87,7 @@ export const OnboardingFlow: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col py-8 px-4">
+    <main className="min-h-screen flex flex-col py-8 px-4">
       <div className="w-full max-w-md mx-auto mb-8">
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2 text-xs text-muted-foreground">
@@ -108,6 +108,6 @@ export const OnboardingFlow: React.FC = () => {
           {renderStep()}
         </motion.div>
       </AnimatePresence>
-    </div>
+    </main>
   );
 };
