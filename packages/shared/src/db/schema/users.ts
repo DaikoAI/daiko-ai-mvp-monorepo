@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import { boolean, index, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { accountsTable } from "./accounts";
+import { pushSubscriptionTable } from "./push_subscriptions";
 
 export const usersTable = pgTable(
   "users",
@@ -34,6 +35,7 @@ export const userSelectSchema = createSelectSchema(usersTable);
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
   accounts: many(accountsTable),
+  pushSubscriptions: many(pushSubscriptionTable),
 }));
 
 // DB操作のための型定義
