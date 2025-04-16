@@ -5,7 +5,8 @@ export const farcasterCastsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     hash: text("hash").notNull().unique(),
-    authorFid: integer("author_fid").notNull(),
+    author: text("author"),
+    authorFid: integer("author_fid"),
     text: text("text").notNull(),
     replyTo: text("reply_to"),
     timestamp: timestamp("timestamp").notNull(),
@@ -14,10 +15,7 @@ export const farcasterCastsTable = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
-  (table) => [
-    uniqueIndex("farcaster_casts_hash_idx").on(table.hash),
-    uniqueIndex("farcaster_casts_author_fid_idx").on(table.authorFid),
-  ],
+  (table) => [uniqueIndex("farcaster_casts_hash_idx").on(table.hash)],
 );
 
 export type FarcasterCasts = typeof farcasterCastsTable.$inferSelect;

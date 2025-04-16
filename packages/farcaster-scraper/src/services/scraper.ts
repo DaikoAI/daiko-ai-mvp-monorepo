@@ -1,13 +1,16 @@
+import { castKeywordsTable, db, farcasterCastsTable, farcasterKeywordsTable } from "@daiko-ai/shared";
+import { eq } from "drizzle-orm";
 import { NeynarAdapter } from "../adapters/neynar";
+import { SearchcasterAdapter } from "../adapters/searchcaster";
 import { FarcasterRepository } from "../repositories/farcaster";
-import { ScrapingResult } from "../types";
+import type { ScrapingResult, SearchcasterCast } from "../types";
 
 /**
  * レートリミット考慮: 1分あたり300リクエスト以内（Starterプラン）
  * 1リクエストごとにsleepを挟む・バッチサイズを調整
  */
 const DEFAULT_BATCH_SIZE = 10;
-const DEFAULT_SLEEP_MS = 250; // 4req/sec
+const DEFAULT_SLEEP_MS = 500; // 2req/sec
 
 // 必要最小限のcast型
 interface SimpleCast {
@@ -22,10 +25,7 @@ export class FarcasterScraper {
   constructor(
     private readonly repository: FarcasterRepository,
     private readonly neynar: NeynarAdapter,
-  ) {
-    this.repository = new FarcasterRepository();
-    this.neynar = new NeynarAdapter();
-  }
+  ) {}
 
   /**
    * 監視アカウント（isMonitored=true）のcast/プロフィールを最新化
@@ -59,7 +59,7 @@ export class FarcasterScraper {
             const cast = casts[0];
             const newCast = {
               hash: cast.hash,
-              authorFid: cast.author.fid,
+              author: profile.username,
               text: cast.text,
               replyTo: cast.thread_hash ?? undefined,
               timestamp: new Date(cast.timestamp),
@@ -88,10 +88,10 @@ export class FarcasterScraper {
       const batch = keywords.slice(i, i + batchSize);
       for (const keyword of batch) {
         try {
-          const casts: SimpleCast[] = await this.neynar.searchCasts(keyword.keyword, limit);
+          const casts = await this.neynar.searchCasts(keyword.keyword, limit);
           const castsToSave = casts.map((cast) => ({
             hash: cast.hash,
-            authorFid: cast.author.fid,
+            author: cast.author.username,
             text: cast.text,
             replyTo: cast.thread_hash ?? undefined,
             timestamp: new Date(cast.timestamp),
@@ -101,6 +101,73 @@ export class FarcasterScraper {
           await this.repository.saveCasts(castsToSave);
           await this.repository.updateKeywordLastScanned(keyword.keyword);
           results.push({ success: true, castsCount: castsToSave.length });
+        } catch (error) {
+          results.push({ success: false, error: error instanceof Error ? error.message : String(error) });
+        }
+        await this.sleep(DEFAULT_SLEEP_MS);
+      }
+    }
+    return results;
+  }
+
+  /**
+   * isActiveなキーワードごとにSearchcasterでcast検索し保存
+   * cast_keywords中間テーブルにもリレーションを保存
+   */
+  async scrapeActiveKeywordsWithSearchcaster(
+    searchcaster: SearchcasterAdapter,
+    limit = 200,
+    batchSize = DEFAULT_BATCH_SIZE,
+  ): Promise<ScrapingResult[]> {
+    const keywords = await this.repository.getActiveKeywords();
+    const results: ScrapingResult[] = [];
+    for (let i = 0; i < keywords.length; i += batchSize) {
+      const batch = keywords.slice(i, i + batchSize);
+      for (const keyword of batch) {
+        try {
+          // Searchcasterで検索
+          const casts: SearchcasterCast[] = await searchcaster.searchByKeyword(keyword.keyword, { count: limit });
+          for (const cast of casts) {
+            // cast本体を保存しid取得
+            const [savedCast] = await db
+              .insert(farcasterCastsTable)
+              .values({
+                hash: cast.uri,
+                author: cast.body.username,
+                authorFid: undefined, // 必要に応じてcast.body.fid等をセット
+                text: cast.body.data.text,
+                replyTo: undefined,
+                timestamp: new Date(cast.body.publishedAt),
+                fetchedAt: new Date(),
+                isLatest: false,
+              })
+              .onConflictDoUpdate({
+                target: farcasterCastsTable.hash,
+                set: {
+                  text: cast.body.data.text,
+                  replyTo: undefined,
+                  timestamp: new Date(cast.body.publishedAt),
+                  fetchedAt: new Date(),
+                  isLatest: false,
+                  updatedAt: new Date(),
+                },
+              })
+              .returning({ id: farcasterCastsTable.id });
+            // keywordのid取得
+            const [keywordRow] = await db
+              .select({ id: farcasterKeywordsTable.id })
+              .from(farcasterKeywordsTable)
+              .where(eq(farcasterKeywordsTable.keyword, keyword.keyword));
+            // 中間テーブルに保存
+            if (savedCast && keywordRow) {
+              await db
+                .insert(castKeywordsTable)
+                .values({ castId: savedCast.id, keywordId: keywordRow.id })
+                .onConflictDoNothing();
+            }
+          }
+          await this.repository.updateKeywordLastScanned(keyword.keyword);
+          results.push({ success: true, castsCount: casts.length });
         } catch (error) {
           results.push({ success: false, error: error instanceof Error ? error.message : String(error) });
         }

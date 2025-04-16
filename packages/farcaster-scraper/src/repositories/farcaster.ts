@@ -16,7 +16,7 @@ export class FarcasterRepository {
       .insert(farcasterUsersTable)
       .values(user)
       .onConflictDoUpdate({
-        target: farcasterUsersTable.fid,
+        target: farcasterUsersTable.username,
         set: {
           username: user.username,
           displayName: user.displayName,

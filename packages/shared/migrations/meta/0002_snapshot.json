@@ -1,6 +1,6 @@
 {
-  "id": "43e6c59a-bba3-41d0-bbe1-2e73d6a6863c",
-  "prevId": "dfb8c1b8-1bf4-463d-be3e-b134cb880808",
+  "id": "83c68ec9-c11d-4494-a8e4-236dbcee0718",
+  "prevId": "43e6c59a-bba3-41d0-bbe1-2e73d6a6863c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -224,6 +224,64 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cast_keywords": {
+      "name": "cast_keywords",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cast_id": {
+          "name": "cast_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keyword_id": {
+          "name": "keyword_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cast_keywords_cast_id_farcaster_casts_id_fk": {
+          "name": "cast_keywords_cast_id_farcaster_casts_id_fk",
+          "tableFrom": "cast_keywords",
+          "tableTo": "farcaster_casts",
+          "columnsFrom": [
+            "cast_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cast_keywords_keyword_id_farcaster_keywords_id_fk": {
+          "name": "cast_keywords_keyword_id_farcaster_keywords_id_fk",
+          "tableFrom": "cast_keywords",
+          "tableTo": "farcaster_keywords",
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

@@ -1,0 +1,1 @@
+DROP INDEX "farcaster_casts_author_idx";

@@ -90,3 +90,33 @@ await addMonitoredAccount({ fid: 12345 });
 ## License
 
 MIT
+
+---
+
+## Casts for a Specific Keyword (Drizzle ORM Query Example)
+
+```ts
+import { db, castKeywordsTable, farcasterCastsTable, farcasterKeywordsTable } from "@daiko-ai/shared";
+import { eq } from "drizzle-orm";
+
+// 例: "SOL" というキーワードに紐づくcast一覧を取得
+const keyword = "SOL";
+
+// 1. キーワードIDを取得
+const [keywordRow] = await db
+  .select({ id: farcasterKeywordsTable.id })
+  .from(farcasterKeywordsTable)
+  .where(eq(farcasterKeywordsTable.keyword, keyword));
+
+if (keywordRow) {
+  // 2. 中間テーブル経由でcastを取得
+  const casts = await db
+    .select()
+    .from(castKeywordsTable)
+    .leftJoin(farcasterCastsTable, eq(castKeywordsTable.castId, farcasterCastsTable.id))
+    .where(eq(castKeywordsTable.keywordId, keywordRow.id));
+  // casts配列の各要素にcast情報が含まれます
+}
+```
+
+---

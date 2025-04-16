@@ -1,5 +1,6 @@
 export * from "./accounts";
 export * from "./authenticators";
+export * from "./cast_keywords";
 export * from "./chat_messages";
 export * from "./chat_threads";
 export * from "./farcaster_casts";
