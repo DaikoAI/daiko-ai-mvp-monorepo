@@ -12,9 +12,7 @@ const credentials = {
 const scraper = new XScraper(credentials);
 
 async function main() {
-  await scraper.login();
   await scraper.checkXAccounts();
-  await scraper.closeDriver();
 }
 
 main()
