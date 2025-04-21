@@ -1,8 +1,16 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
+import { execSync } from "child_process";
 import { OpenAI } from "openai";
-import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver";
+import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
+
+// Xアカウントのログイン情報の型定義
+export interface XCredentials {
+  email: string;
+  password: string;
+  username: string;
+}
 
 export class XScraper {
   private openai: OpenAI;
@@ -10,12 +18,36 @@ export class XScraper {
   private logger = new Logger({
     level: LogLevel.INFO,
   });
+  private credentials: XCredentials | null = null;
 
-  constructor() {
+  constructor(credentials?: XCredentials) {
     // OpenAI APIクライアントを初期化
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+
+    if (credentials) {
+      this.credentials = credentials;
+    }
+  }
+
+  /**
+   * Chromeプロセスをクリーンアップ
+   */
+  private cleanupChromeProcesses(): void {
+    try {
+      if (process.platform === "darwin") {
+        execSync('pkill -f "Google Chrome"');
+      } else if (process.platform === "win32") {
+        execSync("taskkill /F /IM chrome.exe");
+      } else {
+        execSync("pkill -f chrome");
+      }
+      this.logger.info("XScraper", "Cleaned up Chrome processes");
+    } catch (error) {
+      // プロセスが見つからない場合などのエラーは無視
+      this.logger.debug("XScraper", "No Chrome processes to clean up");
+    }
   }
 
   /**
@@ -29,9 +61,12 @@ export class XScraper {
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
+      // 既存のChromeプロセスをクリーンアップ
+      this.cleanupChromeProcesses();
+
       const options = new chrome.Options();
       options.addArguments("--headless");
-      // ヘッドレスモードでの検出を回避するための追加オプション
+      options.addArguments("--start-maximized");
       options.addArguments("--disable-blink-features=AutomationControlled");
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
@@ -41,12 +76,23 @@ export class XScraper {
         "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       );
 
-      // ヘッドレスモードでも自動化を検出されにくくするための設定
-      options.addArguments("--disable-infobars"); // 「Chrome is being controlled by automated test software」を非表示
+      // 自動化検出を回避するための設定
+      options.addArguments("--disable-infobars");
       options.addArguments("--disable-notifications");
       options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
+      options.addArguments("--disable-automation");
+
+      // インコグニートモードを使用してクリーンな状態を保証
+      options.addArguments("--incognito");
 
       this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
+
+      // CDP経由で自動化フラグを変更
+      await this.driver.executeScript(`
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined
+        });
+      `);
 
       return this.driver;
     } catch (error) {
@@ -56,6 +102,96 @@ export class XScraper {
         stack: error instanceof Error ? error.stack : undefined,
       });
       throw new Error(`WebDriver initialization failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Xアカウントにログイン
+   */
+  public async login(): Promise<boolean> {
+    if (!this.credentials) {
+      this.logger.error("XScraper", "No credentials provided for login");
+      return false;
+    }
+
+    try {
+      const driver = await this.initDriver();
+      this.logger.info("XScraper", "Starting login process");
+
+      // ログインページにアクセス
+      await driver.get("https://x.com/i/flow/login");
+
+      // ランダムな待機時間を設定（より人間らしい動作に）
+      const randomWait = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
+
+      try {
+        // メールアドレスを入力（一文字ずつ入力して人間らしく）
+        const emailInput = await driver.wait(until.elementLocated(By.css('input[autocomplete="username"]')), 10000);
+
+        for (const char of this.credentials.email) {
+          await emailInput.sendKeys(char);
+          this.logger.debug("XScraper", `Inputting email: ${char}`);
+          await driver.sleep(randomWait(50, 150));
+        }
+
+        // Enterキーを使用してNext
+        this.logger.debug("XScraper", "Sending Enter key");
+        await driver.sleep(randomWait(500, 1000));
+        await emailInput.sendKeys(Key.RETURN);
+        this.logger.debug("XScraper", "Enter key sent");
+        await driver.sleep(randomWait(2000, 3000));
+
+        // 不審なアクセスと判断された場合、ユーザー名の入力を求められる
+        try {
+          const usernameInput = await driver.wait(until.elementLocated(By.css('input[name="text"]')), 5000);
+
+          for (const char of this.credentials.username) {
+            await usernameInput.sendKeys(char);
+            await driver.sleep(randomWait(50, 150));
+          }
+
+          await driver.sleep(randomWait(500, 1000));
+          await usernameInput.sendKeys(Key.RETURN);
+          await driver.sleep(randomWait(2000, 3000));
+        } catch (error) {
+          this.logger.debug("XScraper", "Username verification not required");
+        }
+
+        // パスワードを入力
+        const passwordInput = await driver.wait(until.elementLocated(By.css('input[name="password"]')), 10000);
+
+        for (const char of this.credentials.password) {
+          await passwordInput.sendKeys(char);
+          await driver.sleep(randomWait(50, 150));
+        }
+
+        await driver.sleep(randomWait(500, 1000));
+        await passwordInput.sendKeys(Key.RETURN);
+        await driver.sleep(randomWait(3000, 5000));
+
+        // ログイン成功の確認（ホームフィードが表示されるまで待機）
+        await driver.wait(until.elementLocated(By.css('div[data-testid="primaryColumn"]')), 10000);
+
+        this.logger.info("XScraper", "Login successful");
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error("XScraper", "Login failed", {
+          error: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        await driver.takeScreenshot().then((image) => {
+          require("fs").writeFileSync("debug-login-error.png", image, "base64");
+        });
+        return false;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error("XScraper", "Login process failed", {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      return false;
     }
   }
 

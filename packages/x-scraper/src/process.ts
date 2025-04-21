@@ -15,7 +15,13 @@ export async function processXScraping(options?: { specificAccountId?: string })
     console.log(`[${startTime.toISOString()}] Xスクレイピング処理を開始します`);
 
     // スクレイパーのインスタンスを作成
-    const scraper = new XScraper();
+    const credentials = {
+      email: process.env.X_EMAIL!,
+      password: process.env.X_PASSWORD!,
+      username: process.env.X_USERNAME!,
+    };
+    const scraper = new XScraper(credentials);
+    await scraper.login();
 
     // 特定のアカウントのみをスクレイピングする場合
     if (options?.specificAccountId) {
