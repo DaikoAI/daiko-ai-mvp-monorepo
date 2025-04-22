@@ -1,8 +1,16 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
+import { execSync } from "child_process";
 import { OpenAI } from "openai";
-import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver";
+import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
+
+// Xアカウントのログイン情報の型定義
+export interface XCredentials {
+  email: string;
+  password: string;
+  username: string;
+}
 
 export class XScraper {
   private openai: OpenAI;
@@ -10,16 +18,47 @@ export class XScraper {
   private logger = new Logger({
     level: LogLevel.INFO,
   });
+  private credentials: XCredentials | null = null;
+  // static flag to ensure Chrome processes are cleaned up only once
+  private static chromeCleaned = false;
 
-  constructor() {
-    // OpenAI APIクライアントを初期化
+  constructor(credentials?: XCredentials) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+
+    if (credentials) {
+      this.credentials = credentials;
+    }
   }
 
   /**
-   * Seleniumドライバーを初期化
+   * Chromeプロセスをクリーンアップ
+   */
+  private cleanupChromeProcesses(): void {
+    if (XScraper.chromeCleaned) {
+      this.logger.debug("XScraper", "Chrome processes already cleaned up");
+      return;
+    }
+    try {
+      if (process.platform === "darwin") {
+        execSync('pkill -f "Google Chrome"');
+      } else if (process.platform === "win32") {
+        execSync("taskkill /F /IM chrome.exe");
+      } else {
+        execSync("pkill -f chrome");
+      }
+      // mark as cleaned to avoid repeating kills
+      XScraper.chromeCleaned = true;
+      this.logger.info("XScraper", "Cleaned up Chrome processes");
+    } catch (error) {
+      // プロセスが見つからない場合などのエラーは無視
+      this.logger.debug("XScraper", "No Chrome processes to clean up");
+    }
+  }
+
+  /**
+   * Seleniumドライバーを初期化（シングルインスタンス）
    */
   private async initDriver(): Promise<WebDriver> {
     if (this.driver) {
@@ -29,24 +68,38 @@ export class XScraper {
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
+      this.cleanupChromeProcesses();
+
       const options = new chrome.Options();
       options.addArguments("--headless");
-      // ヘッドレスモードでの検出を回避するための追加オプション
+      options.addArguments("--window-size=1920,3000");
       options.addArguments("--disable-blink-features=AutomationControlled");
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
       options.addArguments("--disable-gpu");
-      options.addArguments("--window-size=1920,1080");
+
+      // 固定User-Agentを設定
       options.addArguments(
         "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       );
 
-      // ヘッドレスモードでも自動化を検出されにくくするための設定
-      options.addArguments("--disable-infobars"); // 「Chrome is being controlled by automated test software」を非表示
+      // 自動化検出を回避するための設定
+      options.addArguments("--disable-infobars");
       options.addArguments("--disable-notifications");
       options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
+      options.addArguments("--disable-automation");
+
+      // インコグニートモードを使用してクリーンな状態を保証
+      options.addArguments("--incognito");
 
       this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
+
+      // CDP経由で自動化フラグを変更
+      await this.driver.executeScript(`
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined
+        });
+      `);
 
       return this.driver;
     } catch (error) {
@@ -60,54 +113,52 @@ export class XScraper {
   }
 
   /**
-   * ドライバーをクローズ
+   * ログインを実行してセッションを確立
    */
-  public async closeDriver(): Promise<void> {
-    if (this.driver) {
-      this.logger.info("XScraper", "Closing WebDriver");
-      try {
-        await this.driver.quit();
-      } catch (error) {
-        this.logger.error("XScraper", "Error closing WebDriver", error);
-      } finally {
-        this.driver = null;
-      }
+  public async login(): Promise<boolean> {
+    if (!this.credentials) {
+      this.logger.error("XScraper", "No credentials provided for login");
+      return false;
     }
-  }
 
-  /**
-   * 登録されたすべてのXアカウントをチェック
-   */
-  public async checkXAccounts(): Promise<void> {
     try {
-      this.logger.info("XScraper", "Starting to check all X accounts");
+      const driver = await this.initDriver();
+      this.logger.info("XScraper", "Starting login process");
 
-      const accounts = await getAllXAccounts();
-      this.logger.info("XScraper", `Found ${accounts.length} accounts to check`);
+      // ログインページにアクセス
+      await driver.get("https://x.com/i/flow/login");
+      await driver.sleep(5000);
 
-      if (accounts.length === 0) {
-        this.logger.warn("XScraper", "No accounts to check");
-        return;
+      // email入力 -> ENTER
+      try {
+        const emailInput = await driver.findElement(By.css("input[autocomplete='username']"));
+        await emailInput.sendKeys(this.credentials.email, Key.RETURN);
+        await driver.sleep(5000);
+      } catch {
+        this.logger.debug("XScraper", "Email input stage skipped");
       }
 
-      for (const account of accounts) {
-        if (!account.id) continue;
-
-        try {
-          await this.checkSingleAccount(account.id);
-          // アカウント間で少し間隔を空ける（レート制限対策）
-          await new Promise((resolve) => setTimeout(resolve, 20000));
-        } catch (error) {
-          this.logger.error("XScraper", `Error checking account ${account.id}:`, error);
-        }
+      // username入力（必要時）
+      try {
+        const userInput = await driver.findElement(By.css("input[name='text']"));
+        await userInput.sendKeys(this.credentials.username, Key.RETURN);
+        await driver.sleep(5000);
+      } catch {
+        this.logger.debug("XScraper", "Username verification not required");
       }
 
-      this.logger.info("XScraper", "Finished checking all X accounts");
+      // password入力 -> ENTER
+      const passwordInput = await driver.findElement(By.css("input[name='password']"));
+      await passwordInput.sendKeys(this.credentials.password, Key.RETURN);
+      await driver.sleep(5000);
+
+      // login success check
+      await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 10000);
+      this.logger.info("XScraper", "Login successful");
+      return true;
     } catch (error) {
-      this.logger.error("XScraper", "Error checking X accounts:", error);
-      throw error;
-    } finally {
-      await this.closeDriver();
+      this.logger.error("XScraper", "Login failed:", error);
+      return false;
     }
   }
 
@@ -115,10 +166,11 @@ export class XScraper {
    * 単一のXアカウントをチェック
    */
   public async checkSingleAccount(xId: string): Promise<Tweet[] | null> {
+    const driver = await this.initDriver();
+
     try {
       this.logger.info("XScraper", `Checking X account: ${xId}`);
 
-      const driver = await this.initDriver();
       const url = `https://x.com/${xId}`;
 
       // ページに移動
@@ -126,9 +178,9 @@ export class XScraper {
       await driver.get(url);
 
       // Xのページが完全に読み込まれるのを十分な時間待つ
-      await driver.sleep(5000); // ページのJavaScriptが実行される時間を確保
+      await driver.sleep(5000);
 
-      // ページが読み込まれるのを待つ - 複数のセレクターを試す
+      // ページが読み込まれるのを待つ
       await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 10000);
 
       // ツイートを抽出
@@ -303,6 +355,104 @@ export class XScraper {
     } catch (error) {
       this.logger.error("XScraper", `Error adding account ${xId}:`, error);
       return false;
+    }
+  }
+
+  /**
+   * 別タブでアカウントのツイートを取得
+   */
+  private async scrapeInTab(driver: WebDriver, xId: string): Promise<Tweet[] | null> {
+    const originalHandle = await driver.getWindowHandle();
+    await driver.switchTo().newWindow("tab");
+    const handles = await driver.getAllWindowHandles();
+    const newHandle = handles.find((h) => h !== originalHandle);
+    if (newHandle) {
+      await driver.switchTo().window(newHandle);
+    }
+    try {
+      const url = `https://x.com/${xId}`;
+      this.logger.debug("XScraper", `Navigating to ${url} in new tab`);
+      await driver.get(url);
+      await driver.sleep(2000);
+      await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 10000);
+      return await this.extractTweets(driver);
+    } catch (error) {
+      this.logger.error("XScraper", `Error scraping account ${xId} in tab:`, error);
+      return null;
+    } finally {
+      // タブを閉じて元のタブに戻る
+      try {
+        await driver.close();
+      } catch (e) {
+        this.logger.debug("XScraper", "Error closing tab, may already be closed", e);
+      }
+      try {
+        await driver.switchTo().window(originalHandle);
+      } catch (e) {
+        this.logger.debug("XScraper", "Error switching back to original tab", e);
+      }
+    }
+  }
+
+  /**
+   * 登録されたすべてのXアカウントをチェック（シングルドライバー＋マルチタブ並列処理）
+   */
+  public async checkXAccounts(concurrency: number = 100): Promise<void> {
+    const driver = await this.initDriver();
+    // maintain login session
+    if (this.credentials) {
+      const success = await this.login();
+      if (!success) {
+        this.logger.error("XScraper", "Login failed, aborting checkXAccounts");
+        return;
+      }
+    }
+    this.logger.info("XScraper", `Starting scraping all X accounts with concurrency=${concurrency}`);
+    const accounts = await getAllXAccounts();
+    this.logger.info("XScraper", `Found ${accounts.length} accounts to check`);
+    if (accounts.length === 0) {
+      this.logger.warn("XScraper", "No accounts to check");
+      return;
+    }
+    for (let i = 0; i < accounts.length; i += concurrency) {
+      const batch = accounts.slice(i, i + concurrency);
+      this.logger.info("XScraper", `Processing accounts ${i + 1}-${i + batch.length}`);
+      const tasks = batch.map((acc) => (acc.id ? this.scrapeInTab(driver, acc.id) : Promise.resolve(null)));
+      const results = (await Promise.allSettled(tasks)) as PromiseSettledResult<Tweet[] | null>[];
+      results.forEach((res, idx) => {
+        const acc = batch[idx];
+        if (res.status === "fulfilled") {
+          const tweets = res.value;
+          if (tweets && tweets.length > 0) {
+            this.logger.info("XScraper", `Fetched ${tweets.length} tweets for ${acc.id}`);
+            saveTweets(acc.id, tweets).catch((err) =>
+              this.logger.error("XScraper", `Error saving tweets for ${acc.id}`, err),
+            );
+          } else {
+            this.logger.info("XScraper", `No new tweets for ${acc.id}`);
+          }
+        } else {
+          this.logger.error("XScraper", `Error scraping ${acc.id}:`, res.reason);
+        }
+      });
+      if (i + concurrency < accounts.length) {
+        await driver.sleep(2000);
+      }
+    }
+    this.logger.info("XScraper", "Finished checking all X accounts");
+  }
+
+  /**
+   * ドライバーをクローズ
+   */
+  public async closeDriver(): Promise<void> {
+    if (this.driver) {
+      try {
+        await this.driver.quit();
+      } catch (err) {
+        this.logger.error("XScraper", "Error closing WebDriver", err);
+      }
+      this.driver = null;
     }
   }
 }
