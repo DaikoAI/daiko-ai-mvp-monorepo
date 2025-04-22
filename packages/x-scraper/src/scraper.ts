@@ -395,59 +395,51 @@ export class XScraper {
   }
 
   /**
-   * 登録されたすべてのXアカウントをチェック（複数ドライバーを用いた並列処理）
+   * 登録されたすべてのXアカウントをチェック（シングルドライバー＋マルチタブ並列処理）
    */
   public async checkXAccounts(concurrency: number = 5): Promise<void> {
+    const driver = await this.initDriver();
+    // maintain login session
+    if (this.credentials) {
+      const success = await this.login();
+      if (!success) {
+        this.logger.error("XScraper", "Login failed, aborting checkXAccounts");
+        return;
+      }
+    }
+    this.logger.info("XScraper", `Starting scraping all X accounts with concurrency=${concurrency}`);
     const accounts = await getAllXAccounts();
     this.logger.info("XScraper", `Found ${accounts.length} accounts to check`);
     if (accounts.length === 0) {
       this.logger.warn("XScraper", "No accounts to check");
       return;
     }
-    // Split accounts into batches for parallel processing
-    const batches: (typeof accounts)[] = [];
-    for (let i = 0; i < concurrency; i++) {
-      const start = Math.floor((accounts.length * i) / concurrency);
-      const end = Math.floor((accounts.length * (i + 1)) / concurrency);
-      batches.push(accounts.slice(start, end));
-    }
-    this.logger.info("XScraper", `Starting scraping with concurrency=${concurrency}`);
-    // Process each batch in parallel using separate driver instances
-    await Promise.all(batches.map((batch) => this.processBatch(batch)));
-    this.logger.info("XScraper", "Finished checking all X accounts");
-  }
-
-  // プライベート: アカウントバッチを処理する
-  private async processBatch(batch: { id: string }[]): Promise<void> {
-    const scraper = new XScraper(this.credentials || undefined);
-    try {
-      // 初回ログイン
-      if (this.credentials) {
-        const ok = await scraper.login();
-        if (!ok) {
-          this.logger.error("XScraper", "Login failed for batch, skipping batch");
-          return;
-        }
-      }
-      this.logger.info("XScraper", `Processing batch with ${batch.length} accounts`);
-      for (const acc of batch) {
-        try {
-          const tweets = await scraper.checkSingleAccount(acc.id);
+    for (let i = 0; i < accounts.length; i += concurrency) {
+      const batch = accounts.slice(i, i + concurrency);
+      this.logger.info("XScraper", `Processing accounts ${i + 1}-${i + batch.length}`);
+      const tasks = batch.map((acc) => (acc.id ? this.scrapeInTab(driver, acc.id) : Promise.resolve(null)));
+      const results = (await Promise.allSettled(tasks)) as PromiseSettledResult<Tweet[] | null>[];
+      results.forEach((res, idx) => {
+        const acc = batch[idx];
+        if (res.status === "fulfilled") {
+          const tweets = res.value;
           if (tweets && tweets.length > 0) {
             this.logger.info("XScraper", `Fetched ${tweets.length} tweets for ${acc.id}`);
-            await saveTweets(acc.id, tweets);
+            saveTweets(acc.id, tweets).catch((err) =>
+              this.logger.error("XScraper", `Error saving tweets for ${acc.id}`, err),
+            );
           } else {
             this.logger.info("XScraper", `No new tweets for ${acc.id}`);
           }
-        } catch (err) {
-          this.logger.error("XScraper", `Error scraping ${acc.id}:`, err);
+        } else {
+          this.logger.error("XScraper", `Error scraping ${acc.id}:`, res.reason);
         }
-        // 少し待ってサーバー負荷を抑える
-        await new Promise((r) => setTimeout(r, 2000));
+      });
+      if (i + concurrency < accounts.length) {
+        await driver.sleep(2000);
       }
-    } finally {
-      await scraper.closeDriver();
     }
+    this.logger.info("XScraper", "Finished checking all X accounts");
   }
 
   /**
