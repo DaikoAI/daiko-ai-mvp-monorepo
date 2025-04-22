@@ -397,7 +397,7 @@ export class XScraper {
   /**
    * 登録されたすべてのXアカウントをチェック（シングルドライバー＋マルチタブ並列処理）
    */
-  public async checkXAccounts(concurrency: number = 5): Promise<void> {
+  public async checkXAccounts(concurrency: number = 100): Promise<void> {
     const driver = await this.initDriver();
     // maintain login session
     if (this.credentials) {

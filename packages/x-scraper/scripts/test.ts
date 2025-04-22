@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
 import { XScraper } from "../src/scraper";
-
-dotenv.config();
 
 const credentials = {
   email: process.env.X_EMAIL!,
@@ -12,7 +9,10 @@ const credentials = {
 const scraper = new XScraper(credentials);
 
 async function main() {
+  const start = performance.now();
   await scraper.checkXAccounts();
+  const end = performance.now();
+  console.log(`Time taken: ${(end - start) / 1000}s`);
 }
 
 main()
