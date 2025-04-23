@@ -64,6 +64,7 @@ export const saveTweets = async (accountId: string, tweets: Tweet[]): Promise<st
         content: tweet.data,
         tweetTime: new Date(tweet.time),
       });
+      log.info("x-scraper:db", `Saved tweet: ${newTweet.id}`);
 
       // 最初のツイート（最新）のIDを記録
       if (!latestTweetId) {

@@ -1,7 +1,15 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
 import { execSync } from "child_process";
 import { OpenAI } from "openai";
-import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver";
+import {
+  Browser,
+  Builder,
+  By,
+  Key,
+  IWebDriverOptionsCookie as SeleniumCookie,
+  until,
+  WebDriver,
+} from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
 
@@ -13,6 +21,9 @@ export interface XCredentials {
 }
 
 export class XScraper {
+  // shared session cookies for login reuse
+  private sessionCookies: any[] | null = null;
+
   private openai: OpenAI;
   private driver: WebDriver | null = null;
   private logger = new Logger({
@@ -22,13 +33,17 @@ export class XScraper {
   // static flag to ensure Chrome processes are cleaned up only once
   private static chromeCleaned = false;
 
-  constructor(credentials?: XCredentials) {
+  constructor(credentials?: XCredentials, sessionCookies?: any[]) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
     if (credentials) {
       this.credentials = credentials;
+    }
+    // accept pre-logged-in session cookies
+    if (sessionCookies) {
+      this.sessionCookies = sessionCookies;
     }
   }
 
@@ -101,6 +116,20 @@ export class XScraper {
         });
       `);
 
+      // inject session cookies if present
+      if (this.sessionCookies && this.sessionCookies.length > 0) {
+        // navigate to base domain to apply cookies
+        await this.driver.get("https://x.com");
+        for (const cookie of this.sessionCookies) {
+          try {
+            // cast to SeleniumCookie to satisfy overload
+            await this.driver.manage().addCookie(cookie as SeleniumCookie);
+          } catch (e) {
+            this.logger.debug("XScraper", "Failed to add cookie", e);
+          }
+        }
+      }
+
       return this.driver;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -155,6 +184,14 @@ export class XScraper {
       // login success check
       await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 10000);
       this.logger.info("XScraper", "Login successful");
+
+      // store cookies for reuse in child instances
+      try {
+        this.sessionCookies = await driver.manage().getCookies();
+      } catch (e) {
+        this.logger.debug("XScraper", "Unable to retrieve cookies", e);
+      }
+
       return true;
     } catch (error) {
       this.logger.error("XScraper", "Login failed:", error);
@@ -359,54 +396,19 @@ export class XScraper {
   }
 
   /**
-   * 別タブでアカウントのツイートを取得
-   */
-  private async scrapeInTab(driver: WebDriver, xId: string): Promise<Tweet[] | null> {
-    const originalHandle = await driver.getWindowHandle();
-    await driver.switchTo().newWindow("tab");
-    const handles = await driver.getAllWindowHandles();
-    const newHandle = handles.find((h) => h !== originalHandle);
-    if (newHandle) {
-      await driver.switchTo().window(newHandle);
-    }
-    try {
-      const url = `https://x.com/${xId}`;
-      this.logger.debug("XScraper", `Navigating to ${url} in new tab`);
-      await driver.get(url);
-      await driver.sleep(2000);
-      await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 10000);
-      return await this.extractTweets(driver);
-    } catch (error) {
-      this.logger.error("XScraper", `Error scraping account ${xId} in tab:`, error);
-      return null;
-    } finally {
-      // タブを閉じて元のタブに戻る
-      try {
-        await driver.close();
-      } catch (e) {
-        this.logger.debug("XScraper", "Error closing tab, may already be closed", e);
-      }
-      try {
-        await driver.switchTo().window(originalHandle);
-      } catch (e) {
-        this.logger.debug("XScraper", "Error switching back to original tab", e);
-      }
-    }
-  }
-
-  /**
    * 登録されたすべてのXアカウントをチェック（シングルドライバー＋マルチタブ並列処理）
    */
   public async checkXAccounts(concurrency: number = 100): Promise<void> {
-    const driver = await this.initDriver();
-    // maintain login session
-    if (this.credentials) {
-      const success = await this.login();
-      if (!success) {
-        this.logger.error("XScraper", "Login failed, aborting checkXAccounts");
-        return;
-      }
+    // perform single login to obtain session cookies
+    const mainScraper = new XScraper(this.credentials ?? undefined);
+    const loggedIn = await mainScraper.login();
+    if (!loggedIn) {
+      this.logger.error("XScraper", "Login failed, aborting checkXAccounts");
+      return;
     }
+    const baseCookies = mainScraper.sessionCookies ?? [];
+    await mainScraper.closeDriver();
+
     this.logger.info("XScraper", `Starting scraping all X accounts with concurrency=${concurrency}`);
     const accounts = await getAllXAccounts();
     this.logger.info("XScraper", `Found ${accounts.length} accounts to check`);
@@ -417,26 +419,30 @@ export class XScraper {
     for (let i = 0; i < accounts.length; i += concurrency) {
       const batch = accounts.slice(i, i + concurrency);
       this.logger.info("XScraper", `Processing accounts ${i + 1}-${i + batch.length}`);
-      const tasks = batch.map((acc) => (acc.id ? this.scrapeInTab(driver, acc.id) : Promise.resolve(null)));
-      const results = (await Promise.allSettled(tasks)) as PromiseSettledResult<Tweet[] | null>[];
-      results.forEach((res, idx) => {
-        const acc = batch[idx];
-        if (res.status === "fulfilled") {
-          const tweets = res.value;
-          if (tweets && tweets.length > 0) {
-            this.logger.info("XScraper", `Fetched ${tweets.length} tweets for ${acc.id}`);
-            saveTweets(acc.id, tweets).catch((err) =>
-              this.logger.error("XScraper", `Error saving tweets for ${acc.id}`, err),
-            );
-          } else {
-            this.logger.info("XScraper", `No new tweets for ${acc.id}`);
+      const tasks = batch.map((acc) => {
+        // each instance reuses the logged-in session via cookies
+        const scraper = new XScraper(undefined, baseCookies);
+        return (async () => {
+          try {
+            // cookies already injected in initDriver(), no need to login again
+            const tweets = await scraper.checkSingleAccount(acc.id);
+            if (tweets && tweets.length > 0) {
+              this.logger.info("XScraper", `Fetched ${tweets.length} tweets for ${acc.id}`);
+              await saveTweets(acc.id, tweets);
+            } else {
+              this.logger.info("XScraper", `No new tweets for ${acc.id}`);
+            }
+          } catch (err) {
+            this.logger.error("XScraper", `Error scraping ${acc.id}:`, err);
+          } finally {
+            await scraper.closeDriver();
           }
-        } else {
-          this.logger.error("XScraper", `Error scraping ${acc.id}:`, res.reason);
-        }
+        })();
       });
+      await Promise.allSettled(tasks);
       if (i + concurrency < accounts.length) {
-        await driver.sleep(2000);
+        // throttle between batches
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
     this.logger.info("XScraper", "Finished checking all X accounts");
