@@ -36,8 +36,8 @@ export interface NotificationPayload {
 // Web Push の設定
 webpush.setVapidDetails(
   "mailto:" + process.env.VAPID_EMAIL!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
+  process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY!,
+  process.env.WEB_PUSH_VAPID_PRIVATE_KEY!,
 );
 
 export interface PushNotificationPayload {

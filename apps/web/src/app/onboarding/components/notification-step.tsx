@@ -17,21 +17,16 @@ export const NotificationStep: React.FC = () => {
     isLoading,
     error,
     subscription, // Get the current subscription state
+    isRegistered,
   } = usePushNotifications();
 
-  // Update onboarding context based on hook state
+  // Advance to next step when server registration succeeds
   useEffect(() => {
-    // If a subscription exists (either initially or after subscribing)
-    // and notifications weren't already marked as enabled in context,
-    // update the context.
-    if (subscription && !state.notificationEnabled) {
+    if (isRegistered) {
       setNotificationEnabled(true);
-    }
-
-    if (state.notificationEnabled) {
       setCurrentStep("profile");
     }
-  }, [subscription, setNotificationEnabled, state.notificationEnabled, setCurrentStep]);
+  }, [isRegistered, setNotificationEnabled, setCurrentStep]);
 
   // Determine the button text and disabled state
   const isNotificationAllowed = permission === "granted";

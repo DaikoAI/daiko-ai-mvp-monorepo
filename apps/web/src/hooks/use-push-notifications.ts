@@ -10,6 +10,7 @@ interface UsePushNotificationsReturn {
   isLoading: boolean;
   error: string | null;
   subscription: PushSubscription | null;
+  isRegistered: boolean;
 }
 
 export function usePushNotifications(): UsePushNotificationsReturn {
@@ -27,6 +28,23 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       setIsSupported(false);
     }
   }, []);
+
+  // Detect existing browser subscription on mount when permission granted
+  useEffect(() => {
+    if (isSupported && permission === "granted") {
+      navigator.serviceWorker.ready
+        .then((registration) => registration.pushManager.getSubscription())
+        .then((existing) => {
+          if (existing) {
+            console.log("Found existing subscription:", existing);
+            setSubscription(existing);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching existing subscription:", err);
+        });
+    }
+  }, [isSupported, permission]);
 
   // tRPC mutation hook
   const subscribeMutation = api.push.subscribe.useMutation({
@@ -152,5 +170,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     isLoading: subscribeMutation.status === "pending",
     error,
     subscription,
+    isRegistered: subscribeMutation.status === "success" || !!subscription,
   };
 }
