@@ -1,15 +1,20 @@
 import { Background3D } from "@/components/background-3d";
 import { WaitListForm } from "@/components/waitlist-form";
+import Image from "next/image";
 
 export function Hero() {
   return (
     <section className="relative min-h-screen">
       <Background3D />
-      <div className="flex-1 flex flex-col justify-center items-center px-6 text-center relative z-10 min-h-screen">
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-3 text-center relative z-10 min-h-screen">
         <div className="max-w-md mx-auto">
-          <h1 className="text-4xl md:text-6xl font-bold mb-8 text-white leading-tight">
+          <h1 className="text-3xl font-bold text-white leading-tight flex items-center gap-2 mb-12">
+            <Image src="/icon.jpg" alt="Daiko AI" width={40} height={40} className="rounded-full" />
+            Daiko
+          </h1>
+          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-48">
             <span className="bg-gradient-to-r from-[#E5A05C] via-[#E57C5C] to-[#E55C9F] bg-clip-text text-transparent">
-              Exit Strategy Agent
+              Exit Strategy Assistant
             </span>
           </h1>
           <p className="text-md mb-10 text-white/80">

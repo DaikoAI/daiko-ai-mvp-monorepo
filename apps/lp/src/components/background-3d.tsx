@@ -11,7 +11,7 @@ function Model() {
   const { scene } = useGLTF("/lucky_mallet.glb");
   const modelRef = useRef<THREE.Group | null>(null);
   const [isWobbling, setIsWobbling] = useState(false);
-  const [hovered, setHovered] = useState(false);
+
   const wobbleTime = useRef(0);
   const { triggerHaptic } = useHaptic();
 
@@ -41,15 +41,7 @@ function Model() {
       ref={modelRef}
       object={scene}
       onClick={handleClick}
-      onPointerOver={() => {
-        document.body.style.cursor = 'pointer';
-        setHovered(true);
-      }}
-      onPointerOut={() => {
-        document.body.style.cursor = 'auto';
-        setHovered(false);
-      }}
-      scale={hovered ? 1.1 : 1}
+      scale={1.3}
     />
   );
 }
@@ -93,7 +85,7 @@ export function Background3D() {
             <OrbitControls
               enableZoom={false}
               autoRotate
-              autoRotateSpeed={0.5}
+              autoRotateSpeed={4}
               enablePan={false}
               maxPolarAngle={Math.PI / 2}
               minPolarAngle={Math.PI / 3}
