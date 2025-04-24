@@ -1,28 +1,26 @@
-import { Background3D } from "@/components/background-3d";
 import { WaitListForm } from "@/components/waitlist-form";
 import Image from "next/image";
 
 export function Hero() {
   return (
     <section className="relative min-h-screen">
-      <Background3D />
-      <div className="flex-1 flex flex-col justify-center items-center px-6 py-3 text-center relative z-10 min-h-screen">
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-3 text-center relative min-h-screen">
         <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold text-white leading-tight flex items-center gap-2 mb-12">
+          <h1 className="text-3xl font-bold text-white leading-tight flex items-center gap-2 mb-12 pointer-events-auto">
             <Image src="/icon.jpg" alt="Daiko AI" width={40} height={40} className="rounded-full" />
             Daiko
           </h1>
-          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-48">
+          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-48 pointer-events-auto">
             <span className="bg-gradient-to-r from-[#E5A05C] via-[#E57C5C] to-[#E55C9F] bg-clip-text text-transparent">
               Exit Strategy Assistant
             </span>
           </h1>
-          <p className="text-md mb-10 text-white/80">
+          <p className="text-md mb-10 text-white/80 pointer-events-auto">
             An AI-powered trading assistant for busy investors. No constant monitoring or Twitter scrolling
             required&mdash;Daiko delivers personalized trading strategies optimized just for you.
           </p>
 
-          <div className="space-y-6 mb-8">
+          <div className="space-y-6 mb-8 pointer-events-auto">
             <div className="flex items-start space-x-4 text-left">
               <div className="w-10 h-10 rounded-full bg-[#E5A05C]/20 flex items-center justify-center flex-shrink-0 mt-1">
                 <svg
@@ -70,7 +68,7 @@ export function Hero() {
             </div>
           </div>
 
-          <div className="relative z-10 w-full max-w-md mx-auto mt-8 mb-24">
+          <div className="relative w-full max-w-md mx-auto mt-8 mb-24 pointer-events-auto">
             <div
               className="bg-black/30 backdrop-blur-md p-6 rounded-xl border border-white/10
           shadow-[0_0_15px_rgba(251,191,36,0.15)] hover:shadow-[0_0_25px_rgba(251,191,36,0.25)] transition-all duration-500"

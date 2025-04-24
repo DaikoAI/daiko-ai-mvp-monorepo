@@ -25,9 +25,9 @@ const features = [
 
 export function Features() {
   return (
-    <section className="py-24 px-4 z-10">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16 z-10">
+    <section className="relative py-24 px-4">
+      <div className="max-w-6xl mx-auto relative pointer-events-auto">
+        <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#E5A05C] to-[#E55C9F] bg-clip-text text-transparent mb-4">
             Why Choose Daiko AI
           </h2>

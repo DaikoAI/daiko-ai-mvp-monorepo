@@ -69,8 +69,8 @@ export function Background3D() {
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: -1,
-          cursor: "auto"
+          zIndex: 0,
+          pointerEvents: "all"
         }}
       >
         <Canvas>
