@@ -17,7 +17,7 @@ export const coinConfig: CoinConfig = {
     "/3d/coin/sol.glb",
     "/3d/coin/inf.glb",
   ],
-  ratios: [1, 1, 1, 1, 1],
+  ratios: [1, 1, 1, 1, 1, 1],
   batchCount: 30,
   scale: [0.05, 0.05, 0.05],
   spawnRange: 16,
