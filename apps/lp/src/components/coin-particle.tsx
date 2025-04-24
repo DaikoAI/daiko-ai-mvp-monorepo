@@ -79,7 +79,7 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
         object,
         velocity: new THREE.Vector3(
           (Math.random() - 0.5) * 0.1,
-          -(0.02 + Math.random() * 0.02),
+          -(0.03 + Math.random() * 0.03),
           (Math.random() - 0.5) * 0.1,
         ),
         rotationSpeed: {

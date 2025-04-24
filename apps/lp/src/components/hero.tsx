@@ -6,10 +6,6 @@ export function Hero() {
     <section className="relative min-h-screen">
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-3 text-center relative min-h-screen">
         <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold text-white leading-tight flex items-center gap-2 mb-12 pointer-events-auto">
-            <Image src="/icon.jpg" alt="Daiko AI" width={40} height={40} className="rounded-full" />
-            Daiko
-          </h1>
           <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-48 pointer-events-auto">
             <span className="bg-gradient-to-r from-[#E5A05C] via-[#E57C5C] to-[#E55C9F] bg-clip-text text-transparent">
               Exit Strategy Assistant

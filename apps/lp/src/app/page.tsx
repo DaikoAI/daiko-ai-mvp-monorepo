@@ -3,6 +3,7 @@ import { Hero } from "@/components/hero";
 import { Features } from "@/components/features";
 import { Footer } from "@/components/footer";
 import { Background3D } from "@/components/background-3d";
+import { Header } from "@/components/header";
 
 export default function Home() {
   return (
@@ -11,6 +12,7 @@ export default function Home() {
       <Background3D />
 
       <div className="relative pointer-events-none z-10">
+        <Header />
         <Hero />
         <Features />
         <Footer />
