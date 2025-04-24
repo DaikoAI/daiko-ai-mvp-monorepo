@@ -24,7 +24,7 @@ export function LuckyMalletModel() {
       wobbleTime.current += delta * 12;
       const wobbleAmount = Math.sin(wobbleTime.current) * 0.04;
       modelRef.current.rotation.x = wobbleAmount;
-      const rotationMultiplier = isFever ? -1.3 : 1;
+      const rotationMultiplier = isFever ? -360 : 1;
       modelRef.current.rotation.y += delta * 0.1 * rotationMultiplier;
 
       if (wobbleTime.current > Math.PI * 0.6) {
