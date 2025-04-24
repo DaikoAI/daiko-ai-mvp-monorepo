@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { coinConfig, getRandomCoinModelIndex } from "./coin-config";
 
-export default function CoinParticles({ trigger, fever }: { trigger: number; fever: boolean }) {
+export function CoinParticles({ trigger, fever }: { trigger: number; fever: boolean }) {
   // Load each coin model via useGLTF to satisfy hook rules
   const gltfBTC = useGLTF(coinConfig.coins[0].glbPath);
   const gltfUSDC = useGLTF(coinConfig.coins[1].glbPath);

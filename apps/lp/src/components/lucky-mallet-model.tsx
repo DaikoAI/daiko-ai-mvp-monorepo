@@ -6,7 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useHaptic } from "use-haptic";
 import useSound from "use-sound";
-import CoinParticles from "./coin-particle";
+import { CoinParticles } from "./coin-particle";
 
 export function LuckyMalletModel() {
   const modelRef = useRef<THREE.Group | null>(null);

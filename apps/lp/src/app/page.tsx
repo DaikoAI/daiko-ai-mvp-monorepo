@@ -2,6 +2,7 @@ import { Background3D } from "@/components/background-3d";
 import { Features } from "@/components/features";
 import { Footer } from "@/components/footer";
 import { GradientBackground } from "@/components/gradient-background";
+import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
       <Background3D />
 
       <div className="relative pointer-events-none z-10">
+        <Header />
         <Hero />
         <Features />
         <Footer />
