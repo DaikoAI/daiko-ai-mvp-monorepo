@@ -18,6 +18,7 @@
   "dependencies": {
     "@daiko-ai/shared": "workspace:*",
     "@neynar/nodejs-sdk": "^2.27.1",
+    "drizzle-orm": "^0.42.0",
     "picocolors": "^1.1.1",
     "postgres": "^3.4.5"
   },

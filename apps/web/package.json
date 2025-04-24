@@ -44,6 +44,7 @@
     "bignumber.js": "^9.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.42.0",
     "framer-motion": "^12.6.5",
     "idle-task": "^4.3.1",
     "lucide-react": "^0.483.0",

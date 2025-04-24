@@ -24,6 +24,7 @@
     "@types/web-push": "^3.6.4",
     "dotenv": "^16.4.7",
     "drizzle-dbml-generator": "^0.10.0",
+    "drizzle-orm": "^0.42.0",
     "drizzle-zod": "^0.7.1",
     "web-push": "^3.6.7",
     "zod": "^3.22.4"

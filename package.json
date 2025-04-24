@@ -1,8 +1,7 @@
 {
   "name": "daiko-ai-mvp-monorepo",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "daiko ai mvp monorepo",
   "scripts": {
     "dev:x-scraper": "turbo run dev --filter=@daiko-ai/x-scraper",
     "dev:news-scraper": "turbo run dev --filter=@daiko-ai/news-scraper",
@@ -23,21 +22,10 @@
     "jobs:cron": "turbo run dev:cron --filter=\"@daiko-ai/*-job\"",
     "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\""
   },
-  "dependencies": {
-    "bignumber.js": "^9.2.1",
-    "drizzle-orm": "^0.41.0",
-    "zod": "^3.24.2"
-  },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.149",
-    "@types/node-cron": "^3.0.11",
-    "@types/uuid": "^9.0.8",
-    "dotenv": "^16.5.0",
     "drizzle-kit": "^0.30.6",
-    "node-cron": "^3.0.3",
     "prettier": "^3.5.3",
-    "turbo": "^2.5.0",
-    "uuid": "^9.0.1"
+    "turbo": "^2.5.1"
   },
   "prettier": {
     "printWidth": 120,
