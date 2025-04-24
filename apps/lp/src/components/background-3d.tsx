@@ -1,15 +1,9 @@
 "use client";
 
-import { Html, OrbitControls, Stage, useProgress } from "@react-three/drei";
+import { OrbitControls, Stage } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import { LuckyMalletModel } from "./lucky-mallet-model";
-
-// Simple text loader using useProgress
-function LoaderUI() {
-  const { progress } = useProgress();
-  return <Html center>{progress.toFixed(0)}% loaded</Html>;
-}
 
 export function Background3D() {
   return (
@@ -41,12 +35,15 @@ export function Background3D() {
         <Canvas>
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 5, 5]} intensity={1} />
-          <Suspense fallback={<LoaderUI />}>
+
+          <Suspense fallback={null}>
             <Stage intensity={0.6} adjustCamera={false}>
               <LuckyMalletModel />
             </Stage>
             <OrbitControls
               enableZoom={false}
+              autoRotate
+              autoRotateSpeed={4}
               enablePan={false}
               maxPolarAngle={Math.PI / 2}
               minPolarAngle={Math.PI / 3}
