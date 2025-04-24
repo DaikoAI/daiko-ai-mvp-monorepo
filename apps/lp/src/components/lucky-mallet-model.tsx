@@ -1,7 +1,7 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useHaptic } from "use-haptic";
@@ -13,6 +13,8 @@ export function LuckyMalletModel() {
   const wobbleTime = useRef(0);
   const [isWobbling, setIsWobbling] = useState(false);
   const [coinTrigger, setCoinTrigger] = useState(0);
+  const [tapCount, setTapCount] = useState(0);
+  const [isFever, setIsFever] = useState(false);
   const { scene } = useGLTF("/3d/lucky_mallet.glb");
   const { triggerHaptic } = useHaptic();
   const [play] = useSound("/sound/coin.mp3", { volume: 0.5 });
@@ -32,12 +34,35 @@ export function LuckyMalletModel() {
     }
   });
 
+  useEffect(() => {
+    if (!modelRef.current) return;
+    modelRef.current.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        const intensity = isFever ? 1 : tapCount / 20;
+        child.material.emissive = new THREE.Color(1, 1, 0);
+        child.material.emissiveIntensity = intensity;
+      }
+    });
+  }, [tapCount, isFever]);
+
   const handleClick = () => {
     triggerHaptic();
     play();
     setIsWobbling(true);
     setCoinTrigger(prev => prev + 1);
     wobbleTime.current = 0;
+    if (!isFever) {
+      if (tapCount + 1 >= 20) {
+        setIsFever(true);
+        setTapCount(0);
+        setTimeout(() => {
+          setIsFever(false);
+          setTapCount(0);
+        }, 15000);
+      } else {
+        setTapCount(tapCount + 1);
+      }
+    }
   };
 
   return (
@@ -48,7 +73,7 @@ export function LuckyMalletModel() {
         onClick={handleClick}
         scale={1.3}
       />
-      <CoinParticles trigger={coinTrigger} />
+      <CoinParticles trigger={coinTrigger} fever={isFever} />
     </>
   );
 }

@@ -4,25 +4,14 @@ import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { coinConfig, getRandomCoinModelIndex } from "./coinConfig";
+import { coinConfig, getRandomCoinModelIndex } from "./coin-config";
 
-export default function CoinParticles({ trigger }: { trigger: number }) {
+export default function CoinParticles({ trigger, fever }: { trigger: number; fever: boolean }) {
   // Load each coin model via useGLTF to satisfy hook rules
-  const [path0, path1, path2, path3, path4, path5] = coinConfig.glbPaths;
-  const gltf0 = useGLTF(path0);
-  const gltf1 = useGLTF(path1);
-  const gltf2 = useGLTF(path2);
-  const gltf3 = useGLTF(path3);
-  const gltf4 = useGLTF(path4);
-  const gltf5 = useGLTF(path5);
-  const templates: THREE.Group[] = [
-    gltf0.scene,
-    gltf1.scene,
-    gltf2.scene,
-    gltf3.scene,
-    gltf4.scene,
-    gltf5.scene,
-  ];
+  const gltfs = coinConfig.coins.map(coin => useGLTF(coin.glbPath));
+  const templates: THREE.Group[] = gltfs.map(gltf => gltf.scene);
+  // Index of daiko coin for fever mode
+  const daikoIndex = coinConfig.coins.findIndex(coin => coin.glbPath.includes("daiko.glb"));
 
   // Imperative coin list
   type Coin = {
@@ -58,9 +47,13 @@ export default function CoinParticles({ trigger }: { trigger: number }) {
     // Generate and add new coin batch
     const newCoins: Coin[] = Array.from({ length: coinConfig.batchCount }).map(() => {
       const id = coinIdRef.current++;
-      const idx = getRandomCoinModelIndex();
+      // Choose daiko coin during fever or random otherwise
+      const idx = fever && daikoIndex >= 0 ? daikoIndex : getRandomCoinModelIndex();
       const template = templates[idx];
       const object = template.clone(true) as THREE.Group;
+      // Apply configured scale
+      const scale = coinConfig.coins[idx].scale;
+      object.scale.set(scale[0], scale[1], scale[2]);
       object.position.set(
         (Math.random() - 0.5) * coinConfig.spawnRange,
         coinConfig.spawnHeight,
@@ -89,7 +82,7 @@ export default function CoinParticles({ trigger }: { trigger: number }) {
       newCoins.forEach(coin => groupRef.current!.remove(coin.object));
       coinsRef.current = coinsRef.current.filter(c => !newCoins.some(nc => nc.id === c.id));
     }, coinConfig.lifetime);
-  }, [trigger]);
+  }, [trigger, fever]);
 
   return <group ref={groupRef} />;
 }
