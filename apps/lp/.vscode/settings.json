@@ -5,5 +5,10 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.addMissingImports.ts": "explicit"
-  }
+  },
+  "eslint.useFlatConfig": true,
+  "eslint.options": {
+    "overrideConfigFile": "eslint.config.mjs"
+  },
+  "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact"]
 }
