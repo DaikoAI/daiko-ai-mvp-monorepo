@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     reactCompiler: true,
-    optimizePackageImports: ["three"],
+    inlineCss: true,
+    optimizePackageImports: ["lucide-react", "zod", "three", "framer-motion"],
   },
   transpilePackages: ["three"],
   devIndicators: false,

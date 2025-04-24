@@ -14,13 +14,13 @@ export interface CoinConfig {
 
 export const coinConfig: CoinConfig = {
   coins: [
-    { glbPath: "/3d/coin/btc.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/usdc.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/jito.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/jup.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/sol.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/inf.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/daiko.glb", ratio: 1, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/btc.glb", ratio: 8, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/usdc.glb", ratio: 3, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/jito.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/jup.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/sol.glb", ratio: 5, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/inf.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/daiko.glb", ratio: 0, scale: [0.2, 0.2, 0.2] },
   ],
   batchCount: 20,
   spawnRange: 16,

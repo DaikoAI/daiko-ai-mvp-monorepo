@@ -24,7 +24,8 @@ export function LuckyMalletModel() {
       wobbleTime.current += delta * 12;
       const wobbleAmount = Math.sin(wobbleTime.current) * 0.04;
       modelRef.current.rotation.x = wobbleAmount;
-      modelRef.current.rotation.y += delta * 0.1;
+      const rotationMultiplier = isFever ? -1.3 : 1;
+      modelRef.current.rotation.y += delta * 0.1 * rotationMultiplier;
 
       if (wobbleTime.current > Math.PI * 0.6) {
         setIsWobbling(false);
@@ -36,11 +37,15 @@ export function LuckyMalletModel() {
 
   useEffect(() => {
     if (!modelRef.current) return;
-    modelRef.current.traverse((child: any) => {
-      if (child.isMesh && child.material) {
-        const intensity = isFever ? 1 : tapCount / 20;
-        child.material.emissive = new THREE.Color(1, 1, 0);
-        child.material.emissiveIntensity = intensity;
+    // Calculate emissive intensity based on gauge or fever
+    const intensity = isFever ? 1 : tapCount / 20;
+    modelRef.current.traverse((child: THREE.Object3D) => {
+      // Only update meshes with standard material
+      if (child instanceof THREE.Mesh) {
+        const mesh = child as THREE.Mesh;
+        const material = mesh.material as THREE.MeshStandardMaterial;
+        material.emissive = new THREE.Color(1, 1, 0);
+        material.emissiveIntensity = intensity;
       }
     });
   }, [tapCount, isFever]);

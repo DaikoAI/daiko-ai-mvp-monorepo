@@ -8,10 +8,24 @@ import { coinConfig, getRandomCoinModelIndex } from "./coin-config";
 
 export default function CoinParticles({ trigger, fever }: { trigger: number; fever: boolean }) {
   // Load each coin model via useGLTF to satisfy hook rules
-  const gltfs = coinConfig.coins.map(coin => useGLTF(coin.glbPath));
-  const templates: THREE.Group[] = gltfs.map(gltf => gltf.scene);
+  const gltfBTC = useGLTF(coinConfig.coins[0].glbPath);
+  const gltfUSDC = useGLTF(coinConfig.coins[1].glbPath);
+  const gltfJITO = useGLTF(coinConfig.coins[2].glbPath);
+  const gltfJUP = useGLTF(coinConfig.coins[3].glbPath);
+  const gltfSOL = useGLTF(coinConfig.coins[4].glbPath);
+  const gltfINF = useGLTF(coinConfig.coins[5].glbPath);
+  const gltfDAIKO = useGLTF(coinConfig.coins[6].glbPath);
+  const templates: THREE.Group[] = [
+    gltfBTC.scene,
+    gltfUSDC.scene,
+    gltfJITO.scene,
+    gltfJUP.scene,
+    gltfSOL.scene,
+    gltfINF.scene,
+    gltfDAIKO.scene,
+  ];
   // Index of daiko coin for fever mode
-  const daikoIndex = coinConfig.coins.findIndex(coin => coin.glbPath.includes("daiko.glb"));
+  const daikoIndex = coinConfig.coins.findIndex((coin) => coin.glbPath.includes("daiko.glb"));
 
   // Imperative coin list
   type Coin = {
@@ -27,7 +41,7 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
 
   // Animate all coins in a single frame loop
   useFrame((state, delta) => {
-    coinsRef.current.forEach(coin => {
+    coinsRef.current.forEach((coin) => {
       const { object, velocity, rotationSpeed, wobblePhase } = coin;
       const t = state.clock.getElapsedTime();
       const wobbleX = Math.sin(t * 1.5 + wobblePhase) * 0.02;
@@ -57,7 +71,7 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
       object.position.set(
         (Math.random() - 0.5) * coinConfig.spawnRange,
         coinConfig.spawnHeight,
-        (Math.random() - 0.5) * coinConfig.spawnRange
+        (Math.random() - 0.5) * coinConfig.spawnRange,
       );
       groupRef.current!.add(object);
       return {
@@ -66,12 +80,12 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
         velocity: new THREE.Vector3(
           (Math.random() - 0.5) * 0.1,
           -(0.02 + Math.random() * 0.02),
-          (Math.random() - 0.5) * 0.1
+          (Math.random() - 0.5) * 0.1,
         ),
         rotationSpeed: {
           x: (Math.random() - 0.5) * 0.2,
           y: (Math.random() - 0.5) * 0.2,
-          z: (Math.random() - 0.5) * 0.2
+          z: (Math.random() - 0.5) * 0.2,
         },
         wobblePhase: Math.random() * 2 * Math.PI,
       };
@@ -79,8 +93,8 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
     coinsRef.current.push(...newCoins);
     // Schedule removal after lifetime
     setTimeout(() => {
-      newCoins.forEach(coin => groupRef.current!.remove(coin.object));
-      coinsRef.current = coinsRef.current.filter(c => !newCoins.some(nc => nc.id === c.id));
+      newCoins.forEach((coin) => groupRef.current!.remove(coin.object));
+      coinsRef.current = coinsRef.current.filter((c) => !newCoins.some((nc) => nc.id === c.id));
     }, coinConfig.lifetime);
   }, [trigger, fever]);
 
