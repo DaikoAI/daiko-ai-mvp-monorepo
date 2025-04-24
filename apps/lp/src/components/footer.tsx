@@ -1,10 +1,15 @@
+import Image from "next/image";
+
 export function Footer() {
   return (
     <footer className="py-12 px-4 backdrop-blur-xl bg-black/40 border-t border-white/10 pointer-events-auto">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Daiko AI</h3>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Image src="/icon.jpg" alt="Daiko AI" width={28} height={28} />
+              Daiko
+            </h3>
             <p className="text-sm text-white/60">Your Personalized Exit Strategy Assistant</p>
           </div>
           <div>

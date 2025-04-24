@@ -33,7 +33,8 @@ export function Features() {
       <div className="max-w-6xl mx-auto relative pointer-events-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#E5A05C] to-[#E55C9F] bg-clip-text text-transparent mb-4">
-            Why Choose Daiko AI
+            Why Choose
+            <span className="text-white"> Daiko</span>
           </h2>
           <p className="text-lg text-white/80 max-w-2xl mx-auto">
             Ultra-low fees and personalized crypto intelligence in one seamless experience.
