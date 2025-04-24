@@ -20,6 +20,7 @@ export const coinConfig: CoinConfig = {
     { glbPath: "/3d/coin/jup.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/sol.glb", ratio: 5, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/inf.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/orca.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/daiko.glb", ratio: 0, scale: [0.2, 0.2, 0.2] },
   ],
   batchCount: 20,
@@ -34,7 +35,7 @@ function createAlias(probabilities: number[]) {
   const prob: number[] = new Array(n);
   const alias: number[] = new Array(n);
   const sum = probabilities.reduce((a, b) => a + b, 0);
-  const scaled = probabilities.map(p => (p * n) / sum);
+  const scaled = probabilities.map((p) => (p * n) / sum);
   const small: number[] = [];
   const large: number[] = [];
   scaled.forEach((s, i) => {
@@ -50,14 +51,14 @@ function createAlias(probabilities: number[]) {
     if (scaled[g] < 1) small.push(g);
     else large.push(g);
   }
-  [...small, ...large].forEach(i => {
+  [...small, ...large].forEach((i) => {
     prob[i] = 1;
     alias[i] = i;
   });
   return { prob, alias };
 }
 
-const ratios = coinConfig.coins.map(coin => coin.ratio);
+const ratios = coinConfig.coins.map((coin) => coin.ratio);
 const { prob: coinAliasProbabilities, alias: coinAliasIndices } = createAlias(ratios);
 
 /**

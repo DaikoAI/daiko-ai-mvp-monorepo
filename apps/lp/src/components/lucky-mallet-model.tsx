@@ -54,7 +54,7 @@ export function LuckyMalletModel() {
     triggerHaptic();
     play();
     setIsWobbling(true);
-    setCoinTrigger(prev => prev + 1);
+    setCoinTrigger((prev) => prev + 1);
     wobbleTime.current = 0;
     if (!isFever) {
       if (tapCount + 1 >= 20) {
@@ -72,12 +72,7 @@ export function LuckyMalletModel() {
 
   return (
     <>
-      <primitive
-        ref={modelRef}
-        object={scene}
-        onClick={handleClick}
-        scale={1.3}
-      />
+      <primitive ref={modelRef} object={scene} onClick={handleClick} scale={1.3} />
       <CoinParticles trigger={coinTrigger} fever={isFever} />
     </>
   );

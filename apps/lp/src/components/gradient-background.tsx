@@ -5,7 +5,8 @@ export function GradientBackground({ className }: { className?: string }) {
       <div
         className={`fixed inset-0 opacity-40 ${className}`}
         style={{
-          background: "linear-gradient(45deg, rgba(229, 160, 92, 0.5) 0%, rgba(229, 92, 159, 0.5) 100%)",
+          background:
+            "linear-gradient(45deg, rgba(229, 160, 92, 0.5) 0%, rgba(229, 92, 159, 0.5) 100%)",
           filter: "blur(100px)",
         }}
       />

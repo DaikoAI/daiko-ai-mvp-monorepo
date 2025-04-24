@@ -1,5 +1,4 @@
 import { WaitListForm } from "@/components/waitlist-form";
-import Image from "next/image";
 
 export function Hero() {
   return (
@@ -12,8 +11,9 @@ export function Hero() {
             </span>
           </h1>
           <p className="text-md mb-10 text-white/80 pointer-events-auto">
-            An AI-powered trading assistant for busy investors. No constant monitoring or Twitter scrolling
-            required&mdash;Daiko delivers personalized trading strategies optimized just for you.
+            An AI-powered trading assistant for busy investors. No constant monitoring or Twitter
+            scrolling required&mdash;Daiko delivers personalized trading strategies optimized just
+            for you.
           </p>
 
           <div className="space-y-6 mb-8 pointer-events-auto">
@@ -35,7 +35,8 @@ export function Hero() {
               <div>
                 <h3 className="font-semibold text-white mb-1">Vibe Trading for Beginners</h3>
                 <p className="text-white/70 text-sm">
-                  Just hit Accept or Decline. AI monitors your portfolio and gives you personalized proposals.
+                  Just hit Accept or Decline. AI monitors your portfolio and gives you personalized
+                  proposals.
                 </p>
               </div>
             </div>
@@ -58,7 +59,8 @@ export function Hero() {
               <div>
                 <h3 className="font-semibold text-white mb-1">Talk Trading for Pros</h3>
                 <p className="text-white/70 text-sm">
-                  Understand the &ldquo;why&rdquo; behind every proposal with sources and smart chats
+                  Understand the &ldquo;why&rdquo; behind every proposal with sources and smart
+                  chats
                 </p>
               </div>
             </div>

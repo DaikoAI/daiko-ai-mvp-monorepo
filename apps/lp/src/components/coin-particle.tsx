@@ -14,7 +14,9 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
   const gltfJUP = useGLTF(coinConfig.coins[3].glbPath);
   const gltfSOL = useGLTF(coinConfig.coins[4].glbPath);
   const gltfINF = useGLTF(coinConfig.coins[5].glbPath);
-  const gltfDAIKO = useGLTF(coinConfig.coins[6].glbPath);
+  const gltfORCA = useGLTF(coinConfig.coins[6].glbPath);
+  const gltfDAIKO = useGLTF(coinConfig.coins[7].glbPath);
+
   const templates: THREE.Group[] = [
     gltfBTC.scene,
     gltfUSDC.scene,
@@ -22,6 +24,7 @@ export default function CoinParticles({ trigger, fever }: { trigger: number; fev
     gltfJUP.scene,
     gltfSOL.scene,
     gltfINF.scene,
+    gltfORCA.scene,
     gltfDAIKO.scene,
   ];
   // Index of daiko coin for fever mode
