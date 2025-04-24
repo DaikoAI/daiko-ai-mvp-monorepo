@@ -14,16 +14,19 @@ export interface CoinConfig {
 
 export const coinConfig: CoinConfig = {
   coins: [
-    { glbPath: "/3d/coin/btc.glb", ratio: 8, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/btc.glb", ratio: 10, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/usdc.glb", ratio: 3, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/jito.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/jitoSOL.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/jto.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/jup.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
-    { glbPath: "/3d/coin/sol.glb", ratio: 5, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/sol.glb", ratio: 6, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/inf.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/orca.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/layer.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
+    { glbPath: "/3d/coin/ray.glb", ratio: 2, scale: [0.2, 0.2, 0.2] },
     { glbPath: "/3d/coin/daiko.glb", ratio: 0, scale: [0.2, 0.2, 0.2] },
   ],
-  batchCount: 20,
+  batchCount: 10,
   spawnRange: 16,
   spawnHeight: 10,
   lifetime: 10000,
@@ -38,10 +41,12 @@ function createAlias(probabilities: number[]) {
   const scaled = probabilities.map((p) => (p * n) / sum);
   const small: number[] = [];
   const large: number[] = [];
+
   scaled.forEach((s, i) => {
     if (s < 1) small.push(i);
     else large.push(i);
   });
+
   while (small.length && large.length) {
     const l = small.pop() as number;
     const g = large.pop() as number;
@@ -51,10 +56,12 @@ function createAlias(probabilities: number[]) {
     if (scaled[g] < 1) small.push(g);
     else large.push(g);
   }
+
   [...small, ...large].forEach((i) => {
     prob[i] = 1;
     alias[i] = i;
   });
+
   return { prob, alias };
 }
 

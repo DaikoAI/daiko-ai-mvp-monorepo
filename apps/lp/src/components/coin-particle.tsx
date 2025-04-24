@@ -11,22 +11,29 @@ export function CoinParticles({ trigger, fever }: { trigger: number; fever: bool
   const gltfBTC = useGLTF(coinConfig.coins[0].glbPath);
   const gltfUSDC = useGLTF(coinConfig.coins[1].glbPath);
   const gltfJITO = useGLTF(coinConfig.coins[2].glbPath);
-  const gltfJUP = useGLTF(coinConfig.coins[3].glbPath);
-  const gltfSOL = useGLTF(coinConfig.coins[4].glbPath);
-  const gltfINF = useGLTF(coinConfig.coins[5].glbPath);
-  const gltfORCA = useGLTF(coinConfig.coins[6].glbPath);
-  const gltfDAIKO = useGLTF(coinConfig.coins[7].glbPath);
+  const gltfJTO = useGLTF(coinConfig.coins[3].glbPath);
+  const gltfJUP = useGLTF(coinConfig.coins[4].glbPath);
+  const gltfSOL = useGLTF(coinConfig.coins[5].glbPath);
+  const gltfINF = useGLTF(coinConfig.coins[6].glbPath);
+  const gltfORCA = useGLTF(coinConfig.coins[7].glbPath);
+  const gltfLAYER = useGLTF(coinConfig.coins[8].glbPath);
+  const gltfRAY = useGLTF(coinConfig.coins[9].glbPath);
+  const gltfDAIKO = useGLTF(coinConfig.coins[10].glbPath);
 
   const templates: THREE.Group[] = [
     gltfBTC.scene,
     gltfUSDC.scene,
     gltfJITO.scene,
+    gltfJTO.scene,
     gltfJUP.scene,
     gltfSOL.scene,
     gltfINF.scene,
     gltfORCA.scene,
+    gltfLAYER.scene,
+    gltfRAY.scene,
     gltfDAIKO.scene,
   ];
+
   // Index of daiko coin for fever mode
   const daikoIndex = coinConfig.coins.findIndex((coin) => coin.glbPath.includes("daiko.glb"));
 
