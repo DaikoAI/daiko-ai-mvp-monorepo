@@ -1,8 +1,8 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useHaptic } from "use-haptic";
 import useSound from "use-sound";
@@ -73,7 +73,9 @@ export function LuckyMalletModel() {
   return (
     <>
       <primitive ref={modelRef} object={scene} onClick={handleClick} scale={1.3} />
-      <CoinParticles trigger={coinTrigger} fever={isFever} />
+      <Suspense fallback={null}>
+        <CoinParticles trigger={coinTrigger} fever={isFever} />
+      </Suspense>
     </>
   );
 }

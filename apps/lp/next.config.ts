@@ -5,7 +5,13 @@ const nextConfig: NextConfig = {
   experimental: {
     reactCompiler: true,
     inlineCss: true,
-    optimizePackageImports: ["lucide-react", "zod", "three", "framer-motion"],
+    optimizePackageImports: [
+      "lucide-react",
+      "zod",
+      "three",
+      "@react-three/drei",
+      "@react-three/fiber",
+    ],
   },
   transpilePackages: ["three"],
   devIndicators: false,

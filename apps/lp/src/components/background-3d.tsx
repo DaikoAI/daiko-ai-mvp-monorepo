@@ -1,8 +1,8 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { OrbitControls, Stage } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { Stage, OrbitControls } from "@react-three/drei";
+import { Suspense } from "react";
 import { LuckyMalletModel } from "./lucky-mallet-model";
 
 export function Background3D() {
@@ -33,8 +33,10 @@ export function Background3D() {
         }}
       >
         <Canvas>
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[5, 5, 5]} intensity={1} />
           <Suspense fallback={null}>
-            <Stage environment="city" intensity={0.6} adjustCamera={false}>
+            <Stage intensity={0.6} adjustCamera={false}>
               <LuckyMalletModel />
             </Stage>
             <OrbitControls
