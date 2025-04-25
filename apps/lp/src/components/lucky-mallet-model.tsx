@@ -11,27 +11,35 @@ import { CoinParticles } from "./coin-particle";
 export function LuckyMalletModel() {
   const modelRef = useRef<THREE.Group | null>(null);
   const wobbleTime = useRef(0);
+
   const [isWobbling, setIsWobbling] = useState(false);
   const [coinTrigger, setCoinTrigger] = useState(0);
   const [tapCount, setTapCount] = useState(0);
   const [isFever, setIsFever] = useState(false);
+
   const { scene } = useGLTF("/3d/lucky_mallet.glb");
   const { triggerHaptic } = useHaptic();
   const [play] = useSound("/sound/coin.mp3", { volume: 0.5 });
+
+  const autoRotateSpeed = 0.5; // Adjust rotation speed as needed
 
   useFrame((state, delta) => {
     if (isWobbling && modelRef.current) {
       wobbleTime.current += delta * 12;
       const wobbleAmount = Math.sin(wobbleTime.current) * 0.04;
       modelRef.current.rotation.x = wobbleAmount;
-      const rotationMultiplier = isFever ? -360 : 1;
-      modelRef.current.rotation.y += delta * 0.1 * rotationMultiplier;
 
       if (wobbleTime.current > Math.PI * 0.6) {
         setIsWobbling(false);
         wobbleTime.current = 0;
         modelRef.current.rotation.x = 0;
       }
+    }
+
+    // Auto-rotate the model on the Y-axis
+    if (modelRef.current) {
+      const rotationMultiplier = isFever ? -20 : 1; // Fever makes it spin faster (adjust multiplier)
+      modelRef.current.rotation.y += delta * autoRotateSpeed * rotationMultiplier;
     }
   });
 
@@ -63,7 +71,7 @@ export function LuckyMalletModel() {
         setTimeout(() => {
           setIsFever(false);
           setTapCount(0);
-        }, 15000);
+        }, 10000);
       } else {
         setTapCount(tapCount + 1);
       }
