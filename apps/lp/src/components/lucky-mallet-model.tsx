@@ -21,19 +21,25 @@ export function LuckyMalletModel() {
   const { triggerHaptic } = useHaptic();
   const [play] = useSound("/sound/coin.mp3", { volume: 0.5 });
 
+  const autoRotateSpeed = 0.5; // Adjust rotation speed as needed
+
   useFrame((state, delta) => {
     if (isWobbling && modelRef.current) {
       wobbleTime.current += delta * 12;
       const wobbleAmount = Math.sin(wobbleTime.current) * 0.04;
       modelRef.current.rotation.x = wobbleAmount;
-      const rotationMultiplier = isFever ? -360 : 1;
-      modelRef.current.rotation.y += delta * 0.1 * rotationMultiplier;
 
       if (wobbleTime.current > Math.PI * 0.6) {
         setIsWobbling(false);
         wobbleTime.current = 0;
         modelRef.current.rotation.x = 0;
       }
+    }
+
+    // Auto-rotate the model on the Y-axis
+    if (modelRef.current) {
+      const rotationMultiplier = isFever ? -20 : 1; // Fever makes it spin faster (adjust multiplier)
+      modelRef.current.rotation.y += delta * autoRotateSpeed * rotationMultiplier;
     }
   });
 
