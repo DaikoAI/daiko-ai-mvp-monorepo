@@ -65,7 +65,7 @@ export function LuckyMalletModel() {
         setTimeout(() => {
           setIsFever(false);
           setTapCount(0);
-        }, 15000);
+        }, 10000);
       } else {
         setTapCount(tapCount + 1);
       }
