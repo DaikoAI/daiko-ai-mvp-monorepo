@@ -68,13 +68,9 @@ export const pushRouter = createTRPCRouter({
           // createdAt and updatedAt will default to now()
         })
         .onConflictDoUpdate({
-          target: pushSubscriptionTable.endpoint, // Use endpoint as the conflict target
+          target: [pushSubscriptionTable.userId, pushSubscriptionTable.endpoint], // Use the composite primary key [userId, endpoint] as the conflict target
           set: {
-            // Update keys and timestamp if endpoint already exists for *any* user
-            // Consider security implications: should only update if userId matches?
-            // Or should an endpoint be strictly unique across all users?
-            // Assuming endpoint is globally unique here.
-            userId: userId, // Ensure the correct user owns it now
+            // Update fields if the combination of userId and endpoint already exists
             p256dh: keys.p256dh,
             auth: keys.auth,
             userAgent: uaString, // Use uaString from input

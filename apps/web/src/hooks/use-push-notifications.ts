@@ -167,9 +167,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     isSupported,
     permission,
     subscribe,
-    isLoading: subscribeMutation.status === "pending",
+    isLoading: subscribeMutation.isPending,
     error,
     subscription,
-    isRegistered: subscribeMutation.status === "success" || !!subscription,
+    isRegistered: subscribeMutation.isSuccess || !!subscription,
   };
 }
