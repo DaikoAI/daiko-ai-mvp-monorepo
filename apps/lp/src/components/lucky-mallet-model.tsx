@@ -11,10 +11,12 @@ import { CoinParticles } from "./coin-particle";
 export function LuckyMalletModel() {
   const modelRef = useRef<THREE.Group | null>(null);
   const wobbleTime = useRef(0);
+
   const [isWobbling, setIsWobbling] = useState(false);
   const [coinTrigger, setCoinTrigger] = useState(0);
   const [tapCount, setTapCount] = useState(0);
   const [isFever, setIsFever] = useState(false);
+
   const { scene } = useGLTF("/3d/lucky_mallet.glb");
   const { triggerHaptic } = useHaptic();
   const [play] = useSound("/sound/coin.mp3", { volume: 0.5 });

@@ -42,6 +42,7 @@ export function Background3D() {
             </Stage>
             <OrbitControls
               enableZoom={false}
+              enableRotate={false}
               autoRotate
               autoRotateSpeed={4}
               enablePan={false}

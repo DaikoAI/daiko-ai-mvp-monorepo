@@ -11,8 +11,9 @@ export default function Home() {
       <GradientBackground />
       <Background3D />
 
+      <Header />
+
       <div className="relative pointer-events-none z-10">
-        <Header />
         <Hero />
         <Features />
         <Footer />
