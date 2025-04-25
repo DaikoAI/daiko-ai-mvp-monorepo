@@ -1,6 +1,5 @@
 "use client";
 
-import { Stage } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import { LuckyMalletModel } from "./lucky-mallet-model";
@@ -38,12 +37,10 @@ export function Background3D() {
           }}
         >
           <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1} />
+          <directionalLight position={[5, 5, 5]} intensity={1.1} />
 
           <Suspense fallback={null}>
-            <Stage intensity={0.6} adjustCamera={false}>
-              <LuckyMalletModel />
-            </Stage>
+            <LuckyMalletModel />
           </Suspense>
         </Canvas>
       </div>

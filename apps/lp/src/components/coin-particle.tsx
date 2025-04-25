@@ -43,7 +43,6 @@ export function CoinParticles({ trigger, fever }: { trigger: number; fever: bool
     object: THREE.Group;
     velocity: THREE.Vector3;
     rotationSpeed: { x: number; y: number; z: number };
-    wobblePhase: number;
   };
   const coinsRef = useRef<Coin[]>([]);
   const coinIdRef = useRef(0);
@@ -52,13 +51,11 @@ export function CoinParticles({ trigger, fever }: { trigger: number; fever: bool
   // Animate all coins in a single frame loop
   useFrame((state, delta) => {
     coinsRef.current.forEach((coin) => {
-      const { object, velocity, rotationSpeed, wobblePhase } = coin;
-      const t = state.clock.getElapsedTime();
-      const wobbleX = Math.sin(t * 1.5 + wobblePhase) * 0.02;
-      const wobbleZ = Math.cos(t * 1.2 + wobblePhase) * 0.02;
-      object.position.x += velocity.x + wobbleX;
+      const { object, velocity, rotationSpeed } = coin;
+
+      object.position.x += velocity.x;
       object.position.y += velocity.y;
-      object.position.z += velocity.z + wobbleZ;
+      object.position.z += velocity.z;
       object.rotation.x += delta * rotationSpeed.x;
       object.rotation.y += delta * rotationSpeed.y;
       object.rotation.z += delta * rotationSpeed.z;
@@ -97,7 +94,6 @@ export function CoinParticles({ trigger, fever }: { trigger: number; fever: bool
           y: (Math.random() - 0.5) * 5.0,
           z: (Math.random() - 0.5) * 0.01,
         },
-        wobblePhase: Math.random() * 2 * Math.PI,
       };
     });
     coinsRef.current.push(...newCoins);
