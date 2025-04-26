@@ -18,28 +18,23 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
 - **フロントエンド**:
 
   - Next.js 15
-  - React 19
-  - TypeScript
-  - Tailwind CSS 4
-  - Radix UI
-  - Solana Wallet Adapter
-  - Firebase クライアント
+  - shadcn/ui
   - Serwist (PWA)
 
 - **バックエンド**:
 
-  - TypeScript
-  - Node.js
-  - Hono
-  - Firebase Admin
+  - trpc
+  - Route Handler
 
 - **データベース**:
 
-  - Firebase Firestore
+  - NeonDB(Postgres)
 
-- **インフラ**:
-  - Turborepo (モノレポ管理)
-  - pnpm (パッケージマネージャー)
+- **インフラ・SaaS**:
+  - Vercel
+    - Hosting
+  - Inngest
+    - Job queue
 
 ## プロジェクト構成
 

@@ -49,8 +49,8 @@ export function Footer() {
           </div>
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">Contact</h4>
-            <a href="mailto:contact@daiko.ai" className="text-sm text-white/60 hover:text-white">
-              contact@daiko.ai
+            <a href="mailto:support@daiko.ai" className="text-sm text-white/60 hover:text-white">
+              support@daiko.ai
             </a>
           </div>
         </div>
