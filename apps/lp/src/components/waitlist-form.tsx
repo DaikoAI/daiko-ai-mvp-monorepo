@@ -2,9 +2,9 @@
 
 import type React from "react";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export function WaitListForm() {
@@ -48,6 +48,9 @@ export function WaitListForm() {
             type="email"
             placeholder="your@email.com"
             value={email}
+            name="email"
+            aria-label="email"
+            autoComplete="email"
             onChange={(e) => setEmail(e.target.value)}
             required
             className="bg-white/5 border-white/10 focus:border-[#E5A05C]/50 focus:ring-[#E5A05C]/20"

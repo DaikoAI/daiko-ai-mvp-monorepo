@@ -1,5 +1,6 @@
 "use client";
 
+import { sendGAEvent } from "@next/third-parties/google";
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -76,6 +77,8 @@ export function LuckyMalletModel() {
         setTapCount(tapCount + 1);
       }
     }
+
+    sendGAEvent("event", "lucky_mallet_tap");
   };
 
   return (

@@ -1,3 +1,4 @@
+import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
@@ -32,6 +33,7 @@ export default function RootLayout({
         {children}
         <Toaster position="bottom-right" richColors />
       </body>
+      <GoogleAnalytics gaId="G-1234567890" />
     </html>
   );
 }
