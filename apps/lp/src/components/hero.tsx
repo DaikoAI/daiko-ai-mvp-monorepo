@@ -1,6 +1,6 @@
 import { VideoPlayer } from "@/components/video-player";
-import { WaitListForm } from "@/components/waitlist-form";
 import { Suspense } from "react";
+import { WaitListForm } from "./waitlist-form";
 
 export function Hero() {
   return (
@@ -17,6 +17,16 @@ export function Hero() {
             scrolling required&mdash;Daiko delivers personalized trading strategies optimized just
             for you.
           </p>
+
+          <div className="relative w-full max-w-md mx-auto mt-12 mb-24 pointer-events-auto">
+            <div
+              className="bg-black/30 backdrop-blur-md p-6 rounded-xl border border-white/10
+          shadow-[0_0_15px_rgba(251,191,36,0.15)] hover:shadow-[0_0_25px_rgba(251,191,36,0.25)] transition-all duration-500"
+            >
+              <h2 className="text-xl font-semibold mb-4">Join the Waitlist</h2>
+              <WaitListForm />
+            </div>
+          </div>
 
           <div className="space-y-10 mb-12 pointer-events-auto">
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6 text-center md:text-left">
@@ -62,16 +72,6 @@ export function Hero() {
                   />
                 </Suspense>
               </div>
-            </div>
-          </div>
-
-          <div className="relative w-full max-w-md mx-auto mt-12 mb-24 pointer-events-auto">
-            <div
-              className="bg-black/30 backdrop-blur-md p-6 rounded-xl border border-white/10
-          shadow-[0_0_15px_rgba(251,191,36,0.15)] hover:shadow-[0_0_25px_rgba(251,191,36,0.25)] transition-all duration-500"
-            >
-              <h2 className="text-xl font-semibold mb-4">Join the Waitlist</h2>
-              <WaitListForm />
             </div>
           </div>
         </div>

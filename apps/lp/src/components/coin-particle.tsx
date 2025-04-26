@@ -90,9 +90,9 @@ export function CoinParticles({ trigger, fever }: { trigger: number; fever: bool
           (Math.random() - 0.5) * 0.1,
         ),
         rotationSpeed: {
-          x: (Math.random() - 0.5) * 0.01,
-          y: (Math.random() - 0.5) * 5.0,
-          z: (Math.random() - 0.5) * 0.01,
+          x: (Math.random() - 0.5) * 7.0,
+          y: (Math.random() - 0.5) * 0.5,
+          z: 0,
         },
       };
     });
