@@ -1,29 +1,27 @@
-import { Brain, ShieldCheck, Smartphone, Zap } from "lucide-react";
+import { Brain, Network, ShieldCheck, Smartphone } from "lucide-react";
 
 const features = [
   {
-    title: "AI Signal Engine",
+    title: "AI signals Network",
     description:
-      "Always-on agent models digest social, on-chain, and macro data to deliver entry, exit, and hedge signals tuned to your personal risk profile.",
+      "Specialized AI agents continuously gather and analyze data, collaborating to deliver personalized trading proposals tailored to your needs.",
+    icon: Network,
+  },
+  {
+    title: "AI researches",
+    description:
+      " You make decisions Data-driven AI meets human intuition. The perfect combo for winning trades.",
     icon: Brain,
   },
   {
-    title: "Risk Firewall",
-    description:
-      "Live contract screening, rug-pull heuristics, and MEV-aware routing actively defend your capital against hidden threats.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Omni-Channel Access",
-    description:
-      "Trade and chat seamlessly across mobile app, web dashboard, and messaging bots—one wallet, synced everywhere.",
+    title: "Personalized Proposals",
+    description: "Receive custom proposals aligned with your risk profile and instructions.",
     icon: Smartphone,
   },
   {
-    title: "MEV-Optimised Flow",
-    description:
-      "Validator rebates and slippage savings are captured automatically and re-invested, pushing your effective cost toward zero.",
-    icon: Zap,
+    title: "Anti-MEV",
+    description: "Protect your transactions with top-tier MEV-resistant partners.",
+    icon: ShieldCheck,
   },
 ];
 
@@ -36,9 +34,6 @@ export function Features() {
             Why Choose
             <span className="text-white"> Daiko</span>
           </h2>
-          <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Ultra-low fees and personalized crypto intelligence in one seamless experience.
-          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {features.map((feature) => (

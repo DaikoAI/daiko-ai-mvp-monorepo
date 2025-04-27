@@ -3,9 +3,8 @@ import Image from "next/image";
 export function Header() {
   return (
     <header className="flex justify-between items-center p-4 z-20 relative">
-      <h1 className="text-3xl font-bold text-white leading-tight flex items-center gap-2 pointer-events-auto">
-        <Image src="/icon.jpg" alt="Daiko AI" width={40} height={40} className="rounded-full" />
-        Daiko
+      <h1 className="pointer-events-auto">
+        <Image src="/logo.png" alt="Daiko Logo" height={40} width={140} />
       </h1>
     </header>
   );
