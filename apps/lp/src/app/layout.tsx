@@ -8,8 +8,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Daiko AI",
-  description: "Exit Strategy Assistant",
+  title: "Daiko",
+  description: "Vibe Trading App",
 };
 
 export const viewport: Viewport = {
