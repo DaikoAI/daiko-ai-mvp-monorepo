@@ -5,13 +5,9 @@ export function Footer() {
     <footer className="py-12 px-4 backdrop-blur-xl bg-black/40 border-t border-white/10 pointer-events-auto">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Image src="/icon.jpg" alt="Daiko AI" width={28} height={28} />
-              Daiko
-            </h3>
-            <p className="text-sm text-white/60">Your Personalized Exit Strategy Assistant</p>
-          </div>
+          <Image src="/logo.png" alt="Daiko Logo" height={50} width={160} />
+          <p className="text-sm text-white/60">Your Personalized Vibe Trading App</p>
+
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">Follow Us</h4>
             <ul className="space-y-2">
@@ -56,7 +52,7 @@ export function Footer() {
         </div>
         <div className="mt-12 pt-8 border-t border-white/10">
           <p className="text-center text-sm text-white/60">
-            © {new Date().getFullYear()} Daiko AI. All rights reserved.
+            © {new Date().getFullYear()} Daiko All rights reserved.
           </p>
         </div>
       </div>
