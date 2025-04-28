@@ -33,7 +33,7 @@ export default function RootLayout({
         {children}
         <Toaster position="bottom-right" richColors />
       </body>
-      <GoogleAnalytics gaId="G-1234567890" />
+      <GoogleAnalytics gaId="G-REFBT6JHYY" />
     </html>
   );
 }
