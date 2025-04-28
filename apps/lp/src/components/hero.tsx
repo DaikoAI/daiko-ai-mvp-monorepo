@@ -45,7 +45,7 @@ export function Hero() {
                     <div className="w-2/3 mx-auto md:w-full h-[400px] bg-gray-700/50 animate-pulse rounded-xl" />
                   }
                 >
-                  <VideoPlayer src="/video/vibe-trade-demo.mp4" className="rounded-xl shadow-l" />
+                  <VideoPlayer src="/video/vibe-trade-demo.webm" className="rounded-xl shadow-l" />
                 </Suspense>
               </div>
             </div>
