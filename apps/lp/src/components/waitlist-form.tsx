@@ -4,6 +4,7 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sendGAEvent } from "@next/third-parties/google";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +33,9 @@ export function WaitListForm() {
       setIsSubmitted(true);
       setEmail("");
       toast.success("You've been added to the waitlist!");
+      sendGAEvent("waitlist_form_submitted", {
+        email,
+      });
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("An error occurred while submitting the form. Please try again later.");

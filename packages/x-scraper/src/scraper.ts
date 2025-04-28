@@ -1,5 +1,5 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-import { execSync } from "child_process";
+import * as chromedriver from "chromedriver";
 import { OpenAI } from "openai";
 import {
   Browser,
@@ -49,28 +49,29 @@ export class XScraper {
 
   /**
    * Chromeプロセスをクリーンアップ
+   * Vercel環境などでは不要/動作しないため削除
    */
-  private cleanupChromeProcesses(): void {
-    if (XScraper.chromeCleaned) {
-      this.logger.debug("XScraper", "Chrome processes already cleaned up");
-      return;
-    }
-    try {
-      if (process.platform === "darwin") {
-        execSync('pkill -f "Google Chrome"');
-      } else if (process.platform === "win32") {
-        execSync("taskkill /F /IM chrome.exe");
-      } else {
-        execSync("pkill -f chrome");
-      }
-      // mark as cleaned to avoid repeating kills
-      XScraper.chromeCleaned = true;
-      this.logger.info("XScraper", "Cleaned up Chrome processes");
-    } catch (error) {
-      // プロセスが見つからない場合などのエラーは無視
-      this.logger.debug("XScraper", "No Chrome processes to clean up");
-    }
-  }
+  // private cleanupChromeProcesses(): void {
+  //   if (XScraper.chromeCleaned) {
+  //     this.logger.debug("XScraper", "Chrome processes already cleaned up");
+  //     return;
+  //   }
+  //   try {
+  //     if (process.platform === "darwin") {
+  //       execSync('pkill -f "Google Chrome"');
+  //     } else if (process.platform === "win32") {
+  //       execSync("taskkill /F /IM chrome.exe");
+  //     } else {
+  //       execSync("pkill -f chrome");
+  //     }
+  //     // mark as cleaned to avoid repeating kills
+  //     XScraper.chromeCleaned = true;
+  //     this.logger.info("XScraper", "Cleaned up Chrome processes");
+  //   } catch (error) {
+  //     // プロセスが見つからない場合などのエラーは無視
+  //     this.logger.debug("XScraper", "No Chrome processes to clean up");
+  //   }
+  // }
 
   /**
    * Seleniumドライバーを初期化（シングルインスタンス）
@@ -83,7 +84,7 @@ export class XScraper {
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
-      this.cleanupChromeProcesses();
+      // this.cleanupChromeProcesses(); // pkill が使えない環境があるので削除
 
       const options = new chrome.Options();
       options.addArguments("--headless");
@@ -107,7 +108,14 @@ export class XScraper {
       // インコグニートモードを使用してクリーンな状態を保証
       options.addArguments("--incognito");
 
-      this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
+      // chromedriver のパスを直接オプションに設定
+      options.setChromeBinaryPath(chromedriver.path);
+
+      this.driver = await new Builder()
+        .forBrowser(Browser.CHROME)
+        .setChromeOptions(options)
+        // .setChromeService(service) // ServiceBuilder を使わないのでコメントアウト
+        .build();
 
       // CDP経由で自動化フラグを変更
       await this.driver.executeScript(`
