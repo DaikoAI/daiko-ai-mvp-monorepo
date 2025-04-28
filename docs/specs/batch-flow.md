@@ -4,80 +4,100 @@
 
 ```mermaid
 graph TD
-    %% データ収集プロセス
-    subgraph DataCollection["データ収集 (5分毎)"]
-        A[Vercel Cron] --> B[スクレイピング関数]
-        B --> C[Railway Selenium]
-        C --> D[Twitter取得]
-        D --> E[DB: ツイート保存]
-        E --> F[更新イベント送信]
+    %% --- Runtimes Definition ---
+    subgraph VercelCron ["<strong><big>fa:fa-calendar-alt Vercel Cron (Scheduler)</big></strong>"]
+        A_Cron["fa:fa-clock Schedule: Data Collection (5m)"]
+        Z_Cron["fa:fa-clock Schedule: Market Data (10m)"]
     end
 
-    %% 市場データ更新
-    subgraph MarketUpdate["市場データ更新 (10分毎)"]
-        Z[Vercel Cron] --> Y[市場データ関数]
-        Y --> X[DB: 20種トークン価格更新]
+    subgraph VercelFunctions ["<strong><big>fa:fa-server Vercel Functions (Compute)</big></strong>"]
+        B_DataCollectionFunc["fa:fa-cloud-download-alt <strong>Data Collection</strong> Func"]
+        Y_MarketDataFunc["fa:fa-chart-line <strong>Market Data</strong> Func"]
+        H_SignalProcessingFunc["fa:fa-cogs <strong>Signal Processing</strong> Func"]
+        Q_ProposalGenerationFunc["fa:fa-lightbulb <strong>Proposal Generation</strong> Func"]
+        X1_NotificationFunc["fa:fa-paper-plane <strong>Notification</strong> Func"]
     end
 
-    %% シグナル検出処理
-    subgraph SignalProcess["シグナル検出処理"]
-        F --> G[Inngest Queue]
-        G --> H[シグナル検出関数]
-        H --> I[DB: データ取得]
-        I --> J[トークン別分析]
-        J --> K1[インフルエンサー分析]
-        J --> K2[価格パターン分析]
-        J --> K3[オンチェーン分析]
-        J --> K4[センチメント分析]
-        K1 --> L[シグナルスコアリング]
-        K2 --> L
-        K3 --> L
-        K4 --> L
-        L --> M[DB: シグナル保存]
-        M --> N[保有ユーザー特定]
-        N --> O[signal.detected イベント]
+    subgraph Inngest ["<strong><big>fa:fa-exchange-alt Inngest (Workflow Engine)</big></strong>"]
+        ING_SignalQueue["fa:fa-tasks Queue: signal.received"]
+        ING_ProposalQueue["fa:fa-tasks Queue: signal.detected"]
+        ING_NotifyQueue["fa:fa-tasks Queue: proposal.created"]
+        ING_SignalEvent["fa:fa-bolt Event: signal.detected"]
+        ING_ProposalEvent["fa:fa-bolt Event: proposal.created"]
     end
 
-    %% 提案生成
-    subgraph ProposalGen["提案生成プロセス"]
-        O --> P[Inngest Queue]
-        P --> Q[提案生成関数]
-        Q --> R1[ユーザープロファイル]
-        Q --> R2[ポートフォリオ構成]
-        Q --> R3[過去取引パターン]
-        R1 --> S[OpenAI API 呼び出し]
-        R2 --> S
-        R3 --> S
-        S --> T[パーソナライズ提案]
-        T --> U[DB: 提案保存]
-        U --> V[proposal.created イベント]
+    subgraph NeonDB ["<strong><big>fa:fa-database NeonDB (Database)</big></strong>"]
+        DB_Tweets["Tweets Storage"]
+        DB_MarketData["Market Data Storage"]
+        DB_Signals["Signals Storage"]
+        DB_Proposals["Proposals Storage"]
+        DB_UserData["User Data Access"]
     end
 
-    %% 通知処理
-    subgraph Notification["通知プロセス"]
-        V --> W[Inngest Queue]
-        W --> X1[通知関数]
-        X1 --> Y1[ユーザー通知送信]
+    subgraph ExternalServices ["<strong><big>fa:fa-external-link-alt External Services</big></strong>"]
+        subgraph Railway ["<strong>fa:fa-window-maximize Railway</strong> (Selenium Grid)"]
+            C_Selenium["Selenium Service"]
+        end
+        subgraph OpenAI ["<strong>fa:fa-brain OpenAI API</strong> (AI Service)"]
+            S_OpenAICall["OpenAI API Call"]
+        end
     end
 
-    %% フロー接続
-    DataCollection --> SignalProcess
-    MarketUpdate -.-> SignalProcess
-    SignalProcess --> ProposalGen
-    ProposalGen --> Notification
+    %% --- Flows ---
 
-    %% スタイル
-    classDef collection fill:#e1d5e7,stroke:#333,stroke-width:1px;
-    classDef market fill:#ffe6cc,stroke:#333,stroke-width:1px;
-    classDef signal fill:#d5e8d4,stroke:#333,stroke-width:1px;
-    classDef proposal fill:#fff2cc,stroke:#333,stroke-width:1px;
-    classDef notify fill:#f8cecc,stroke:#333,stroke-width:1px;
-    classDef queue fill:#f9f9f9,stroke:#999,stroke-width:2px,stroke-dasharray:5 5;
+    %% Data Collection Flow
+    A_Cron --> B_DataCollectionFunc
+    B_DataCollectionFunc --> C_Selenium
+    C_Selenium --> B_DataCollectionFunc
+    %% Assuming func coordinates scraping
+    B_DataCollectionFunc --> DB_Tweets
+    DB_Tweets -- "tweet.updated" --> ING_SignalQueue
 
-    class DataCollection collection;
-    class MarketUpdate market;
-    class SignalProcess signal;
-    class ProposalGen proposal;
-    class Notification notify;
-    class G,P,W queue;
+    %% Market Data Update Flow
+    Z_Cron --> Y_MarketDataFunc
+    Y_MarketDataFunc --> DB_MarketData
+
+    %% Signal Detection Flow
+    ING_SignalQueue --> H_SignalProcessingFunc
+    H_SignalProcessingFunc --> DB_MarketData
+    H_SignalProcessingFunc --> DB_Tweets
+    H_SignalProcessingFunc --> DB_Signals
+    DB_Signals --> H_SignalProcessingFunc
+    H_SignalProcessingFunc -- "signal.detected" --> ING_SignalEvent
+    ING_SignalEvent --> ING_ProposalQueue
+
+    %% Proposal Generation Flow
+    ING_ProposalQueue --> Q_ProposalGenerationFunc
+    Q_ProposalGenerationFunc --> DB_Signals
+    Q_ProposalGenerationFunc --> DB_UserData
+    Q_ProposalGenerationFunc --> S_OpenAICall
+    S_OpenAICall --> Q_ProposalGenerationFunc
+    Q_ProposalGenerationFunc --> DB_Proposals
+    DB_Proposals -- "proposal.created" --> ING_ProposalEvent
+
+    %% Notification Flow
+    ING_ProposalEvent --> ING_NotifyQueue
+    ING_NotifyQueue --> X1_NotificationFunc
+    X1_NotificationFunc --> SendNotify["fa:fa-envelope Send User Notification"]
+
+    %% --- Styling (Dark Mode Friendly) ---
+    classDef VercelCron fill:#A07ACC,stroke:#D8BFD8,color:#fff;
+    classDef VercelFunctions fill:#6495ED,stroke:#ADD8E6,color:#fff;
+    classDef Inngest fill:#DAA520,stroke:#FFD700,color:#000;
+    classDef NeonDB fill:#3CB371,stroke:#90EE90,color:#fff;
+    classDef ExternalServices fill:#444,stroke:#888,color:#fff;
+    classDef Railway fill:#CD5C5C,stroke:#F08080,color:#fff;
+    classDef OpenAI fill:#40E0D0,stroke:#AFEEEE,color:#000;
+    classDef Queue fill:#aaa,stroke:#ccc,color:#000,stroke-dasharray: 5 5;
+    classDef Event fill:#fff,stroke:#FF6347,color:#FF6347;
+
+    class VercelCron VercelCron;
+    class VercelFunctions VercelFunctions;
+    class Inngest Inngest;
+    class NeonDB NeonDB;
+    class ExternalServices ExternalServices;
+    class Railway Railway;
+    class OpenAI OpenAI;
+    class ING_SignalQueue,ING_ProposalQueue,ING_NotifyQueue Queue;
+    class ING_SignalEvent,ING_ProposalEvent Event;
 ```
