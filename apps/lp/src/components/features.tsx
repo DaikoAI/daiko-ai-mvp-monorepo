@@ -8,9 +8,8 @@ const features = [
     icon: Network,
   },
   {
-    title: "AI researches",
-    description:
-      " You make decisions Data-driven AI meets human intuition. The perfect combo for winning trades.",
+    title: "AI researches. You make decisions",
+    description: "Data-driven AI meets human intuition. The perfect combo for winning trades.",
     icon: Brain,
   },
   {

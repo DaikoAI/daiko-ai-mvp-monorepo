@@ -7,7 +7,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="flex flex-col gap-1">
             <Image src="/logo.png" alt="Daiko Logo" height={50} width={160} />
-            <p className="text-sm text-white/60">Your Personalized Vibe Trading App</p>
+            <p className="text-sm text-white/60">Vibe Trading App</p>
           </div>
 
           <div>
