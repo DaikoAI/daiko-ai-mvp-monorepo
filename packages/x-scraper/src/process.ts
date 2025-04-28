@@ -20,6 +20,7 @@ export async function processXScraping(options?: { specificAccountId?: string })
       password: process.env.X_PASSWORD!,
       username: process.env.X_USERNAME!,
     };
+
     const scraper = new XScraper(credentials);
     await scraper.login();
 
