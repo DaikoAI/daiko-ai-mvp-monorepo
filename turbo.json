@@ -15,7 +15,10 @@
         "AUTH_GOOGLE_SECRET",
         "AUTH_SECRET",
         "WEB_PUSH_VAPID_PRIVATE_KEY",
-        "CRON_SECRET"
+        "CRON_SECRET",
+        "X_EMAIL",
+        "X_PASSWORD",
+        "X_USERNAME"
       ],
       "cache": true
     },
