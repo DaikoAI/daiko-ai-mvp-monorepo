@@ -6,7 +6,7 @@
     "nixpacksPlan": {
       "phases": {
         "build": {
-          "cmds": ["pnpm build:selenium-worker"],
+          "cmds": ["pnpm build:selenium-worker"]
         },
         "setup": {
           "nixPkgs": ["chromium", "chromedriver"],
@@ -21,15 +21,15 @@
             "libxshmfence1",
             "libx11-xcb1",
             "libxcb1",
-            "fonts-noto-cjk",
-          ],
+            "fonts-noto-cjk"
+          ]
         },
         "install": {
-          "cmds": ["pnpm install --frozen-lockfile"],
-        },
-      },
+          "cmds": ["pnpm install --frozen-lockfile"]
+        }
+      }
     },
-    "watchPatterns": ["/apps/selenium-worker/**"],
+    "watchPatterns": ["/apps/selenium-worker/**"]
   },
   "deploy": {
     "runtime": "V2",
@@ -39,9 +39,9 @@
     "sleepApplication": false,
     "multiRegionConfig": {
       "asia-southeast1-eqsg3a": {
-        "numReplicas": 1,
-      },
+        "numReplicas": 1
+      }
     },
-    "restartPolicyType": "NEVER",
-  },
+    "restartPolicyType": "NEVER"
+  }
 }
