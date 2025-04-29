@@ -52,31 +52,6 @@ export class XScraper {
   }
 
   /**
-   * Chromeプロセスをクリーンアップ
-   */
-  private cleanupChromeProcesses(): void {
-    if (XScraper.chromeCleaned) {
-      this.logger.debug("XScraper", "Chrome processes already cleaned up");
-      return;
-    }
-    try {
-      if (process.platform === "darwin") {
-        execSync('pkill -f "Google Chrome"');
-      } else if (process.platform === "win32") {
-        execSync("taskkill /F /IM chrome.exe");
-      } else {
-        execSync("pkill -f chrome");
-      }
-      // mark as cleaned to avoid repeating kills
-      XScraper.chromeCleaned = true;
-      this.logger.info("XScraper", "Cleaned up Chrome processes");
-    } catch (error) {
-      // プロセスが見つからない場合などのエラーは無視
-      this.logger.debug("XScraper", "No Chrome processes to clean up");
-    }
-  }
-
-  /**
    * Seleniumドライバーを初期化
    */
   private async initDriver(): Promise<WebDriver> {
@@ -84,11 +59,6 @@ export class XScraper {
       return this.driver;
     }
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
-
-    // 一意なユーザーデータディレクトリを作成
-    const userDataDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "chrome-user-data-"));
-    this.currentDriverUserDataDir = userDataDir;
-    this.logger.debug("XScraper", `Using user data directory: ${userDataDir}`);
 
     try {
       const options = new chrome.Options();
@@ -99,7 +69,7 @@ export class XScraper {
       options.addArguments("--disable-dev-shm-usage");
       options.addArguments("--disable-gpu");
       // 一意なユーザーデータディレクトリを指定
-      options.addArguments(`--user-data-dir=${this.currentDriverUserDataDir}`);
+      // options.addArguments(`--user-data-dir=${this.currentDriverUserDataDir}`);
 
       // 固定User-Agentを設定
       options.addArguments(
