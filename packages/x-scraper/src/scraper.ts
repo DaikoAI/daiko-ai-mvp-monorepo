@@ -426,7 +426,7 @@ export class XScraper {
   /**
    * 登録されたすべてのXアカウントをチェック
    */
-  public async checkXAccounts(concurrency: number = 20): Promise<void> {
+  public async checkXAccounts(concurrency: number = 1): Promise<void> {
     // perform single login to obtain session cookies
     const mainScraper = new XScraper(this.credentials ?? undefined);
 
