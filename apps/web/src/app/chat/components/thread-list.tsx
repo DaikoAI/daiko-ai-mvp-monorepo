@@ -15,7 +15,7 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
   });
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto overscroll-contain">
       <ul className="space-y-2 p-4">
         {threads && threads.length > 0 ? (
           threads.map((thread) => (
@@ -56,7 +56,7 @@ export const ThreadListComponent: React.FC<ThreadListProps> = async ({ searchQue
 
 export const ThreadList = Object.assign(ThreadListComponent, {
   Skeleton: () => (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2">
+    <div className="flex-1 overflow-y-auto p-4 space-y-2 overscroll-contain">
       {[...Array(5)].map((_, i) => (
         <li key={i} className="rounded-xl bg-[rgba(255,255,255,0.12)] p-4 backdrop-blur-sm shadow-sm list-none">
           <div className="flex flex-col gap-1">

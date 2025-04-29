@@ -70,7 +70,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ user, initialSetting
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overscroll-contain">
       <Card glass>
         <CardContent className="pt-6">
           <div className="flex items-center">
