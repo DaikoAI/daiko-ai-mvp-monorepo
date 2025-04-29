@@ -1,5 +1,5 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-import chromium from "@sparticuz/chromium";
+import { execSync } from "child_process";
 import { OpenAI } from "openai";
 import {
   Browser,
@@ -49,59 +49,51 @@ export class XScraper {
 
   /**
    * Chromeプロセスをクリーンアップ
-   * Vercel環境などでは不要/動作しないため削除
    */
-  // private cleanupChromeProcesses(): void {
-  //   if (XScraper.chromeCleaned) {
-  //     this.logger.debug("XScraper", "Chrome processes already cleaned up");
-  //     return;
-  //   }
-  //   try {
-  //     if (process.platform === "darwin") {
-  //       execSync('pkill -f "Google Chrome"');
-  //     } else if (process.platform === "win32") {
-  //       execSync("taskkill /F /IM chrome.exe");
-  //     } else {
-  //       execSync("pkill -f chrome");
-  //     }
-  //     // mark as cleaned to avoid repeating kills
-  //     XScraper.chromeCleaned = true;
-  //     this.logger.info("XScraper", "Cleaned up Chrome processes");
-  //   } catch (error) {
-  //     // プロセスが見つからない場合などのエラーは無視
-  //     this.logger.debug("XScraper", "No Chrome processes to clean up");
-  //   }
-  // }
+  private cleanupChromeProcesses(): void {
+    if (XScraper.chromeCleaned) {
+      this.logger.debug("XScraper", "Chrome processes already cleaned up");
+      return;
+    }
+    try {
+      if (process.platform === "darwin") {
+        execSync('pkill -f "Google Chrome"');
+      } else if (process.platform === "win32") {
+        execSync("taskkill /F /IM chrome.exe");
+      } else {
+        execSync("pkill -f chrome");
+      }
+      // mark as cleaned to avoid repeating kills
+      XScraper.chromeCleaned = true;
+      this.logger.info("XScraper", "Cleaned up Chrome processes");
+    } catch (error) {
+      // プロセスが見つからない場合などのエラーは無視
+      this.logger.debug("XScraper", "No Chrome processes to clean up");
+    }
+  }
 
   /**
    * Seleniumドライバーを初期化（シングルインスタンス）
-   * @sparticuz/chromium を使用
    */
   private async initDriver(): Promise<WebDriver> {
     if (this.driver) {
       return this.driver;
     }
 
-    this.logger.info("XScraper", "Initializing Selenium WebDriver using @sparticuz/chromium");
+    this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
+      this.cleanupChromeProcesses();
+
       const options = new chrome.Options();
-
-      // @sparticuz/chromium のデフォルト引数を追加
-      chromium.args.forEach((arg) => options.addArguments(arg));
-
-      // ヘッドレスモードなどの必要な引数を追加（@sparticuz/chromiumのデフォルトに含まれる場合あり）
-      if (!chromium.args.includes("--headless=new")) {
-        // headless=new が推奨
-        options.addArguments("--headless=new");
-      }
+      options.addArguments("--headless");
       options.addArguments("--window-size=1920,3000");
       options.addArguments("--disable-blink-features=AutomationControlled");
-      // options.addArguments("--no-sandbox"); // sparticuzに含まれる
-      // options.addArguments("--disable-dev-shm-usage"); // sparticuzに含まれる
-      // options.addArguments("--disable-gpu"); // sparticuzに含まれる
+      options.addArguments("--no-sandbox");
+      options.addArguments("--disable-dev-shm-usage");
+      options.addArguments("--disable-gpu");
 
-      // 固定User-Agentを設定 (必要に応じて)
+      // 固定User-Agentを設定
       options.addArguments(
         "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       );
@@ -115,21 +107,9 @@ export class XScraper {
       // インコグニートモードを使用してクリーンな状態を保証
       options.addArguments("--incognito");
 
-      // Vercel環境で書き込み可能な /tmp を使用するように関連パスを指定
-      options.addArguments(`--user-data-dir=/tmp/user-data`);
-      options.addArguments(`--data-path=/tmp/data-path`);
-      options.addArguments(`--disk-cache-dir=/tmp/cache-dir`);
-      options.addArguments(`--homedir=/tmp`);
-      options.addArguments(`--crash-dumps-dir=/tmp/crash-dumps`);
-
-      // @sparticuz/chromium の Chromium 実行ファイルのパスを設定
-      const executablePath = await chromium.executablePath();
-      options.setChromeBinaryPath(executablePath);
-
-      // ServiceBuilderの設定を削除し、selenium-webdriverの自動検出に任せる
       this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
 
-      // CDP経由で自動化フラグを変更 (必要であれば)
+      // CDP経由で自動化フラグを変更
       await this.driver.executeScript(`
         Object.defineProperty(navigator, 'webdriver', {
           get: () => undefined
@@ -138,9 +118,11 @@ export class XScraper {
 
       // inject session cookies if present
       if (this.sessionCookies && this.sessionCookies.length > 0) {
+        // navigate to base domain to apply cookies
         await this.driver.get("https://x.com");
         for (const cookie of this.sessionCookies) {
           try {
+            // cast to SeleniumCookie to satisfy overload
             await this.driver.manage().addCookie(cookie as SeleniumCookie);
           } catch (e) {
             this.logger.debug("XScraper", "Failed to add cookie", e);

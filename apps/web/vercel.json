@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/portfolio-snapshot",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/x-scraper",
-      "schedule": "*/10 * * * *"
     }
   ]
 }
