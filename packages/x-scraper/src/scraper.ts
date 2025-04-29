@@ -1,5 +1,4 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-import { execSync } from "node:child_process";
 import { OpenAI } from "openai";
 import {
   Browser,
@@ -12,8 +11,6 @@ import {
 } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
 
 // Xアカウントのログイン情報の型定義
@@ -33,8 +30,7 @@ export class XScraper {
     level: LogLevel.INFO,
   });
   private credentials: XCredentials | null = null;
-  // static flag to ensure Chrome processes are cleaned up only once
-  private static chromeCleaned = false;
+
   private currentDriverUserDataDir: string | null = null;
 
   constructor(credentials?: XCredentials, sessionCookies?: any[]) {

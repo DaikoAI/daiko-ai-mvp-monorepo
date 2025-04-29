@@ -1,0 +1,43 @@
+# Stage 1: Build selenium-worker only
+FROM node:22-slim AS builder
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy monorepo manifests and config
+COPY package.json pnpm-lock.yaml turbo.json ./
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy only packages needed for selenium-worker build
+COPY apps/selenium-worker ./apps/selenium-worker
+COPY packages/shared ./packages/shared
+COPY packages/x-scraper ./packages/x-scraper
+
+# Build selenium-worker
+RUN pnpm build --filter=@daiko-ai/selenium-worker
+
+# Prune to production dependencies for selenium-worker
+RUN pnpm install --prod --filter=@daiko-ai/selenium-worker
+
+# Stage 2: Runtime image with Chromium
+FROM node:22-slim AS runner
+WORKDIR /app
+
+# Install Chromium and its driver and required libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium chromium-driver \
+    libnss3 libxss1 libasound2 \
+    libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+    libxcomposite1 libxdamage1 libxrandr2 libgbm1 libxshmfence1 \
+    libx11-xcb1 libxcb1 fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy production Node modules and compiled code
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/selenium-worker/dist ./apps/selenium-worker/dist
+
+# Run the cron entrypoint
+CMD ["node", "--enable-source-maps", "apps/selenium-worker/dist/index.js"]
