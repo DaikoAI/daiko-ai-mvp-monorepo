@@ -118,6 +118,10 @@
   --success-foreground: oklch(0.98 0 0);
 }
 
+html {
+  overscroll-behavior: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

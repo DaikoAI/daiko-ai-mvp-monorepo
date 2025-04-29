@@ -272,6 +272,14 @@ const seedTokens = async () => {
         type: "normal",
         iconUrl: "/tokens/Fartcoin.png",
       },
+      {
+        address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
+        symbol: "MELANIA",
+        name: "MELANIA",
+        decimals: 6,
+        type: "normal",
+        iconUrl: "/tokens/MELANIA.webp",
+      },
     ];
 
     const existingTokens = await db.select().from(tokensTable);
@@ -525,25 +533,25 @@ const seedProposals = async (userIds: string[]) => {
         },
       },
       {
-        title: "Reduce 80% $BONK Exposure Due to Whale Selling",
-        summary: "Sell 75% of your 150M BONK tokens ($1,500) to protect against imminent price decline",
+        title: "Reduce 80% $MELANIA Exposure Due to Roadmap Uncertainty",
+        summary: "Sell 75% of your 100M MELANIA tokens ($1,200) to mitigate risk after recent project announcements",
         reason: [
-          "Top 20 wallets reduced holdings by 18.7% in the past 36 hours",
-          "$BONK founder left the project",
-          "$BONK already experienced 2.1% price decline",
+          "Top 15 wallets reduced holdings by 15% in the past 48 hours",
+          "$MELANIA team announced no significant roadmap updates planned for the near future",
+          "$MELANIA price has declined 3.5% since the announcement",
         ],
         sources: [
-          { name: "$BONK Whale Wallet Movement Analysis", url: "#" },
-          { name: "$BONK Founder's Exit Announcement", url: "#" },
-          { name: "DEX Order Book Depth Analysis", url: "#" },
+          { name: "$MELANIA Wallet Movement Tracker", url: "#" },
+          { name: "$MELANIA Project Announcement", url: "#" },
+          { name: "DEX Price Action Analysis", url: "#" },
         ],
         type: "risk",
         proposedBy: "Daiko AI",
         userId: userIds[0],
         expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24),
         financialImpact: {
-          currentValue: 1500,
-          projectedValue: 900,
+          currentValue: 1200, // Assuming 100M MELANIA = $1200
+          projectedValue: 720, // Assuming 40% potential decline
           percentChange: -40,
           timeFrame: "7 days",
           riskLevel: "high",
@@ -551,41 +559,42 @@ const seedProposals = async (userIds: string[]) => {
         status: "active",
         contractCall: {
           type: "swap",
-          description: "Sell 75% of BONK holdings for USDC",
+          description: "Sell 75% of MELANIA holdings for USDC",
           params: {
             fromToken: {
-              symbol: "BONK",
-              address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+              symbol: "MELANIA",
+              // NOTE: Using a placeholder address as MELANIA is not in seedTokens
+              address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
             },
             toToken: {
               symbol: "USDC",
               address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             },
-            fromAmount: 112500000,
+            fromAmount: 75000000, // 75% of 100M
           },
         },
       },
       {
-        title: "Stake 15.8 SOL in Jupiter's JupSOL for Enhanced Yields",
+        title: "Stake 4 SOL in Jito's jitoSOL for Enhanced Yields",
         summary:
-          "Earn 8.24% APY by converting your idle 15.8 SOL ($3,243) to JupSOL, Jupiter's high-yield liquid staking token",
+          "Earn 8.24% APY by converting your idle 4 SOL ($595.92) to jitoSOL, Jito's high-yield liquid staking token",
         reason: [
-          "You have 15.8 SOL ($3,243) sitting idle in your wallet",
-          "JupSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+          "You have 4 SOL ($595.92) sitting idle in your wallet", // Updated value
+          "jitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
           "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
         ],
         sources: [
-          { name: "Jupiter JupSOL Documentation", url: "#" },
+          { name: "Jito jitoSOL Documentation", url: "#" },
           { name: "Solana LST Comparison Analysis", url: "#" },
-          { name: "JupSOL Performance Metrics", url: "#" },
+          { name: "jitoSOL Performance Metrics", url: "#" },
         ],
         type: "stake",
         proposedBy: "Daiko AI",
         userId: userIds[0],
         expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72),
         financialImpact: {
-          currentValue: 3243,
-          projectedValue: 3510,
+          currentValue: 595.92, // Updated value (4 * 148.98)
+          projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)
           percentChange: 8.24,
           timeFrame: "1 year",
           riskLevel: "low",
@@ -593,17 +602,17 @@ const seedProposals = async (userIds: string[]) => {
         status: "active",
         contractCall: {
           type: "stake",
-          description: "Stake SOL to jupSOL for higher yields",
+          description: "Stake SOL to jitoSOL for higher yields",
           params: {
             fromToken: {
               symbol: "SOL",
               address: "So11111111111111111111111111111111111111112",
             },
             toToken: {
-              symbol: "jupSOL",
-              address: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
+              symbol: "jitoSOL",
+              address: "jitoSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
             },
-            fromAmount: 15.8,
+            fromAmount: 4, // Corrected amount
           },
         },
       },
