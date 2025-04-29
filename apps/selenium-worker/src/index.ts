@@ -1,6 +1,7 @@
+import "dotenv/config"; // Load .env file if present
+
 import { Logger, LogLevel } from "@daiko-ai/shared";
 import { XScraper } from "@daiko-ai/x-scraper";
-import "dotenv/config"; // Load .env file if present
 
 const logger = new Logger({ level: LogLevel.INFO });
 
