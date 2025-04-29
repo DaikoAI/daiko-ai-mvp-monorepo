@@ -35,6 +35,7 @@ export class XScraper {
   private credentials: XCredentials | null = null;
   // static flag to ensure Chrome processes are cleaned up only once
   private static chromeCleaned = false;
+  private currentDriverUserDataDir: string | null = null;
 
   constructor(credentials?: XCredentials, sessionCookies?: any[]) {
     this.openai = new OpenAI({
@@ -76,22 +77,20 @@ export class XScraper {
   }
 
   /**
-   * Seleniumドライバーを初期化（シングルインスタンス）
+   * Seleniumドライバーを初期化
    */
   private async initDriver(): Promise<WebDriver> {
     if (this.driver) {
       return this.driver;
     }
-
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     // 一意なユーザーデータディレクトリを作成
     const userDataDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "chrome-user-data-"));
+    this.currentDriverUserDataDir = userDataDir;
     this.logger.debug("XScraper", `Using user data directory: ${userDataDir}`);
 
     try {
-      this.cleanupChromeProcesses();
-
       const options = new chrome.Options();
       options.addArguments("--headless");
       options.addArguments("--window-size=1920,3000");
@@ -100,7 +99,7 @@ export class XScraper {
       options.addArguments("--disable-dev-shm-usage");
       options.addArguments("--disable-gpu");
       // 一意なユーザーデータディレクトリを指定
-      options.addArguments(`--user-data-dir=${userDataDir}`);
+      options.addArguments(`--user-data-dir=${this.currentDriverUserDataDir}`);
 
       // 固定User-Agentを設定
       options.addArguments(
@@ -144,20 +143,29 @@ export class XScraper {
       return this.driver;
     } catch (error) {
       // エラー発生時にも一時ディレクトリを削除する試み
-      try {
-        await fs.promises.rm(userDataDir, { recursive: true, force: true });
-        this.logger.debug("XScraper", `Cleaned up user data directory on error: ${userDataDir}`);
-      } catch (cleanupError) {
-        this.logger.warn("XScraper", `Failed to cleanup user data directory ${userDataDir} on error`, cleanupError);
+      if (this.currentDriverUserDataDir) {
+        const dirPath = this.currentDriverUserDataDir;
+        try {
+          await fs.promises.rm(dirPath, { recursive: true, force: true });
+          this.logger.debug("XScraper", `Cleaned up user data directory on error: ${dirPath}`);
+        } catch (cleanupError) {
+          this.logger.warn("XScraper", `Failed to cleanup user data directory ${dirPath} on error`, cleanupError);
+        }
+        this.currentDriverUserDataDir = null;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error("XScraper", "Failed to initialize WebDriver", {
+          error: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw new Error(`WebDriver initialization failed (using ${dirPath}): ${errorMessage}`);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error("XScraper", "Failed to initialize WebDriver before userDataDir creation", {
+          error: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw new Error(`WebDriver initialization failed: ${errorMessage}`);
       }
-
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error("XScraper", "Failed to initialize WebDriver", {
-        error: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      // エラーメッセージに user-data-dir を含める
-      throw new Error(`WebDriver initialization failed (using ${userDataDir}): ${errorMessage}`);
     }
   }
 
@@ -416,18 +424,23 @@ export class XScraper {
   }
 
   /**
-   * 登録されたすべてのXアカウントをチェック（シングルドライバー＋マルチタブ並列処理）
+   * 登録されたすべてのXアカウントをチェック
    */
-  public async checkXAccounts(concurrency: number = 100): Promise<void> {
+  public async checkXAccounts(concurrency: number = 20): Promise<void> {
     // perform single login to obtain session cookies
     const mainScraper = new XScraper(this.credentials ?? undefined);
+
+    // 最初のログイン前のクリーンアップ（必要であれば）
+    // mainScraper.cleanupChromeProcesses();
+
     const loggedIn = await mainScraper.login();
     if (!loggedIn) {
       this.logger.error("XScraper", "Login failed, aborting checkXAccounts");
+      await mainScraper.closeDriver(); // Ensure cleanup even on login failure
       return;
     }
     const baseCookies = mainScraper.sessionCookies ?? [];
-    await mainScraper.closeDriver();
+    await mainScraper.closeDriver(); // メインのログイン用ドライバーは閉じる
 
     this.logger.info("XScraper", `Starting scraping all X accounts with concurrency=${concurrency}`);
     const accounts = await getAllXAccounts();
@@ -455,7 +468,7 @@ export class XScraper {
           } catch (err) {
             this.logger.error("XScraper", `Error scraping ${acc.id}:`, err);
           } finally {
-            await scraper.closeDriver();
+            await scraper.closeDriver(); // 各インスタンスの closeDriver でクリーンアップ
           }
         })();
       });
@@ -473,29 +486,32 @@ export class XScraper {
    */
   public async closeDriver(): Promise<void> {
     if (this.driver) {
-      let userDataDir: string | null = null;
-      // NOTE: ここで userDataDir を確実に取得・削除するには、
-      // initDriver で作成したパスをクラス変数に保存しておく必要があります。
-      // 例: private currentDriverUserDataDir: string | null = null;
-      //     initDriver 内で this.currentDriverUserDataDir = userDataDir;
-      //     closeDriver 内で userDataDir = this.currentDriverUserDataDir;
+      const dirToClean = this.currentDriverUserDataDir;
       try {
         await this.driver.quit();
       } catch (err) {
         this.logger.error("XScraper", "Error closing WebDriver", err);
       } finally {
-        // クラス変数などに保存しておいた userDataDir をここで削除する
-        // if (this.currentDriverUserDataDir) {
-        //    try {
-        //       await fs.promises.rm(this.currentDriverUserDataDir, { recursive: true, force: true });
-        //       this.logger.debug("XScraper", `Cleaned up user data directory: ${this.currentDriverUserDataDir}`);
-        //    } catch (cleanupError) {
-        //       this.logger.warn("XScraper", `Failed to cleanup user data directory ${this.currentDriverUserDataDir}`, cleanupError);
-        //    }
-        //    this.currentDriverUserDataDir = null; // リセット
-        // }
+        if (dirToClean) {
+          try {
+            await fs.promises.rm(dirToClean, { recursive: true, force: true });
+            this.logger.debug("XScraper", `Cleaned up user data directory: ${dirToClean}`);
+          } catch (cleanupError) {
+            this.logger.warn("XScraper", `Failed to cleanup user data directory ${dirToClean}`, cleanupError);
+          }
+        }
         this.driver = null;
+        this.currentDriverUserDataDir = null;
       }
+    } else if (this.currentDriverUserDataDir) {
+      const dirToClean = this.currentDriverUserDataDir;
+      try {
+        await fs.promises.rm(dirToClean, { recursive: true, force: true });
+        this.logger.debug("XScraper", `Cleaned up user data directory after init error: ${dirToClean}`);
+      } catch (cleanupError) {
+        this.logger.warn("XScraper", `Failed cleanup after init error ${dirToClean}`, cleanupError);
+      }
+      this.currentDriverUserDataDir = null;
     }
   }
 }
