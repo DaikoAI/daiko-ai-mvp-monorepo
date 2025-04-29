@@ -28,7 +28,8 @@
     },
     "start": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["OPENAI_API_KEY", "DATABASE_URL", "X_EMAIL", "X_PASSWORD", "X_USERNAME"]
     },
     "dev:cron": {
       "cache": false,
