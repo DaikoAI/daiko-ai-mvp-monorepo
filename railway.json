@@ -4,6 +4,7 @@
     "builder": "NIXPACKS",
     "buildCommand": "pnpm run build:selenium-worker",
     "nixpacksPlan": {
+      "providers": ["node"],
       "phases": {
         "build": {
           "cmds": ["pnpm build:selenium-worker"]
