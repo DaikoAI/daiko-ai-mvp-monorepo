@@ -115,6 +115,13 @@ export class XScraper {
       // インコグニートモードを使用してクリーンな状態を保証
       options.addArguments("--incognito");
 
+      // Vercel環境で書き込み可能な /tmp を使用するように関連パスを指定
+      options.addArguments(`--user-data-dir=/tmp/user-data`);
+      options.addArguments(`--data-path=/tmp/data-path`);
+      options.addArguments(`--disk-cache-dir=/tmp/cache-dir`);
+      options.addArguments(`--homedir=/tmp`);
+      options.addArguments(`--crash-dumps-dir=/tmp/crash-dumps`);
+
       // @sparticuz/chromium の Chromium 実行ファイルのパスを設定
       const executablePath = await chromium.executablePath();
       options.setChromeBinaryPath(executablePath);
