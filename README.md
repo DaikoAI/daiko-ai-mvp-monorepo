@@ -1,42 +1,42 @@
 # Daiko AI MVP Monorepo
 
-## 概要
+## Overview
 
-Daiko AIは、暗号資産トレーダーのためのAIパワードトレーディングアシスタントです。ソーシャルメディア、ニュース、オンチェーンデータを統合し、高度な分析と取引提案を提供します。
+Daiko AI is an AI-powered trading assistant for cryptocurrency traders. It integrates social media, news, and on-chain data to provide advanced analysis and trading proposals.
 
-## 主な機能
+## Key Features
 
-- リアルタイムのマーケットデータ監視
-- ソーシャルメディア（X、Farcaster）の感情分析
-- ニュースサイトからの情報収集
-- オンチェーンデータの分析
-- AIによる取引提案生成
-- ユーザーポートフォリオのパフォーマンス追跡
+- Real-time market data monitoring
+- Sentiment analysis from social media (X, Farcaster)
+- Information gathering from news sites
+- On-chain data analysis
+- AI-generated trading proposals
+- User portfolio performance tracking
 
-## 技術スタック
+## Technology Stack
 
-- **フロントエンド**:
+- **Frontend**:
 
   - Next.js 15
   - shadcn/ui
   - Serwist (PWA)
 
-- **バックエンド**:
+- **Backend**:
 
   - trpc
   - Route Handler
 
-- **データベース**:
+- **Database**:
 
-  - NeonDB(Postgres)
+  - NeonDB (Postgres)
 
-- **インフラ・SaaS**:
+- **Infrastructure/SaaS**:
   - Vercel
     - Hosting
   - Inngest
     - Job queue
 
-## プロジェクト構成
+## Project Structure
 
 ```zsh
 .
@@ -45,35 +45,35 @@ Daiko AIは、暗号資産トレーダーのためのAIパワードトレーデ�
 ├── turbo.json
 ├── pnpm-workspace.yaml
 ├── apps
-│   ├── news-scraper-job      # ニュースサイトスクレイパージョブ
-│   ├── web                  # メインのウェブアプリケーション (Next.js)
+│   ├── news-scraper-job      # News site scraper job
+│   ├── web                  # Main web application (Next.js)
 │   │   ├── src
 │   │   ├── public
 │   │   └── package.json
-│   └── x-scraper-job        # Xスクレイパージョブ
-├── docs                     # ドキュメント
-│   ├── db                   # データベースドキュメント
-│   │   ├── schema.dbml      # データベーススキーマ
-│   │   └── erd.svg          # データベースER図
-│   └── graph.png            # エージェントアーキテクチャ図
-│   └── specs                # 要件定義などを格納
+│   └── x-scraper-job        # X scraper job
+├── docs                     # Documentation
+│   ├── db                   # Database documentation
+│   │   ├── schema.dbml      # Database schema
+│   │   └── erd.svg          # Database ER diagram
+│   └── graph.png            # Agent architecture diagram
+│   └── specs                # Contains requirement definitions, etc.
 ├── packages
-│   ├── shared               # 共有コード、型定義、ユーティリティ
+│   ├── shared               # Shared code, type definitions, utilities
 │   │   ├── src
 │   │   └── package.json
-│   ├── news-scraper         # ニュースサイトスクレイパー
+│   ├── news-scraper         # News site scraper
 │   │   ├── src
 │   │   └── package.json
-│   └── x-scraper            # X (Twitter) スクレイパー
+│   └── x-scraper            # X (Twitter) scraper
 │       ├── src
 │       └── package.json
 └── scripts
-    └── clean-packages.sh    # ビルドファイルのクリーンアップ
+    └── clean-packages.sh    # Build file cleanup
 ```
 
-## アーキテクチャ
+## Architecture
 
-### 全体アーキテクチャ
+### Overall Architecture
 
 ```mermaid
 flowchart TB
@@ -190,76 +190,76 @@ flowchart TB
 
 ![Agent Architecture](./docs/graph.png)
 
-## セットアップ手順
+## Setup Instructions
 
-### 前提条件
+### Prerequisites
 
-- Node.js 20以上
-- pnpm 10.6.3以上
-- Firebase CLIツール
+- Node.js 20 or higher
+- pnpm 10.6.3 or higher
+- Firebase CLI tools
 
-### 開発環境のセットアップ
+### Development Environment Setup
 
-1. リポジトリのクローン
+1. Clone the repository
 
 ```bash
 git clone https://github.com/your-org/daiko-ai-mvp-monorepo.git
 cd daiko-ai-mvp-monorepo
 ```
 
-2. 依存関係のインストール
+2. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-3. 環境変数の設定
+3. Configure environment variables
 
 ```bash
-# webアプリ用
+# For the web app
 cp apps/web/.env.example apps/web/.env
-# 必要な環境変数を設定
+# Set the necessary environment variables
 
-# スクレイパー用
+# For the scrapers
 cp packages/news-scraper/.env.example packages/news-scraper/.env
-# 必要な環境変数を設定
+# Set the necessary environment variables
 ```
 
-4. 開発サーバーの起動
+4. Start the development servers
 
 ```bash
-# フロントエンド
+# Frontend
 pnpm dev:web
 
-# X (Twitter) スクレイパー
+# X (Twitter) Scraper
 pnpm dev:x-scraper
 
-# ニューススクレイパー
+# News Scraper
 pnpm dev:news-scraper
 ```
 
-## データベース操作 (Drizzle ORM + Neon Postgres)
+## Database Operations (Drizzle ORM + Neon Postgres)
 
-このプロジェクトでは、データベースアクセスに [Drizzle ORM](https://orm.drizzle.team) と [Neon Postgres](https://neon.tech) を使用しています。データベーススキーマと共通クエリは `packages/shared` パッケージで一元管理されています。
+This project uses [Drizzle ORM](https://orm.drizzle.team) and [Neon Postgres](https://neon.tech) for database access. The database schema and common queries are centrally managed in the `packages/shared` package.
 
-### セットアップ
+### Setup
 
-1. `.env` ファイルを作成し、Neon データベースの接続情報を設定:
+1. Create a `.env` file and set the Neon database connection information:
 
 ```
 DATABASE_URL=postgres://username:password@ep-xxx-xxx-xxx.region.aws.neon.tech/neondb
 ```
 
-2. 必要なパッケージをインストール:
+2. Install the required packages:
 
 ```bash
 pnpm add -F @daiko-ai/shared @neondatabase/serverless dotenv drizzle-orm
 pnpm add -D drizzle-kit
 ```
 
-### スキーマ定義
+### Schema Definition
 
-スキーマは `packages/shared/src/db/schema` ディレクトリに定義されています。新しいテーブルを追加する場合は、このディレクトリに新しいファイルを作成し、`index.ts` からエクスポートしてください。
+The schema is defined in the `packages/shared/src/db/schema` directory. If you add a new table, create a new file in this directory and export it from `index.ts`.
 
 ```typescript
 // packages/shared/src/db/schema/example.ts
@@ -275,86 +275,86 @@ export type Example = typeof exampleTable.$inferSelect;
 export type NewExample = typeof exampleTable.$inferInsert;
 ```
 
-### マイグレーション
+### Migrations
 
-#### マイグレーションファイルの生成
+#### Generating Migration Files
 
-スキーマの変更を行った後、以下のコマンドでマイグレーションファイルを生成します：
+After making schema changes, generate migration files with the following command:
 
 ```bash
 pnpm db:generate
 ```
 
-生成されたマイグレーションファイルは `migrations` ディレクトリに保存されます。
+The generated migration files are saved in the `migrations` directory.
 
-#### データベースへの反映
+#### Applying to the Database
 
-マイグレーションをデータベースに適用するには、以下のコマンドを実行します：
+To apply migrations to the database, execute the following command:
 
 ```bash
-# マイグレーションファイルを使用してDBを更新
+# Update DB using migration files
 pnpm run -F @daiko-ai/shared migrate
 
-# または直接スキーマを反映（開発時のみ推奨）
+# Or directly apply schema (Recommended for development only)
 pnpm db:push
 ```
 
-### データベース操作
+### Database Operations
 
-#### 接続
+#### Connection
 
-`packages/shared/src/db/connection.ts` からデータベース接続をインポートして使用します：
+Import the database connection from `packages/shared/src/db/connection.ts` to use it:
 
 ```typescript
 import { db } from "@daiko-ai/shared/src/db/connection";
 ```
 
-#### 共通クエリ
+#### Common Queries
 
-共通クエリ関数は `packages/shared/src/db/queries` に定義されています。
+Common query functions are defined in `packages/shared/src/db/queries`.
 
 ```typescript
 import { getUserById, createUser } from "@daiko-ai/shared/src/db/queries/users";
 
-// ユーザー取得
+// Get user
 const user = await getUserById(1);
 
-// ユーザー作成
+// Create user
 await createUser({
-  name: "ユーザー名",
+  name: "Username",
   age: 30,
   email: "user@example.com",
 });
 ```
 
-#### カスタムクエリ
+#### Custom Queries
 
-パッケージ固有のクエリロジックは、各パッケージ内で定義してください：
+Define package-specific query logic within each package:
 
 ```typescript
 import { db } from "@daiko-ai/shared/src/db/connection";
 import { eq } from "drizzle-orm";
 import { usersTable } from "@daiko-ai/shared/src/db/schema/users";
 
-// カスタムクエリ
+// Custom query
 export async function findUsersByAge(age: number) {
   return db.select().from(usersTable).where(eq(usersTable.age, age));
 }
 ```
 
-### 開発ツール
+### Development Tools
 
-Drizzle Studio を使ってデータベースを視覚的に操作できます：
+You can visually interact with the database using Drizzle Studio:
 
 ```bash
 pnpm db:studio
 ```
 
-ブラウザで `http://localhost:4983` を開くと、テーブルやデータを確認・編集できます。
+Open `http://localhost:4983` in your browser to view and edit tables and data.
 
-### 推奨プラクティス
+### Recommended Practices
 
-1. **スキーマ設計**: アプリケーション全体で共通のスキーマを `shared` パッケージで管理
-2. **クエリ分離**: 共通クエリは `shared` パッケージに、パッケージ固有のクエリは各パッケージに配置
-3. **マイグレーション管理**: スキーマの変更は必ずマイグレーションを通して行う
-4. **型安全性**: 常にDrizzleの型定義（`$inferSelect`、`$inferInsert`）を活用する
+1.  **Schema Design**: Manage the common schema for the entire application in the `shared` package.
+2.  **Query Separation**: Place common queries in the `shared` package and package-specific queries in their respective packages.
+3.  **Migration Management**: Always perform schema changes through migrations.
+4.  **Type Safety**: Consistently utilize Drizzle's type definitions (`$inferSelect`, `$inferInsert`).

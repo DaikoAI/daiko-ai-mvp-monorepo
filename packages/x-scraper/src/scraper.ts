@@ -116,7 +116,8 @@ export class XScraper {
       options.addArguments("--incognito");
 
       // @sparticuz/chromium の Chromium 実行ファイルのパスを設定
-      const executablePath = await chromium.executablePath();
+      // Explicitly tell executablePath to use /tmp as the base path for extraction/lookup
+      const executablePath = await chromium.executablePath("/tmp");
       options.setChromeBinaryPath(executablePath);
 
       this.driver = await new Builder()
