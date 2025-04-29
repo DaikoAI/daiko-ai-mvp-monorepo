@@ -1,5 +1,5 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-import * as chromedriver from "chromedriver";
+import chromium from "@sparticuz/chromium";
 import { OpenAI } from "openai";
 import {
   Browser,
@@ -75,26 +75,33 @@ export class XScraper {
 
   /**
    * Seleniumドライバーを初期化（シングルインスタンス）
+   * @sparticuz/chromium を使用
    */
   private async initDriver(): Promise<WebDriver> {
     if (this.driver) {
       return this.driver;
     }
 
-    this.logger.info("XScraper", "Initializing Selenium WebDriver");
+    this.logger.info("XScraper", "Initializing Selenium WebDriver using @sparticuz/chromium");
 
     try {
-      // this.cleanupChromeProcesses(); // pkill が使えない環境があるので削除
-
       const options = new chrome.Options();
-      options.addArguments("--headless");
+
+      // @sparticuz/chromium のデフォルト引数を追加
+      chromium.args.forEach((arg) => options.addArguments(arg));
+
+      // ヘッドレスモードなどの必要な引数を追加（@sparticuz/chromiumのデフォルトに含まれる場合あり）
+      if (!chromium.args.includes("--headless=new")) {
+        // headless=new が推奨
+        options.addArguments("--headless=new");
+      }
       options.addArguments("--window-size=1920,3000");
       options.addArguments("--disable-blink-features=AutomationControlled");
-      options.addArguments("--no-sandbox");
-      options.addArguments("--disable-dev-shm-usage");
-      options.addArguments("--disable-gpu");
+      // options.addArguments("--no-sandbox"); // sparticuzに含まれる
+      // options.addArguments("--disable-dev-shm-usage"); // sparticuzに含まれる
+      // options.addArguments("--disable-gpu"); // sparticuzに含まれる
 
-      // 固定User-Agentを設定
+      // 固定User-Agentを設定 (必要に応じて)
       options.addArguments(
         "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       );
@@ -108,16 +115,17 @@ export class XScraper {
       // インコグニートモードを使用してクリーンな状態を保証
       options.addArguments("--incognito");
 
-      // chromedriver のパスを指定する ServiceBuilder を作成
-      const service = new chrome.ServiceBuilder(chromedriver.path);
+      // @sparticuz/chromium の Chromium 実行ファイルのパスを設定
+      const executablePath = await chromium.executablePath();
+      options.setChromeBinaryPath(executablePath);
 
       this.driver = await new Builder()
         .forBrowser(Browser.CHROME)
         .setChromeOptions(options)
-        .setChromeService(service) // .build() せずに ServiceBuilder インスタンスを渡す
+        // ServiceBuilder は @sparticuz/chromium では不要
         .build();
 
-      // CDP経由で自動化フラグを変更
+      // CDP経由で自動化フラグを変更 (必要であれば)
       await this.driver.executeScript(`
         Object.defineProperty(navigator, 'webdriver', {
           get: () => undefined
@@ -126,11 +134,9 @@ export class XScraper {
 
       // inject session cookies if present
       if (this.sessionCookies && this.sessionCookies.length > 0) {
-        // navigate to base domain to apply cookies
         await this.driver.get("https://x.com");
         for (const cookie of this.sessionCookies) {
           try {
-            // cast to SeleniumCookie to satisfy overload
             await this.driver.manage().addCookie(cookie as SeleniumCookie);
           } catch (e) {
             this.logger.debug("XScraper", "Failed to add cookie", e);
