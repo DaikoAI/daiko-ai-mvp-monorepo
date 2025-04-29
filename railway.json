@@ -12,6 +12,7 @@
         "setup": {
           "nixPkgs": ["chromium", "chromedriver", "nodePackages.pnpm"],
           "aptPkgs": [
+            "nodejs",
             "libnss3",
             "libxss1",
             "libasound2",
