@@ -19,7 +19,6 @@
     "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   },
-  "packageManager": "pnpm@10.10.0",
   "engines": {
     "node": ">=18"
   }

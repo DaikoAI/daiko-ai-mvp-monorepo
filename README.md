@@ -45,12 +45,12 @@ Daiko AI is an AI-powered trading assistant for cryptocurrency traders. It integ
 ├── turbo.json
 ├── pnpm-workspace.yaml
 ├── apps
-│   ├── news-scraper-job      # News site scraper job
+│   ├── lp                   # Landing page
+│   ├── selenium-worker      # X scraper job
 │   ├── web                  # Main web application (Next.js)
 │   │   ├── src
 │   │   ├── public
 │   │   └── package.json
-│   └── x-scraper-job        # X scraper job
 ├── docs                     # Documentation
 │   ├── db                   # Database documentation
 │   │   ├── schema.dbml      # Database schema
