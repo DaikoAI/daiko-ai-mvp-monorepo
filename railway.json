@@ -9,7 +9,7 @@
           "cmds": ["pnpm build:selenium-worker"]
         },
         "setup": {
-          "nixPkgs": ["chromium", "chromedriver"],
+          "nixPkgs": ["chromium", "chromedriver", "nodePackages.pnpm"],
           "aptPkgs": [
             "libnss3",
             "libxss1",
