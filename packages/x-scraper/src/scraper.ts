@@ -1,5 +1,5 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
 import { OpenAI } from "openai";
 import {
   Browser,
