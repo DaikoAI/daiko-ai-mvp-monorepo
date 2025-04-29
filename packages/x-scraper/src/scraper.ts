@@ -116,15 +116,11 @@ export class XScraper {
       options.addArguments("--incognito");
 
       // @sparticuz/chromium の Chromium 実行ファイルのパスを設定
-      // Explicitly tell executablePath to use /tmp as the base path for extraction/lookup
-      const executablePath = await chromium.executablePath("/tmp");
+      const executablePath = await chromium.executablePath();
       options.setChromeBinaryPath(executablePath);
 
-      this.driver = await new Builder()
-        .forBrowser(Browser.CHROME)
-        .setChromeOptions(options)
-        // ServiceBuilder は @sparticuz/chromium では不要
-        .build();
+      // ServiceBuilderの設定を削除し、selenium-webdriverの自動検出に任せる
+      this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
 
       // CDP経由で自動化フラグを変更 (必要であれば)
       await this.driver.executeScript(`
