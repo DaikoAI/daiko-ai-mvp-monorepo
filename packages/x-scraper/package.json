@@ -16,20 +16,20 @@
   },
   "dependencies": {
     "@daiko-ai/shared": "workspace:*",
-    "@hono/node-server": "^1.14.0",
-    "@neondatabase/serverless": "^0.9.0",
+    "@hono/node-server": "^1.14.1",
+    "@neondatabase/serverless": "^0.9.5",
     "chromedriver": "^135.0.4",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.5.0",
     "drizzle-orm": "^0.42.0",
-    "hono": "^4.7.5",
-    "openai": "^4.90.0",
-    "selenium-webdriver": "^4.30.0"
+    "hono": "^4.7.8",
+    "openai": "^4.96.0",
+    "selenium-webdriver": "^4.31.0"
   },
   "devDependencies": {
     "@types/chromedriver": "^81.0.5",
     "@types/selenium-webdriver": "^4.1.28",
-    "@types/uuid": "^9.0.7",
-    "typescript": "^5.3.3",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.8.3",
     "uuid": "^9.0.1"
   }
 }

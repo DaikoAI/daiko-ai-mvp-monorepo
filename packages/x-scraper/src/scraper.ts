@@ -108,13 +108,13 @@ export class XScraper {
       // インコグニートモードを使用してクリーンな状態を保証
       options.addArguments("--incognito");
 
-      // chromedriver のパスを直接オプションに設定
-      options.setChromeBinaryPath(chromedriver.path);
+      // chromedriver のパスを指定する ServiceBuilder を作成
+      const service = new chrome.ServiceBuilder(chromedriver.path);
 
       this.driver = await new Builder()
         .forBrowser(Browser.CHROME)
         .setChromeOptions(options)
-        // .setChromeService(service) // ServiceBuilder を使わないのでコメントアウト
+        .setChromeService(service) // .build() せずに ServiceBuilder インスタンスを渡す
         .build();
 
       // CDP経由で自動化フラグを変更
