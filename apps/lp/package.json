@@ -50,9 +50,5 @@
     "tabWidth": 2,
     "useTabs": false,
     "semi": true
-  },
-  "packageManager": "pnpm@10.9.0",
-  "engines": {
-    "node": ">=22"
   }
 }

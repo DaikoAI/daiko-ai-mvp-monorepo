@@ -39,5 +39,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "packageManager": "pnpm@10.10.0",
+  "engines": {
+    "node": ">=18"
+  }
 }
