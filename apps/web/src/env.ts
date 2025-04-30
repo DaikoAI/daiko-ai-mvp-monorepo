@@ -15,8 +15,8 @@ export const env = createEnv({
     // AUTH_TWITTER_SECRET: z.string(),
     WEB_PUSH_VAPID_PRIVATE_KEY: z.string(),
     CRON_SECRET: z.string(),
-    INNGEST_EVENT_KEY: z.string(),
-    INNGEST_SIGNING_KEY: z.string(),
+    // INNGEST_EVENT_KEY: z.string(),
+    // INNGEST_SIGNING_KEY: z.string(),
   },
   client: {
     NEXT_PUBLIC_DEBUG: z.string().transform((s) => s !== "false" && s !== "0"),
@@ -38,8 +38,8 @@ export const env = createEnv({
     NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY,
     WEB_PUSH_VAPID_PRIVATE_KEY: process.env.WEB_PUSH_VAPID_PRIVATE_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
-    INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
-    INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
+    // INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
+    // INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
   },
   // For Next.js >= 13.4.4, you only need to destructure client variables:
   // experimental__runtimeEnv: {

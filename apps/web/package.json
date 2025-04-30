@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
+    "inngest:dev": "npx inngest-cli@latest dev",
     "generate-pwa-assets": "npx pwa-asset-generator src/app/icon.jpg public/pwa --background '#080808'"
   },
   "dependencies": {

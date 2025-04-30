@@ -83,7 +83,7 @@ export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProp
   return (
     <AlphaWalletProvider>
       {proposals.length > 0 ? (
-        <div className="flex flex-col space-y-3 overscroll-contain">
+        <div className="flex flex-col space-y-3">
           {proposals
             .filter((proposal) => proposal.id !== undefined)
             .map((proposal) => (
