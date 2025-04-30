@@ -281,6 +281,8 @@ export class XScraper {
           await driver.sleep(randomDelay());
           await passwordInput.sendKeys(Key.RETURN);
           this.logger.info("XScraper", "Password submitted.");
+          // Add a significant delay after password submission to appear less suspicious
+          await driver.sleep(randomDelay(5000, 10000));
         } catch (error) {
           const currentUrl = await driver.getCurrentUrl();
           this.logger.error("XScraper", "Failed to find or interact with password input after confirming transition", {
@@ -299,9 +301,9 @@ export class XScraper {
         }
 
         // login success check
-        this.logger.info("XScraper", "Waiting for login success confirmation...");
-        await driver.sleep(randomDelay(2000, 4000));
-        await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 30000);
+        this.logger.info("XScraper", "Waiting for login success confirmation (e.g., main timeline)...");
+        await driver.sleep(randomDelay(2000, 4000)); // Keep a small delay before the main wait
+        await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 45000); // Increased timeout slightly
         this.logger.info("XScraper", "Login successful");
 
         // store cookies for reuse in child instances
@@ -327,7 +329,10 @@ export class XScraper {
         throw error; // Stop login if initial input fails
       }
     } catch (error) {
-      this.logger.error("XScraper", "Login failed:", error);
+      this.logger.error("XScraper", "Login process failed at some stage", {
+        originalError: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
 
       // Enable screenshot capture on failure
       if (driver) {
