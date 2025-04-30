@@ -15,6 +15,6 @@
     "startCommand": null,
     "numReplicas": 1,
     "restartPolicyType": "NEVER",
-    "cronSchedule": "0 * * * *"
+    "cronSchedule": "0/10 * * * *"
   }
 }
