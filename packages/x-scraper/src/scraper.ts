@@ -164,9 +164,9 @@ export class XScraper {
 
       // email入力 -> ENTER
       try {
-        this.logger.debug("XScraper", "Locating email input");
+        this.logger.info("XScraper", "Locating email input");
         const emailInput = await driver.findElement(By.css("input[autocomplete='username']"));
-        this.logger.debug("XScraper", "Email input located, entering email");
+        this.logger.info("XScraper", "Email input located, entering email");
         await emailInput.sendKeys(this.credentials.email);
         await driver.sleep(randomDelay());
         await emailInput.sendKeys(Key.RETURN);
@@ -174,22 +174,22 @@ export class XScraper {
         await driver.sleep(randomDelay(500, 2500));
       } catch (e) {
         // Potentially username first
-        this.logger.debug("XScraper", "Email input not found directly, trying username input first", e);
+        this.logger.info("XScraper", "Email input not found directly, trying username input first", e);
         // Keep going, maybe it asks for username first
       }
 
       // username入力（必要時）
       try {
-        this.logger.debug("XScraper", "Locating username input (if needed)");
+        this.logger.info("XScraper", "Locating username input (if needed)");
         const userInput = await driver.findElement(By.css("input[name='text']"));
-        this.logger.debug("XScraper", "Username input located, entering username");
+        this.logger.info("XScraper", "Username input located, entering username");
         await userInput.sendKeys(this.credentials.username);
         await driver.sleep(randomDelay());
         await userInput.sendKeys(Key.RETURN);
         this.logger.info("XScraper", "Username submitted.");
         await driver.sleep(randomDelay(1500, 4000));
       } catch (e) {
-        this.logger.debug("XScraper", "Username verification step not required or failed", e);
+        this.logger.info("XScraper", "Username verification step not required or failed", e);
       }
 
       // Log HTML source *before* trying to find the password input
@@ -460,6 +460,7 @@ export class XScraper {
         this.logger.error("XScraper", "Initial login failed, cannot proceed with checking accounts.");
         return; // ログイン失敗時は処理を中断
       }
+
       // ログイン成功後、クッキーを取得
       baseCookies = mainScraper.sessionCookies ?? [];
       if (baseCookies.length === 0) {
