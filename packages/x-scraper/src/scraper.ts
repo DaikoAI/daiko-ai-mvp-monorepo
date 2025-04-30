@@ -160,26 +160,36 @@ export class XScraper {
 
       // ログインページにアクセス
       await driver.get("https://x.com/i/flow/login");
-      // Use explicit wait for the initial input field instead of just sleep
-      // await driver.sleep(1000);
 
       // --- Find and interact with the initial input field (Email/Phone/Username) ---
-      const initialInputSelector = By.css("input[name='text'][autocomplete='username']"); // More specific selector
+      const initialInputSelector = By.css("input[autocomplete='username']"); // Simpler selector
+      const nextButtonSelector = By.css("button[role='button'] div[dir='ltr'] span span:has-text('Next')"); // Selector for Next button (may need adjustment)
+      // Note: Using :has-text might not be standard CSS. If this fails, we need a more robust selector like data-testid if available.
+      // Alternative Next button selector (less specific): By.xpath("//button[.//span[text()='Next']]")
+
       try {
-        this.logger.info("XScraper", "Waiting for initial input field to be located...");
-        await driver.wait(until.elementLocated(initialInputSelector), 20000); // Wait up to 20s
+        this.logger.info("XScraper", `Waiting for initial input field (${initialInputSelector}) to be located...`);
+        await driver.wait(until.elementLocated(initialInputSelector), 30000); // Increased initial wait
+        const emailOrUsernameInput = await driver.findElement(initialInputSelector);
 
         this.logger.info("XScraper", "Waiting for initial input field to be visible and enabled...");
-        const emailOrUsernameInput = await driver.findElement(initialInputSelector);
-        await driver.wait(until.elementIsVisible(emailOrUsernameInput), 10000);
-        await driver.wait(until.elementIsEnabled(emailOrUsernameInput), 10000);
+        await driver.wait(until.elementIsVisible(emailOrUsernameInput), 15000);
+        await driver.wait(until.elementIsEnabled(emailOrUsernameInput), 15000);
 
         this.logger.info("XScraper", "Initial input field located and ready. Entering email...");
         await emailOrUsernameInput.sendKeys(this.credentials.email);
-        await driver.sleep(randomDelay(500, 1500)); // Shorter delay after typing
-        await emailOrUsernameInput.sendKeys(Key.RETURN);
-        this.logger.info("XScraper", "Initial input (email) submitted.");
-        await driver.sleep(randomDelay(1500, 4000)); // Wait for next step page load
+        await driver.sleep(randomDelay(500, 1500));
+
+        // Click the "Next" button explicitly
+        this.logger.info("XScraper", "Locating and clicking the Next button...");
+        // const nextButton = await driver.findElement(nextButtonSelector); // Using potentially non-standard CSS
+        const nextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]")); // Using XPath
+        await driver.wait(until.elementIsEnabled(nextButton), 10000);
+        await nextButton.click();
+        // await emailOrUsernameInput.sendKeys(Key.RETURN); // Replaced with explicit button click
+
+        this.logger.info("XScraper", "Initial input (email) submitted via Next button click.");
+        await driver.sleep(randomDelay(2000, 5000)); // Increased wait after clicking Next
       } catch (error) {
         this.logger.error("XScraper", "Failed to find or interact with the initial email/username input field", {
           error: error instanceof Error ? error.message : String(error),
@@ -196,32 +206,43 @@ export class XScraper {
       }
 
       // --- Handle potential intermediate step (like username verification) ---
-      // This step might occur after submitting email if verification is needed.
-      const usernameVerificationSelector = By.css("input[name='text']"); // Re-using selector, assuming it's specific enough for this step
+      const usernameVerificationSelector = By.css("input[name='text']"); // Keep this selector for verification step
       try {
         this.logger.info("XScraper", "Checking for potential username verification step...");
-        // Use a shorter wait time as this step is optional
-        await driver.wait(until.elementLocated(usernameVerificationSelector), 7000); // Wait 7 seconds
+        // Use a shorter wait time as this step might not appear immediately or at all
+        await driver.wait(until.elementLocated(usernameVerificationSelector), 10000); // Wait 10 seconds
 
         const usernameInput = await driver.findElement(usernameVerificationSelector);
-        // Check if the element is visible and enabled *before* interacting
         await driver.wait(until.elementIsVisible(usernameInput), 5000);
         await driver.wait(until.elementIsEnabled(usernameInput), 5000);
 
-        // Simple check: if the value is empty, assume it's the verification step
         const currentValue = await usernameInput.getAttribute("value");
-        if (currentValue === "") {
+        // Add more checks - perhaps placeholder text changes?
+        const placeholder = await usernameInput.getAttribute("placeholder");
+        if (currentValue === "" && placeholder && placeholder.toLowerCase().includes("username")) {
+          // Check placeholder text
           this.logger.info("XScraper", "Username verification step detected. Entering username...");
           await usernameInput.sendKeys(this.credentials.username);
           await driver.sleep(randomDelay(500, 1500));
-          await usernameInput.sendKeys(Key.RETURN);
-          this.logger.info("XScraper", "Username submitted for verification.");
-          await driver.sleep(randomDelay(1500, 4000)); // Wait after submitting username
+
+          // Find and click the Next button for the username step
+          this.logger.info("XScraper", "Locating and clicking the Next button for username...");
+          // Assuming the 'Next' button selector is the same
+          const usernameNextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
+          await driver.wait(until.elementIsEnabled(usernameNextButton), 10000);
+          await usernameNextButton.click();
+          // await usernameInput.sendKeys(Key.RETURN); // Replaced with explicit button click
+
+          this.logger.info("XScraper", "Username submitted for verification via Next button click.");
+          await driver.sleep(randomDelay(2000, 5000)); // Increased wait after submitting username
         } else {
-          this.logger.info("XScraper", "Input field found, but not empty. Assuming not username verification step.");
+          this.logger.info(
+            "XScraper",
+            `Input field found, but not identified as username verification (Value: '${currentValue}', Placeholder: '${placeholder}'). Proceeding.`,
+          );
         }
       } catch (e) {
-        // Timeout or element not interactable - assume the username step was skipped or failed.
+        // Timeout or element not interactable - assume the username step was skipped.
         this.logger.info("XScraper", "Username verification step not detected or timed out, proceeding.");
       }
 
