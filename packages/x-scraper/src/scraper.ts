@@ -1,4 +1,5 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
+import { execSync } from "child_process";
 import { OpenAI } from "openai";
 import {
   Browser,
@@ -10,8 +11,10 @@ import {
   WebDriver,
 } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
-import fs from "node:fs";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
+
+// Helper function to create random delays
+const randomDelay = (min = 500, max = 1500) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // Xアカウントのログイン情報の型定義
 export interface XCredentials {
@@ -30,8 +33,8 @@ export class XScraper {
     level: LogLevel.INFO,
   });
   private credentials: XCredentials | null = null;
-
-  private currentDriverUserDataDir: string | null = null;
+  // static flag to ensure Chrome processes are cleaned up only once
+  private static chromeCleaned = false;
 
   constructor(credentials?: XCredentials, sessionCookies?: any[]) {
     this.openai = new OpenAI({
@@ -48,15 +51,43 @@ export class XScraper {
   }
 
   /**
-   * Seleniumドライバーを初期化
+   * Chromeプロセスをクリーンアップ
+   */
+  private cleanupChromeProcesses(): void {
+    if (XScraper.chromeCleaned) {
+      this.logger.debug("XScraper", "Chrome processes already cleaned up");
+      return;
+    }
+    try {
+      if (process.platform === "darwin") {
+        execSync('pkill -f "Google Chrome"');
+      } else if (process.platform === "win32") {
+        execSync("taskkill /F /IM chrome.exe");
+      } else {
+        execSync("pkill -f chrome");
+      }
+      // mark as cleaned to avoid repeating kills
+      XScraper.chromeCleaned = true;
+      this.logger.info("XScraper", "Cleaned up Chrome processes");
+    } catch (error) {
+      // プロセスが見つからない場合などのエラーは無視
+      this.logger.debug("XScraper", "No Chrome processes to clean up");
+    }
+  }
+
+  /**
+   * Seleniumドライバーを初期化（シングルインスタンス）
    */
   private async initDriver(): Promise<WebDriver> {
     if (this.driver) {
       return this.driver;
     }
+
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
+      this.cleanupChromeProcesses();
+
       const options = new chrome.Options();
       options.addArguments("--headless");
       options.addArguments("--window-size=1920,3000");
@@ -64,8 +95,6 @@ export class XScraper {
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
       options.addArguments("--disable-gpu");
-      // 一意なユーザーデータディレクトリを指定
-      // options.addArguments(`--user-data-dir=${this.currentDriverUserDataDir}`);
 
       // 固定User-Agentを設定
       options.addArguments(
@@ -78,8 +107,8 @@ export class XScraper {
       options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
       options.addArguments("--disable-automation");
 
-      // インコグニートモードは user-data-dir と併用すると意図しない挙動になることがあるためコメントアウト
-      // options.addArguments("--incognito");
+      // インコグニートモードを使用してクリーンな状態を保証
+      options.addArguments("--incognito");
 
       this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
 
@@ -102,36 +131,16 @@ export class XScraper {
             this.logger.debug("XScraper", "Failed to add cookie", e);
           }
         }
-        // クッキー適用後、再度目的のドメイン以外にアクセスして状態をリセットすることが有効な場合がある
-        await this.driver.get("about:blank");
       }
 
       return this.driver;
     } catch (error) {
-      // エラー発生時にも一時ディレクトリを削除する試み
-      if (this.currentDriverUserDataDir) {
-        const dirPath = this.currentDriverUserDataDir;
-        try {
-          await fs.promises.rm(dirPath, { recursive: true, force: true });
-          this.logger.debug("XScraper", `Cleaned up user data directory on error: ${dirPath}`);
-        } catch (cleanupError) {
-          this.logger.warn("XScraper", `Failed to cleanup user data directory ${dirPath} on error`, cleanupError);
-        }
-        this.currentDriverUserDataDir = null;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.logger.error("XScraper", "Failed to initialize WebDriver", {
-          error: errorMessage,
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        throw new Error(`WebDriver initialization failed (using ${dirPath}): ${errorMessage}`);
-      } else {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.logger.error("XScraper", "Failed to initialize WebDriver before userDataDir creation", {
-          error: errorMessage,
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        throw new Error(`WebDriver initialization failed: ${errorMessage}`);
-      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error("XScraper", "Failed to initialize WebDriver", {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`WebDriver initialization failed: ${errorMessage}`);
     }
   }
 
@@ -144,38 +153,71 @@ export class XScraper {
       return false;
     }
 
+    let driver: WebDriver | null = null;
     try {
-      const driver = await this.initDriver();
+      driver = await this.initDriver();
       this.logger.info("XScraper", "Starting login process");
 
       // ログインページにアクセス
       await driver.get("https://x.com/i/flow/login");
-      await driver.sleep(5000);
+      await driver.sleep(1000); // Longer initial delay
 
       // email入力 -> ENTER
       try {
+        this.logger.debug("XScraper", "Locating email input");
         const emailInput = await driver.findElement(By.css("input[autocomplete='username']"));
-        await emailInput.sendKeys(this.credentials.email, Key.RETURN);
-        await driver.sleep(5000);
-      } catch {
-        this.logger.debug("XScraper", "Email input stage skipped");
+        this.logger.debug("XScraper", "Email input located, entering email");
+        await emailInput.sendKeys(this.credentials.email);
+        await driver.sleep(randomDelay());
+        await emailInput.sendKeys(Key.RETURN);
+        this.logger.info("XScraper", "Email submitted.");
+        await driver.sleep(randomDelay(500, 2500));
+      } catch (e) {
+        // Potentially username first
+        this.logger.debug("XScraper", "Email input not found directly, trying username input first", e);
+        // Keep going, maybe it asks for username first
       }
 
       // username入力（必要時）
       try {
+        this.logger.debug("XScraper", "Locating username input (if needed)");
         const userInput = await driver.findElement(By.css("input[name='text']"));
-        await userInput.sendKeys(this.credentials.username, Key.RETURN);
-        await driver.sleep(5000);
-      } catch {
-        this.logger.debug("XScraper", "Username verification not required");
+        this.logger.debug("XScraper", "Username input located, entering username");
+        await userInput.sendKeys(this.credentials.username);
+        await driver.sleep(randomDelay());
+        await userInput.sendKeys(Key.RETURN);
+        this.logger.info("XScraper", "Username submitted.");
+        await driver.sleep(randomDelay(500, 2500));
+      } catch (e) {
+        this.logger.debug("XScraper", "Username verification step not required or failed", e);
       }
 
       // password入力 -> ENTER
-      const passwordInput = await driver.findElement(By.css("input[name='password']"));
-      await passwordInput.sendKeys(this.credentials.password, Key.RETURN);
-      await driver.sleep(5000);
+      this.logger.info("XScraper", "Attempting to find password input...");
+      const passwordSelector = By.css("input[name='password']");
+      try {
+        await driver.wait(until.elementLocated(passwordSelector), 10000); // Keep explicit wait
+        this.logger.info("XScraper", "Password input field located.");
+        const passwordInput = await driver.findElement(passwordSelector);
+        await driver.sleep(randomDelay());
+        await passwordInput.sendKeys(this.credentials.password);
+        await driver.sleep(randomDelay());
+        await passwordInput.sendKeys(Key.RETURN);
+        this.logger.info("XScraper", "Password submitted.");
+      } catch (error) {
+        const currentUrl = await driver.getCurrentUrl();
+
+        this.logger.error("XScraper", "Failed to find or interact with password input", {
+          error: error instanceof Error ? error.message : String(error),
+          url: currentUrl,
+        });
+
+        throw error;
+      }
 
       // login success check
+      this.logger.info("XScraper", "Waiting for login success confirmation...");
+      await driver.sleep(randomDelay(1500, 3000)); // Delay before final check
       await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 10000);
       this.logger.info("XScraper", "Login successful");
 
@@ -189,6 +231,7 @@ export class XScraper {
       return true;
     } catch (error) {
       this.logger.error("XScraper", "Login failed:", error);
+      // エラー発生時にスクリーンショットを撮るなどの処理を追加することも検討
       return false;
     }
   }
@@ -390,94 +433,99 @@ export class XScraper {
   }
 
   /**
-   * 登録されたすべてのXアカウントをチェック
+   * 登録されたすべてのXアカウントをチェック（並列処理）
    */
-  public async checkXAccounts(concurrency: number = 1): Promise<void> {
-    // perform single login to obtain session cookies
+  public async checkXAccounts(concurrency: number = 10): Promise<void> {
+    // ログイン専用の一時的なスクレイパーインスタンスを作成
     const mainScraper = new XScraper(this.credentials ?? undefined);
+    let baseCookies: any[] = [];
 
-    // 最初のログイン前のクリーンアップ（必要であれば）
-    // mainScraper.cleanupChromeProcesses();
-
-    const loggedIn = await mainScraper.login();
-    if (!loggedIn) {
-      this.logger.error("XScraper", "Login failed, aborting checkXAccounts");
-      await mainScraper.closeDriver(); // Ensure cleanup even on login failure
-      return;
+    try {
+      this.logger.info("XScraper", "Attempting initial login to retrieve session cookies...");
+      const loggedIn = await mainScraper.login();
+      if (!loggedIn) {
+        this.logger.error("XScraper", "Initial login failed, cannot proceed with checking accounts.");
+        return; // ログイン失敗時は処理を中断
+      }
+      // ログイン成功後、クッキーを取得
+      baseCookies = mainScraper.sessionCookies ?? [];
+      if (baseCookies.length === 0) {
+        this.logger.warn("XScraper", "Retrieved session cookies are empty, proceeding without them.");
+      }
+      this.logger.info("XScraper", `Initial login successful. Retrieved ${baseCookies.length} cookies.`);
+    } catch (loginError) {
+      this.logger.error("XScraper", "Error during initial login process:", loginError);
+      return; // ログインプロセス中にエラーが発生した場合も中断
     }
-    const baseCookies = mainScraper.sessionCookies ?? [];
-    await mainScraper.closeDriver(); // メインのログイン用ドライバーは閉じる
 
-    this.logger.info("XScraper", `Starting scraping all X accounts with concurrency=${concurrency}`);
+    // DBからアカウントリストを取得
     const accounts = await getAllXAccounts();
-    this.logger.info("XScraper", `Found ${accounts.length} accounts to check`);
+    this.logger.info("XScraper", `Found ${accounts.length} accounts to check.`);
+
     if (accounts.length === 0) {
-      this.logger.warn("XScraper", "No accounts to check");
+      this.logger.warn("XScraper", "No accounts found in DB to check.");
       return;
     }
+
+    this.logger.info("XScraper", `Starting parallel scraping with concurrency=${concurrency}`);
+
+    // アカウントリストをバッチに分割して並列処理
     for (let i = 0; i < accounts.length; i += concurrency) {
       const batch = accounts.slice(i, i + concurrency);
-      this.logger.info("XScraper", `Processing accounts ${i + 1}-${i + batch.length}`);
+      this.logger.info(
+        "XScraper",
+        `Processing batch ${Math.floor(i / concurrency) + 1}: accounts ${i + 1}-${i + batch.length}`,
+      );
+
       const tasks = batch.map((acc) => {
-        // each instance reuses the logged-in session via cookies
+        // 各アカウントごとに新しいスクレイパーインスタンスを作成し、取得したクッキーを渡す
         const scraper = new XScraper(undefined, baseCookies);
         return (async () => {
           try {
-            // cookies already injected in initDriver(), no need to login again
+            // initDriver内でクッキーが適用されるため、再度login()を呼ぶ必要はない
             const tweets = await scraper.checkSingleAccount(acc.id);
             if (tweets && tweets.length > 0) {
-              this.logger.info("XScraper", `Fetched ${tweets.length} tweets for ${acc.id}`);
-              await saveTweets(acc.id, tweets);
+              this.logger.info("XScraper", `Fetched ${tweets.length} new tweets for ${acc.id}`);
+              // DB保存は checkSingleAccount 内で行われる
             } else {
-              this.logger.info("XScraper", `No new tweets for ${acc.id}`);
+              this.logger.info("XScraper", `No new tweets or change detected for ${acc.id}`);
             }
           } catch (err) {
             this.logger.error("XScraper", `Error scraping ${acc.id}:`, err);
           } finally {
-            await scraper.closeDriver(); // 各インスタンスの closeDriver でクリーンアップ
+            // 各インスタンスのWebDriverを確実に閉じる
+            await scraper.closeDriver();
+            this.logger.debug("XScraper", `Closed driver for account ${acc.id}`);
           }
         })();
       });
+
+      // 現在のバッチの処理がすべて完了するのを待つ
       await Promise.allSettled(tasks);
+      this.logger.info("XScraper", `Finished processing batch ${Math.floor(i / concurrency) + 1}`);
+
+      // 次のバッチがある場合は、負荷軽減のために少し待機
       if (i + concurrency < accounts.length) {
-        // throttle between batches
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const waitTime = 2000; // 2秒待機
+        this.logger.debug("XScraper", `Waiting ${waitTime}ms before next batch...`);
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
-    this.logger.info("XScraper", "Finished checking all X accounts");
+
+    this.logger.info("XScraper", "Finished checking all X accounts in parallel.");
   }
 
   /**
-   * ドライバーをクローズし、関連する一時ディレクトリも削除
+   * ドライバーをクローズ
    */
   public async closeDriver(): Promise<void> {
     if (this.driver) {
-      const dirToClean = this.currentDriverUserDataDir;
       try {
         await this.driver.quit();
       } catch (err) {
         this.logger.error("XScraper", "Error closing WebDriver", err);
-      } finally {
-        if (dirToClean) {
-          try {
-            await fs.promises.rm(dirToClean, { recursive: true, force: true });
-            this.logger.debug("XScraper", `Cleaned up user data directory: ${dirToClean}`);
-          } catch (cleanupError) {
-            this.logger.warn("XScraper", `Failed to cleanup user data directory ${dirToClean}`, cleanupError);
-          }
-        }
-        this.driver = null;
-        this.currentDriverUserDataDir = null;
       }
-    } else if (this.currentDriverUserDataDir) {
-      const dirToClean = this.currentDriverUserDataDir;
-      try {
-        await fs.promises.rm(dirToClean, { recursive: true, force: true });
-        this.logger.debug("XScraper", `Cleaned up user data directory after init error: ${dirToClean}`);
-      } catch (cleanupError) {
-        this.logger.warn("XScraper", `Failed cleanup after init error ${dirToClean}`, cleanupError);
-      }
-      this.currentDriverUserDataDir = null;
+      this.driver = null;
     }
   }
 }
