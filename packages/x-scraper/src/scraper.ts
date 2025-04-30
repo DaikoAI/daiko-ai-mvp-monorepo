@@ -14,7 +14,7 @@ import chrome from "selenium-webdriver/chrome";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
 
 // Helper function to create random delays
-const randomDelay = (min = 500, max = 1500) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomDelay = (min = 1500, max = 3500) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // Xアカウントのログイン情報の型定義
 export interface XCredentials {
@@ -187,16 +187,25 @@ export class XScraper {
         await driver.sleep(randomDelay());
         await userInput.sendKeys(Key.RETURN);
         this.logger.info("XScraper", "Username submitted.");
-        await driver.sleep(randomDelay(500, 2500));
+        await driver.sleep(randomDelay(1500, 4000));
       } catch (e) {
         this.logger.debug("XScraper", "Username verification step not required or failed", e);
+      }
+
+      // Log HTML source *before* trying to find the password input
+      try {
+        this.logger.info("XScraper", "HTML source before finding password input:", {
+          html: await driver.getPageSource(),
+        });
+      } catch (logError) {
+        this.logger.warn("XScraper", "Failed to get page source before password input", logError);
       }
 
       // password入力 -> ENTER
       this.logger.info("XScraper", "Attempting to find password input...");
       const passwordSelector = By.css("input[name='password']");
       try {
-        await driver.wait(until.elementLocated(passwordSelector), 10000); // Keep explicit wait
+        await driver.wait(until.elementLocated(passwordSelector), 30000);
         this.logger.info("XScraper", "Password input field located.");
         const passwordInput = await driver.findElement(passwordSelector);
         await driver.sleep(randomDelay());
@@ -221,8 +230,8 @@ export class XScraper {
 
       // login success check
       this.logger.info("XScraper", "Waiting for login success confirmation...");
-      await driver.sleep(randomDelay(1500, 3000)); // Delay before final check
-      await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 10000);
+      await driver.sleep(randomDelay(2000, 4000));
+      await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 30000);
       this.logger.info("XScraper", "Login successful");
 
       // store cookies for reuse in child instances
