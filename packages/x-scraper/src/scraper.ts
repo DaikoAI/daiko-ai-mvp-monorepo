@@ -225,15 +225,6 @@ export class XScraper {
         this.logger.info("XScraper", "Username verification step not detected or timed out, proceeding.");
       }
 
-      // Log HTML source *before* trying to find the password input
-      try {
-        this.logger.info("XScraper", "HTML source before finding password input:", {
-          html: await driver.getPageSource(),
-        });
-      } catch (logError) {
-        this.logger.warn("XScraper", "Failed to get page source before password input", logError);
-      }
-
       // password入力 -> ENTER
       this.logger.info("XScraper", "Attempting to find password input...");
       const passwordSelector = By.css("input[name='password']");
