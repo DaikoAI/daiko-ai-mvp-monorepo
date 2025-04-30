@@ -277,6 +277,10 @@ export class XScraper {
       return true;
     } catch (error) {
       this.logger.error("XScraper", "Login failed:", error);
+
+      this.logger.info("XScraper", "HTML source on login failure:", {
+        html: await driver?.getPageSource(),
+      });
       // エラー発生時にスクリーンショットを撮るなどの処理を追加することも検討
       return false;
     }
