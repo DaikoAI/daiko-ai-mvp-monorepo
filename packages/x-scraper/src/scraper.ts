@@ -212,6 +212,10 @@ export class XScraper {
           url: currentUrl,
         });
 
+        this.logger.info("XScraper", "Current HTML", {
+          html: await driver.getPageSource(),
+        });
+
         throw error;
       }
 
