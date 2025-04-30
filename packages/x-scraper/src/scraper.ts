@@ -1,5 +1,6 @@
 import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-import { execSync } from "node:child_process";
+// execSync import is unnecessary as cleanupChromeProcesses is removed
+import * as fs from "node:fs"; // Import fs for screenshots
 import { OpenAI } from "openai";
 import {
   Browser,
@@ -51,31 +52,6 @@ export class XScraper {
   }
 
   /**
-   * Chromeプロセスをクリーンアップ
-   */
-  private cleanupChromeProcesses(): void {
-    if (XScraper.chromeCleaned) {
-      this.logger.debug("XScraper", "Chrome processes already cleaned up");
-      return;
-    }
-    try {
-      if (process.platform === "darwin") {
-        execSync('pkill -f "Google Chrome"');
-      } else if (process.platform === "win32") {
-        execSync("taskkill /F /IM chrome.exe");
-      } else {
-        execSync("pkill -f chrome");
-      }
-      // mark as cleaned to avoid repeating kills
-      XScraper.chromeCleaned = true;
-      this.logger.info("XScraper", "Cleaned up Chrome processes");
-    } catch (error) {
-      // プロセスが見つからない場合などのエラーは無視
-      this.logger.debug("XScraper", "No Chrome processes to clean up");
-    }
-  }
-
-  /**
    * Seleniumドライバーを初期化（シングルインスタンス）
    */
   private async initDriver(): Promise<WebDriver> {
@@ -86,7 +62,7 @@ export class XScraper {
     this.logger.info("XScraper", "Initializing Selenium WebDriver");
 
     try {
-      this.cleanupChromeProcesses();
+      // this.cleanupChromeProcesses(); // Call removed
 
       const options = new chrome.Options();
       options.addArguments("--headless");
@@ -177,12 +153,16 @@ export class XScraper {
         await emailOrUsernameInput.sendKeys(this.credentials.email);
         await driver.sleep(randomDelay(500, 1500));
 
-        // Send RETURN key instead of clicking the button
-        this.logger.info("XScraper", "Sending RETURN key to initial input field...");
-        await emailOrUsernameInput.sendKeys(Key.RETURN);
+        // Revert to clicking the "Next" button explicitly
+        this.logger.info("XScraper", "Locating and clicking the Next button for initial input...");
+        const nextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
+        await driver.wait(until.elementIsEnabled(nextButton), 10000);
+        await nextButton.click();
 
-        this.logger.info("XScraper", "Initial input (email) submitted via RETURN key.");
-        await driver.sleep(randomDelay(2000, 5000)); // Wait after submitting
+        this.logger.info("XScraper", "Initial input (email) submitted via Next button click.");
+        const urlAfterInitialSubmit = await driver.getCurrentUrl();
+        this.logger.info("XScraper", `URL after initial submit: ${urlAfterInitialSubmit}`);
+        await driver.sleep(randomDelay(3000, 6000)); // Increased wait after clicking Next
       } catch (error) {
         this.logger.error("XScraper", "Failed to find or interact with the initial email/username input field", {
           error: error instanceof Error ? error.message : String(error),
@@ -215,12 +195,16 @@ export class XScraper {
           await usernameInput.sendKeys(this.credentials.username);
           await driver.sleep(randomDelay(500, 1500));
 
-          // Send RETURN key instead of clicking the button
-          this.logger.info("XScraper", "Sending RETURN key to username verification field...");
-          await usernameInput.sendKeys(Key.RETURN);
+          // Click the "Next" button explicitly for username step
+          this.logger.info("XScraper", "Locating and clicking the Next button for username...");
+          const usernameNextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
+          await driver.wait(until.elementIsEnabled(usernameNextButton), 10000);
+          await usernameNextButton.click();
 
-          this.logger.info("XScraper", "Username submitted for verification via RETURN key.");
-          await driver.sleep(randomDelay(2000, 5000)); // Wait after submitting username
+          this.logger.info("XScraper", "Username submitted for verification via Next button click.");
+          const urlAfterUsernameSubmit = await driver.getCurrentUrl();
+          this.logger.info("XScraper", `URL after username submit: ${urlAfterUsernameSubmit}`);
+          await driver.sleep(randomDelay(3000, 6000)); // Increased wait after submitting username
         } else {
           this.logger.info(
             "XScraper",
@@ -236,6 +220,10 @@ export class XScraper {
       this.logger.info("XScraper", "Attempting to find password input...");
       const passwordSelector = By.css("input[name='password']");
       try {
+        // Log current URL before waiting for password field
+        const urlBeforePassword = await driver.getCurrentUrl();
+        this.logger.info("XScraper", `URL before waiting for password: ${urlBeforePassword}`);
+
         await driver.wait(until.elementLocated(passwordSelector), 30000);
         this.logger.info("XScraper", "Password input field located.");
         const passwordInput = await driver.findElement(passwordSelector);
@@ -276,10 +264,28 @@ export class XScraper {
     } catch (error) {
       this.logger.error("XScraper", "Login failed:", error);
 
-      this.logger.info("XScraper", "HTML source on login failure:", {
-        html: await driver?.getPageSource(),
-      });
-      // エラー発生時にスクリーンショットを撮るなどの処理を追加することも検討
+      // Enable screenshot capture on failure
+      if (driver) {
+        // Ensure driver exists before taking screenshot
+        try {
+          const screenshotPath = "login_failure_screenshot.png"; // Define path
+          await driver.takeScreenshot().then((img) => fs.writeFileSync(screenshotPath, img, "base64"));
+          this.logger.info("XScraper", `Screenshot saved to ${screenshotPath}`);
+        } catch (screenshotError) {
+          this.logger.error("XScraper", "Failed to take or save screenshot", screenshotError);
+        }
+      }
+      // Log HTML source on final failure
+      if (driver) {
+        // Ensure driver exists before getting source
+        try {
+          this.logger.info("XScraper", "HTML source on final login failure:", {
+            html: await driver?.getPageSource(),
+          });
+        } catch (logError) {
+          this.logger.warn("XScraper", "Failed to get page source on final login failure", logError);
+        }
+      }
       return false;
     }
   }
