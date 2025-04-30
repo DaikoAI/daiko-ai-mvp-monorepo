@@ -1,7 +1,7 @@
 "use client";
 
 import { Progress } from "@/components/ui/progress";
-import { useOnboarding } from "@/lib/onboarding-context";
+import { useOnboarding } from "@/app/onboarding/onboarding-context";
 import { isPWA } from "@/utils/pwa";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSession } from "next-auth/react";

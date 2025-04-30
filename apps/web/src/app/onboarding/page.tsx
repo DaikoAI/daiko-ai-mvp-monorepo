@@ -1,5 +1,5 @@
 import type { NextPage } from "next";
-import { OnboardingProvider } from "@/lib/onboarding-context";
+import { OnboardingProvider } from "./onboarding-context";
 import { OnboardingFlow } from "./components/onboarding-flow";
 
 const OnboardingPage: NextPage = () => {

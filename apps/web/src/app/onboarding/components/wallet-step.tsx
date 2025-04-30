@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useOnboarding } from "@/lib/onboarding-context";
+import { useOnboarding } from "@/app/onboarding/onboarding-context";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useEffect } from "react";

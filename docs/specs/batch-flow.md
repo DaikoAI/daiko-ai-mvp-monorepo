@@ -159,23 +159,7 @@ Vercel Cronからのトリガーを受け、Selenium Gridを使用してTwitter�
 
 #### データスキーマ (NeonDB: `tweets`)
 
-```typescript
-// packages/shared/src/schema/tweets.ts (仮)
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
-
-export const tweets = pgTable("tweets", {
-  id: serial("id").primaryKey(),
-  tweetId: text("tweet_id").notNull().unique(), // TwitterのTweet ID
-  authorId: text("author_id"),
-  text: text("text").notNull(),
-  postedAt: timestamp("posted_at").notNull(),
-  source: text("source").default("twitter"), // データソース
-  likes: integer("likes").default(0),
-  retweets: integer("retweets").default(0),
-  // ... その他必要なメタデータ
-  createdAt: timestamp("created_at").defaultNow(),
-});
-```
+※詳細なテーブル定義は `packages/shared/src/schema` 以下の `tweets.ts` を参照してください。
 
 #### エラーハンドリング
 
@@ -212,28 +196,45 @@ Vercel Cronからのトリガーを受け、指定されたニュースサイト
 
 #### データスキーマ (NeonDB: `news`)
 
-```typescript
-// packages/shared/src/schema/news.ts (仮)
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
-
-export const news = pgTable("news", {
-  id: serial("id").primaryKey(),
-  articleId: text("article_id").unique(), // サイト固有ID or URLハッシュなど
-  title: text("title").notNull(),
-  url: text("url").notNull().unique(),
-  sourceName: text("source_name"), // 例: "CoinDesk", "Bloomberg"
-  publishedAt: timestamp("published_at"),
-  summary: text("summary"), // 記事の要約 or 本文の一部
-  // ... その他カテゴリ等のメタデータ
-  createdAt: timestamp("created_at").defaultNow(),
-});
-```
+※詳細なテーブル定義は `packages/shared/src/schema` 以下の `news.ts` を参照してください。
 
 #### エラーハンドリング
 
 - HTTPリクエストのエラー（タイムアウト、404/500エラーなど）を捕捉し、リトライやログ記録を行う。
 - HTMLパース時のエラー（構造変更による要素取得失敗など）を適切に処理する。
 - DB保存時のエラーを処理する。
+
+---
+
+## Inngest とは？
+
+### 役割
+
+- 実行ランタイムではなく **イベント駆動ワークフロー＆ジョブキュー SaaS**
+- Inngest Cloud はイベント管理とリトライ・スケジューリングを担い、実際のコードは Next.js／Vercel Functions など既存ランタイムで実行される
+
+### 採用メリット
+
+| 機能カテゴリ     | Inngest が担保                                     | 自前実装した場合                    |
+| ---------------- | -------------------------------------------------- | ----------------------------------- |
+| 配信保証         | at-least-once 配信、指数バックオフ付き自動リトライ | LISTEN/NOTIFY + 手動リトライ実装    |
+| 冪等性           | `step.idempotencyKey()` 1 行で重複排除             | DB ユニーク制約＋排他ロック         |
+| 並列度制御       | `concurrency.limit` で簡単設定                     | Redis レートリミタ等を構築          |
+| 可観測性         | Web ダッシュボードでイベント／ステップを視覚化     | CloudWatch / Grafana などを別途構築 |
+| スケジューリング | `inngest.cron()` でコード内に Cron 設定            | 外部 Cron + HTTP 呼び出し           |
+
+### 実装フロー (Next.js の例)
+
+1. クリティカルパス終了後に `inngest.send({ name: "tweet.updated", data: {...} })` を呼ぶ
+2. `inngest.createFunction({ id: "detect-signal" }, { event: "tweet.updated" }, async ({ event }) => { ... })` でハンドラを定義
+3. `serve()` を API Route (`/api/inngest`) に配置 → Inngest Cloud が署名付き HTTP で呼び出す
+
+### 採用判断の指針
+
+- ステップが複数、外部 API 失敗が多い、並列制御が必要など **複雑化が見込まれる場合** → Inngest を採用
+- 少量トラフィックで単発処理のみの場合 → Phase1: LISTEN/NOTIFY + 単一 Worker で開始し、負荷増大時に Inngest へ移行
+
+> 詳細な背景や判断基準は README も参照してください。
 
 ---
 
@@ -267,23 +268,7 @@ Vercel Cronからのトリガーを受け、CoinGecko APIなどから主要な�
 
 #### データスキーマ (NeonDB: `market_data`)
 
-```typescript
-// packages/shared/src/schema/market_data.ts (仮)
-import { pgTable, serial, text, timestamp, decimal } from "drizzle-orm/pg-core";
-
-export const marketData = pgTable("market_data", {
-  id: serial("id").primaryKey(),
-  tokenId: text("token_id").notNull(), // 例: "bitcoin", "ethereum" (CoinGecko IDなど)
-  symbol: text("symbol").notNull(), // 例: "BTC", "ETH"
-  priceUsd: decimal("price_usd", { precision: 18, scale: 8 }).notNull(), // 米ドル価格
-  volume24h: decimal("volume_24h", { precision: 24, scale: 4 }), // 24時間出来高
-  marketCap: decimal("market_cap", { precision: 24, scale: 4 }), // 時価総額
-  timestamp: timestamp("timestamp").notNull(), // データ取得時点のタイムスタンプ
-  // ... その他、変動率など
-  createdAt: timestamp("created_at").defaultNow(),
-});
-// tokenIdとtimestampで複合ユニーク制約やインデックスを検討
-```
+※詳細なテーブル定義は `packages/shared/src/schema` 以下の `market_data.ts` を参照してください。
 
 #### エラーハンドリング
 
