@@ -109,6 +109,25 @@ export class XScraper {
         }
       }
 
+      // --- Check if JavaScript is enabled after initialization ---
+      try {
+        const readyState = await this.driver.executeScript("return document.readyState");
+        const userAgent = await this.driver.executeScript("return navigator.userAgent");
+        this.logger.info("XScraper", "JavaScript execution check after init", {
+          readyState,
+          userAgent,
+        });
+        if (readyState !== "complete" && readyState !== "interactive") {
+          this.logger.warn("XScraper", `Potential JS issue: readyState is '${readyState}'`);
+        }
+      } catch (jsError) {
+        this.logger.error("XScraper", "Failed to execute basic JavaScript after init!", {
+          error: jsError instanceof Error ? jsError.message : String(jsError),
+        });
+        // Optionally throw an error here if JS is critical
+        // throw new Error("JavaScript failed to execute in browser.");
+      }
+
       return this.driver;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -158,11 +177,141 @@ export class XScraper {
         const nextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
         await driver.wait(until.elementIsEnabled(nextButton), 10000);
         await nextButton.click();
-
         this.logger.info("XScraper", "Initial input (email) submitted via Next button click.");
-        const urlAfterInitialSubmit = await driver.getCurrentUrl();
-        this.logger.info("XScraper", `URL after initial submit: ${urlAfterInitialSubmit}`);
-        await driver.sleep(randomDelay(3000, 6000)); // Increased wait after clicking Next
+
+        // --- Wait for page transition after clicking Next ---
+        this.logger.info("XScraper", "Waiting for page transition after submitting email...");
+        const passwordSelector = By.css("input[name='password']");
+        const usernameVerificationSelector = By.css("input[name='text']"); // Re-using this selector for check
+        const expectedUrlPattern = /login\/(identifier|password)/; // Correct regex literal
+
+        // Ensure driver is not null before proceeding
+        if (!driver) {
+          throw new Error("Driver became null unexpectedly before page transition wait.");
+        }
+
+        // Re-assign to a new const to satisfy TS null check within the callback scope
+        const nonNullDriver = driver;
+
+        try {
+          await nonNullDriver.wait(async () => {
+            // Use nonNullDriver inside the callback
+            const currentUrl = await nonNullDriver.getCurrentUrl();
+            const passwordField = await nonNullDriver.findElements(passwordSelector);
+            const usernameField = await nonNullDriver.findElements(usernameVerificationSelector);
+            return expectedUrlPattern.test(currentUrl) || passwordField.length > 0 || usernameField.length > 0;
+          }, 40000);
+          this.logger.info("XScraper", `Page transitioned. Current URL: ${await nonNullDriver.getCurrentUrl()}`);
+        } catch (transitionError) {
+          this.logger.error(
+            "XScraper",
+            "Page did not transition after email submission or next elements not found within timeout.",
+            {
+              error: transitionError instanceof Error ? transitionError.message : String(transitionError),
+              url: await nonNullDriver.getCurrentUrl(), // Use nonNullDriver here too
+            },
+          );
+          try {
+            this.logger.info("XScraper", "HTML source on transition failure:", {
+              html: await nonNullDriver.getPageSource(),
+            });
+          } catch (logError) {
+            this.logger.warn("XScraper", "Failed to get page source on transition failure", logError);
+          }
+          throw transitionError;
+        }
+
+        // --- Handle EITHER username verification OR password input ---
+        this.logger.info("XScraper", "Checking if password input or username verification is present...");
+
+        // Check for password field first
+        const passwordElements = await driver.findElements(passwordSelector);
+        if (passwordElements.length > 0) {
+          this.logger.info("XScraper", "Password input field found directly after email submission.");
+          // Proceed directly to password input logic
+        } else {
+          // Check for username verification step if password field wasn't found
+          try {
+            this.logger.info("XScraper", "Password input not found, checking for username verification step...");
+            // Use a more specific wait for the username input in this context
+            await driver.wait(until.elementLocated(usernameVerificationSelector), 5000);
+            const usernameInput = await driver.findElement(usernameVerificationSelector);
+            await driver.wait(until.elementIsVisible(usernameInput), 5000);
+            await driver.wait(until.elementIsEnabled(usernameInput), 5000);
+
+            const placeholder = await usernameInput.getAttribute("placeholder");
+            // A simple check: if a visible input[name='text'] exists here, assume it's username verification
+            this.logger.info("XScraper", "Username verification step detected. Entering username...");
+            await usernameInput.sendKeys(this.credentials.username);
+            await driver.sleep(randomDelay(500, 1500));
+
+            // Click the "Next" button explicitly for username step
+            this.logger.info("XScraper", "Locating and clicking the Next button for username...");
+            const usernameNextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
+            await driver.wait(until.elementIsEnabled(usernameNextButton), 10000);
+            await usernameNextButton.click();
+
+            this.logger.info("XScraper", "Username submitted for verification via Next button click.");
+            const urlAfterUsernameSubmit = await driver.getCurrentUrl();
+            this.logger.info("XScraper", `URL after username submit: ${urlAfterUsernameSubmit}`);
+            // Wait specifically for the password field after submitting username
+            this.logger.info("XScraper", "Waiting for password field after username submission...");
+            await driver.wait(until.elementLocated(passwordSelector), 30000); // Wait for password field
+          } catch (e) {
+            this.logger.error(
+              "XScraper",
+              "Failed to handle username verification step or password field did not appear after it.",
+              e,
+            );
+            throw e; // If neither password nor username verification worked, fail
+          }
+        }
+
+        // --- Password Input Logic (now executed after confirming transition) ---
+        this.logger.info("XScraper", "Attempting to find and interact with password input...");
+        // const passwordSelector = By.css("input[name='password']"); // Defined above
+        try {
+          // We already waited for the element, just need to find and interact
+          const passwordInput = await driver.findElement(passwordSelector);
+          this.logger.info("XScraper", "Password input field found.");
+          await driver.wait(until.elementIsVisible(passwordInput), 10000); // Add visibility check
+          await driver.wait(until.elementIsEnabled(passwordInput), 10000); // Add enabled check
+          await driver.sleep(randomDelay());
+          await passwordInput.sendKeys(this.credentials.password);
+          await driver.sleep(randomDelay());
+          await passwordInput.sendKeys(Key.RETURN);
+          this.logger.info("XScraper", "Password submitted.");
+        } catch (error) {
+          const currentUrl = await driver.getCurrentUrl();
+          this.logger.error("XScraper", "Failed to find or interact with password input after confirming transition", {
+            error: error instanceof Error ? error.message : String(error),
+            url: currentUrl,
+          });
+          // Log HTML source before re-throwing
+          try {
+            this.logger.info("XScraper", "HTML source on password input failure:", {
+              html: await driver.getPageSource(),
+            });
+          } catch (logError) {
+            this.logger.warn("XScraper", "Failed to get page source on password input failure", logError);
+          }
+          throw error;
+        }
+
+        // login success check
+        this.logger.info("XScraper", "Waiting for login success confirmation...");
+        await driver.sleep(randomDelay(2000, 4000));
+        await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 30000);
+        this.logger.info("XScraper", "Login successful");
+
+        // store cookies for reuse in child instances
+        try {
+          this.sessionCookies = await driver.manage().getCookies();
+        } catch (e) {
+          this.logger.debug("XScraper", "Unable to retrieve cookies", e);
+        }
+
+        return true;
       } catch (error) {
         this.logger.error("XScraper", "Failed to find or interact with the initial email/username input field", {
           error: error instanceof Error ? error.message : String(error),
@@ -177,90 +326,6 @@ export class XScraper {
         }
         throw error; // Stop login if initial input fails
       }
-
-      // --- Handle potential intermediate step (like username verification) ---
-      const usernameVerificationSelector = By.css("input[name='text']");
-      try {
-        this.logger.info("XScraper", "Checking for potential username verification step...");
-        await driver.wait(until.elementLocated(usernameVerificationSelector), 10000);
-
-        const usernameInput = await driver.findElement(usernameVerificationSelector);
-        await driver.wait(until.elementIsVisible(usernameInput), 5000);
-        await driver.wait(until.elementIsEnabled(usernameInput), 5000);
-
-        const currentValue = await usernameInput.getAttribute("value");
-        const placeholder = await usernameInput.getAttribute("placeholder");
-        if (currentValue === "" && placeholder && placeholder.toLowerCase().includes("username")) {
-          this.logger.info("XScraper", "Username verification step detected. Entering username...");
-          await usernameInput.sendKeys(this.credentials.username);
-          await driver.sleep(randomDelay(500, 1500));
-
-          // Click the "Next" button explicitly for username step
-          this.logger.info("XScraper", "Locating and clicking the Next button for username...");
-          const usernameNextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
-          await driver.wait(until.elementIsEnabled(usernameNextButton), 10000);
-          await usernameNextButton.click();
-
-          this.logger.info("XScraper", "Username submitted for verification via Next button click.");
-          const urlAfterUsernameSubmit = await driver.getCurrentUrl();
-          this.logger.info("XScraper", `URL after username submit: ${urlAfterUsernameSubmit}`);
-          await driver.sleep(randomDelay(3000, 6000)); // Increased wait after submitting username
-        } else {
-          this.logger.info(
-            "XScraper",
-            `Input field found, but not identified as username verification (Value: '${currentValue}', Placeholder: '${placeholder}'). Proceeding.`,
-          );
-        }
-      } catch (e) {
-        // Timeout or element not interactable - assume the username step was skipped.
-        this.logger.info("XScraper", "Username verification step not detected or timed out, proceeding.");
-      }
-
-      // password入力 -> ENTER
-      this.logger.info("XScraper", "Attempting to find password input...");
-      const passwordSelector = By.css("input[name='password']");
-      try {
-        // Log current URL before waiting for password field
-        const urlBeforePassword = await driver.getCurrentUrl();
-        this.logger.info("XScraper", `URL before waiting for password: ${urlBeforePassword}`);
-
-        await driver.wait(until.elementLocated(passwordSelector), 30000);
-        this.logger.info("XScraper", "Password input field located.");
-        const passwordInput = await driver.findElement(passwordSelector);
-        await driver.sleep(randomDelay());
-        await passwordInput.sendKeys(this.credentials.password);
-        await driver.sleep(randomDelay());
-        await passwordInput.sendKeys(Key.RETURN);
-        this.logger.info("XScraper", "Password submitted.");
-      } catch (error) {
-        const currentUrl = await driver.getCurrentUrl();
-
-        this.logger.error("XScraper", "Failed to find or interact with password input", {
-          error: error instanceof Error ? error.message : String(error),
-          url: currentUrl,
-        });
-
-        this.logger.info("XScraper", "Current HTML", {
-          html: await driver.getPageSource(),
-        });
-
-        throw error;
-      }
-
-      // login success check
-      this.logger.info("XScraper", "Waiting for login success confirmation...");
-      await driver.sleep(randomDelay(2000, 4000));
-      await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 30000);
-      this.logger.info("XScraper", "Login successful");
-
-      // store cookies for reuse in child instances
-      try {
-        this.sessionCookies = await driver.manage().getCookies();
-      } catch (e) {
-        this.logger.debug("XScraper", "Unable to retrieve cookies", e);
-      }
-
-      return true;
     } catch (error) {
       this.logger.error("XScraper", "Login failed:", error);
 
@@ -274,13 +339,12 @@ export class XScraper {
         } catch (screenshotError) {
           this.logger.error("XScraper", "Failed to take or save screenshot", screenshotError);
         }
-      }
-      // Log HTML source on final failure
-      if (driver) {
+
+        // Log HTML source on final failure
         // Ensure driver exists before getting source
         try {
           this.logger.info("XScraper", "HTML source on final login failure:", {
-            html: await driver?.getPageSource(),
+            html: await driver.getPageSource(),
           });
         } catch (logError) {
           this.logger.warn("XScraper", "Failed to get page source on final login failure", logError);
