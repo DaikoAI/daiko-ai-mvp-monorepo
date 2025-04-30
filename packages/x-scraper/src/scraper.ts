@@ -160,36 +160,69 @@ export class XScraper {
 
       // ログインページにアクセス
       await driver.get("https://x.com/i/flow/login");
-      await driver.sleep(1000); // Longer initial delay
+      // Use explicit wait for the initial input field instead of just sleep
+      // await driver.sleep(1000);
 
-      // email入力 -> ENTER
+      // --- Find and interact with the initial input field (Email/Phone/Username) ---
+      const initialInputSelector = By.css("input[name='text'][autocomplete='username']"); // More specific selector
       try {
-        this.logger.info("XScraper", "Locating email input");
-        const emailInput = await driver.findElement(By.css("input[autocomplete='username']"));
-        this.logger.info("XScraper", "Email input located, entering email");
-        await emailInput.sendKeys(this.credentials.email);
-        await driver.sleep(randomDelay());
-        await emailInput.sendKeys(Key.RETURN);
-        this.logger.info("XScraper", "Email submitted.");
-        await driver.sleep(randomDelay(500, 2500));
-      } catch (e) {
-        // Potentially username first
-        this.logger.info("XScraper", "Email input not found directly, trying username input first", e);
-        // Keep going, maybe it asks for username first
+        this.logger.info("XScraper", "Waiting for initial input field to be located...");
+        await driver.wait(until.elementLocated(initialInputSelector), 20000); // Wait up to 20s
+
+        this.logger.info("XScraper", "Waiting for initial input field to be visible and enabled...");
+        const emailOrUsernameInput = await driver.findElement(initialInputSelector);
+        await driver.wait(until.elementIsVisible(emailOrUsernameInput), 10000);
+        await driver.wait(until.elementIsEnabled(emailOrUsernameInput), 10000);
+
+        this.logger.info("XScraper", "Initial input field located and ready. Entering email...");
+        await emailOrUsernameInput.sendKeys(this.credentials.email);
+        await driver.sleep(randomDelay(500, 1500)); // Shorter delay after typing
+        await emailOrUsernameInput.sendKeys(Key.RETURN);
+        this.logger.info("XScraper", "Initial input (email) submitted.");
+        await driver.sleep(randomDelay(1500, 4000)); // Wait for next step page load
+      } catch (error) {
+        this.logger.error("XScraper", "Failed to find or interact with the initial email/username input field", {
+          error: error instanceof Error ? error.message : String(error),
+          url: await driver.getCurrentUrl(),
+        });
+        try {
+          this.logger.info("XScraper", "HTML source on initial input failure:", {
+            html: await driver.getPageSource(),
+          });
+        } catch (logError) {
+          this.logger.warn("XScraper", "Failed to get page source on initial input failure", logError);
+        }
+        throw error; // Stop login if initial input fails
       }
 
-      // username入力（必要時）
+      // --- Handle potential intermediate step (like username verification) ---
+      // This step might occur after submitting email if verification is needed.
+      const usernameVerificationSelector = By.css("input[name='text']"); // Re-using selector, assuming it's specific enough for this step
       try {
-        this.logger.info("XScraper", "Locating username input (if needed)");
-        const userInput = await driver.findElement(By.css("input[name='text']"));
-        this.logger.info("XScraper", "Username input located, entering username");
-        await userInput.sendKeys(this.credentials.username);
-        await driver.sleep(randomDelay());
-        await userInput.sendKeys(Key.RETURN);
-        this.logger.info("XScraper", "Username submitted.");
-        await driver.sleep(randomDelay(1500, 4000));
+        this.logger.info("XScraper", "Checking for potential username verification step...");
+        // Use a shorter wait time as this step is optional
+        await driver.wait(until.elementLocated(usernameVerificationSelector), 7000); // Wait 7 seconds
+
+        const usernameInput = await driver.findElement(usernameVerificationSelector);
+        // Check if the element is visible and enabled *before* interacting
+        await driver.wait(until.elementIsVisible(usernameInput), 5000);
+        await driver.wait(until.elementIsEnabled(usernameInput), 5000);
+
+        // Simple check: if the value is empty, assume it's the verification step
+        const currentValue = await usernameInput.getAttribute("value");
+        if (currentValue === "") {
+          this.logger.info("XScraper", "Username verification step detected. Entering username...");
+          await usernameInput.sendKeys(this.credentials.username);
+          await driver.sleep(randomDelay(500, 1500));
+          await usernameInput.sendKeys(Key.RETURN);
+          this.logger.info("XScraper", "Username submitted for verification.");
+          await driver.sleep(randomDelay(1500, 4000)); // Wait after submitting username
+        } else {
+          this.logger.info("XScraper", "Input field found, but not empty. Assuming not username verification step.");
+        }
       } catch (e) {
-        this.logger.info("XScraper", "Username verification step not required or failed", e);
+        // Timeout or element not interactable - assume the username step was skipped or failed.
+        this.logger.info("XScraper", "Username verification step not detected or timed out, proceeding.");
       }
 
       // Log HTML source *before* trying to find the password input
@@ -309,43 +342,6 @@ export class XScraper {
    */
   private async extractTweets(driver: WebDriver): Promise<Tweet[]> {
     const tweets: Tweet[] = [];
-
-    try {
-      // ツイート要素を取得
-      const tweetElements = await driver.findElements(By.css('article[data-testid="tweet"]'));
-      this.logger.debug("XScraper", `Found ${tweetElements.length} tweet elements`);
-
-      for (const element of tweetElements) {
-        try {
-          // タイムスタンプを持つ要素を探す
-          const timeElement = await element.findElement(By.css("time"));
-          const timestamp = await timeElement.getAttribute("datetime");
-
-          // ツイートのテキストを取得
-          const tweetTextElement = await element.findElement(By.css('div[data-testid="tweetText"]')).catch(() => null);
-
-          let tweetText = "";
-          if (tweetTextElement) {
-            tweetText = await tweetTextElement.getText();
-          } else {
-            // ツイートテキストが見つからない場合、記事全体のテキストを取得
-            tweetText = await element.getText();
-          }
-
-          // テキストが存在し、最小限の長さがある場合のみ追加
-          if (tweetText && tweetText.length > 5) {
-            tweets.push({
-              time: timestamp,
-              data: tweetText,
-            });
-          }
-        } catch (error) {
-          this.logger.error("XScraper", "Error extracting tweet data:", error);
-        }
-      }
-    } catch (error) {
-      this.logger.error("XScraper", "Error finding tweet elements:", error);
-    }
 
     return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }
