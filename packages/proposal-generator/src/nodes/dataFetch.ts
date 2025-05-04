@@ -1,19 +1,14 @@
 import { db } from "@daiko-ai/shared";
-import { tokenPricesTable, tweetTable, newsSiteTable, portfolioSnapshots } from "@daiko-ai/shared";
-import { and, eq, gte, desc } from "drizzle-orm";
+import { tokenPricesTable, tweetTable, newsSiteTable } from "@daiko-ai/shared";
+import { gte, desc } from "drizzle-orm";
 import { proposalGeneratorState } from "../utils/state";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 export const dataFetchNode = async (state: typeof proposalGeneratorState.State, options: LangGraphRunnableConfig) => {
-  const threadId = options.configurable?.thread_id;
-  if (!threadId) {
-    throw new Error("thread_id is missing in config");
-  }
-
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
   // シグナルに関連するデータをDBから取得
-  const [marketData, tweets, news, portfolio] = await Promise.all([
+  const [marketData, tweets, news] = await Promise.all([
     // 市場データ取得 (直近5分)
     db.query.tokenPricesTable.findMany({
       where: gte(tokenPricesTable.lastUpdated, fiveMinutesAgo),
@@ -36,10 +31,6 @@ export const dataFetchNode = async (state: typeof proposalGeneratorState.State, 
     }),
 
     // ユーザーポートフォリオ取得 (直近5分)
-    db.query.portfolioSnapshots.findFirst({
-      where: and(eq(portfolioSnapshots.userId, threadId), gte(portfolioSnapshots.timestamp, fiveMinutesAgo)),
-      orderBy: [desc(portfolioSnapshots.timestamp)],
-    }),
   ]);
 
   return {
@@ -47,7 +38,6 @@ export const dataFetchNode = async (state: typeof proposalGeneratorState.State, 
       marketData,
       tweets,
       news,
-      portfolio,
     },
     processingStage: "analysis",
   };

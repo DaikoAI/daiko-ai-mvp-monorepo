@@ -25,6 +25,10 @@
     "jobs:cron": "turbo run dev:cron --filter=\"@daiko-ai/*-job\"",
     "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\""
   },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "drizzle-orm": "^0.43.1"
+  },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "@types/uuid": "^10.0.0",

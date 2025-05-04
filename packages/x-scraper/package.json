@@ -16,10 +16,8 @@
   },
   "dependencies": {
     "@daiko-ai/shared": "workspace:*",
-    "@neondatabase/serverless": "^0.9.5",
     "@types/jsdom": "^21.1.7",
     "dotenv": "^16.5.0",
-    "drizzle-orm": "^0.42.0",
     "inngest": "^3.35.1",
     "jsdom": "^26.1.0",
     "openai": "^4.96.0",

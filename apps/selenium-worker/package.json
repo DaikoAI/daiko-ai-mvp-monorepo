@@ -15,11 +15,6 @@
     "inngest": "^3.35.1",
     "openai": "^4.52.7"
   },
-  "devDependencies": {
-    "@types/node": "^20.14.10",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
-  },
   "engines": {
     "node": ">=18"
   }
