@@ -5,7 +5,7 @@ import {
   farcasterUsersTable,
   NewFarcasterCasts,
   NewFarcasterUsers,
-} from "@daiko-ai/shared/src/db/schema";
+} from "@daiko-ai/shared";
 import { eq, sql } from "drizzle-orm";
 
 export class FarcasterRepository {

@@ -15,7 +15,7 @@
     "@ai-sdk/openai": "^1.3.11",
     "@ai-sdk/react": "^1.2.9",
     "@auth/drizzle-adapter": "^1.8.0",
-    "@daiko-ai/proposal-agent": "workspace:*",
+    "@daiko-ai/proposal-generator": "workspace:*",
     "@daiko-ai/shared": "workspace:*",
     "@daiko-ai/token-price-fetcher": "workspace:*",
     "@daiko-ai/x-scraper": "workspace:*",

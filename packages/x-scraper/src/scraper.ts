@@ -13,6 +13,9 @@ import {
 } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
+// Remove Inngest imports
+// import { Inngest } from "inngest";
+// import { DaikoEvents } from "@daiko-ai/shared";
 
 // Helper function to create random delays
 const randomDelay = (min = 1500, max = 3500) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -36,11 +39,22 @@ export class XScraper {
   private credentials: XCredentials | null = null;
   // static flag to ensure Chrome processes are cleaned up only once
   private static chromeCleaned = false;
+  // Remove Inngest client instance
+  // private inngest: Inngest;
 
   constructor(credentials?: XCredentials, sessionCookies?: any[]) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+
+    // Remove Inngest initialization
+    /*
+    this.inngest = new Inngest({
+      id: "x-scraper-worker",
+      eventKey: process.env.INNGEST_EVENT_KEY,
+      logger: this.logger,
+    });
+    */
 
     if (credentials) {
       this.credentials = credentials;
@@ -361,8 +375,9 @@ export class XScraper {
 
   /**
    * 単一のXアカウントをチェック
+   * @returns {Promise<string | null>} 変更があった場合は最新のツイートID、なければnull
    */
-  public async checkSingleAccount(xId: string): Promise<Tweet[] | null> {
+  public async checkSingleAccount(xId: string): Promise<string | null> {
     const driver = await this.initDriver();
 
     try {
@@ -402,10 +417,28 @@ export class XScraper {
       const latestTweetId = await saveTweets(xId, tweets);
 
       if (latestTweetId && latestTweetId !== account.lastTweetId) {
-        this.logger.info("XScraper", `Change detected for ${xId}`);
-        return tweets;
+        this.logger.info("XScraper", `Change detected for ${xId}. New latest tweet ID: ${latestTweetId}`);
+        // Remove Inngest event sending
+        /*
+        try {
+          await this.inngest.send({
+            name: "data/tweet.updated",
+            data: {
+              xId: xId,
+              latestTweetId: latestTweetId,
+            },
+          });
+          this.logger.info("XScraper", `Sent 'data/tweet.updated' event for ${xId} to Inngest.`);
+        } catch (inngestError) {
+          this.logger.error("XScraper", `Failed to send 'data/tweet.updated' event for ${xId} to Inngest`, {
+            error: inngestError instanceof Error ? inngestError.message : String(inngestError),
+          });
+        }
+        */
+        // Return latestTweetId if changed
+        return latestTweetId;
       } else {
-        this.logger.info("XScraper", `No change for ${xId}`);
+        this.logger.info("XScraper", `No change for ${xId}. Last checked tweet ID: ${account.lastTweetId}`);
         return null;
       }
     } catch (error) {
@@ -520,8 +553,9 @@ export class XScraper {
 
   /**
    * 登録されたすべてのXアカウントをチェック（並列処理）
+   * @returns {Promise<string[]>} 変更が検出されたアカウントIDの配列
    */
-  public async checkXAccounts(concurrency: number = 10): Promise<void> {
+  public async checkXAccounts(concurrency: number = 10): Promise<string[]> {
     // ログイン専用の一時的なスクレイパーインスタンスを作成
     const mainScraper = new XScraper(this.credentials ?? undefined);
     let baseCookies: any[] = [];
@@ -531,7 +565,7 @@ export class XScraper {
       const loggedIn = await mainScraper.login();
       if (!loggedIn) {
         this.logger.error("XScraper", "Initial login failed, cannot proceed with checking accounts.");
-        return; // ログイン失敗時は処理を中断
+        return []; // Return empty array if login fails
       }
 
       // ログイン成功後、クッキーを取得
@@ -542,7 +576,7 @@ export class XScraper {
       this.logger.info("XScraper", `Initial login successful. Retrieved ${baseCookies.length} cookies.`);
     } catch (loginError) {
       this.logger.error("XScraper", "Error during initial login process:", loginError);
-      return; // ログインプロセス中にエラーが発生した場合も中断
+      return []; // Return empty array if login fails
     }
 
     // DBからアカウントリストを取得
@@ -551,10 +585,12 @@ export class XScraper {
 
     if (accounts.length === 0) {
       this.logger.warn("XScraper", "No accounts found in DB to check.");
-      return;
+      return []; // Return empty array if no accounts
     }
 
     this.logger.info("XScraper", `Starting parallel scraping with concurrency=${concurrency}`);
+
+    const updatedAccountIds: string[] = []; // Array to store updated account IDs
 
     // アカウントリストをバッチに分割して並列処理
     for (let i = 0; i < accounts.length; i += concurrency) {
@@ -568,17 +604,21 @@ export class XScraper {
         // 各アカウントごとに新しいスクレイパーインスタンスを作成し、取得したクッキーを渡す
         const scraper = new XScraper(undefined, baseCookies);
         return (async () => {
+          let changedTweetId: string | null = null;
           try {
             // initDriver内でクッキーが適用されるため、再度login()を呼ぶ必要はない
-            const tweets = await scraper.checkSingleAccount(acc.id);
-            if (tweets && tweets.length > 0) {
-              this.logger.info("XScraper", `Fetched ${tweets.length} new tweets for ${acc.id}`);
+            changedTweetId = await scraper.checkSingleAccount(acc.id);
+            if (changedTweetId) {
+              this.logger.info("XScraper", `Change detected for ${acc.id}`);
               // DB保存は checkSingleAccount 内で行われる
+              return acc.id; // Return account ID if changed
             } else {
               this.logger.info("XScraper", `No new tweets or change detected for ${acc.id}`);
+              return null; // Return null if no change
             }
           } catch (err) {
             this.logger.error("XScraper", `Error scraping ${acc.id}:`, err);
+            return null; // Return null on error
           } finally {
             // 各インスタンスのWebDriverを確実に閉じる
             await scraper.closeDriver();
@@ -587,9 +627,18 @@ export class XScraper {
         })();
       });
 
-      // 現在のバッチの処理がすべて完了するのを待つ
-      await Promise.allSettled(tasks);
-      this.logger.info("XScraper", `Finished processing batch ${Math.floor(i / concurrency) + 1}`);
+      // Collect results from the batch
+      const batchResults = await Promise.allSettled(tasks);
+      batchResults.forEach((result) => {
+        if (result.status === "fulfilled" && result.value) {
+          updatedAccountIds.push(result.value); // Add account ID if changed
+        }
+      });
+
+      this.logger.info(
+        "XScraper",
+        `Finished processing batch ${Math.floor(i / concurrency) + 1}. Updated accounts in batch: ${batchResults.filter((r) => r.status === "fulfilled" && r.value).length}`,
+      );
 
       // 次のバッチがある場合は、負荷軽減のために少し待機
       if (i + concurrency < accounts.length) {
@@ -599,7 +648,11 @@ export class XScraper {
       }
     }
 
-    this.logger.info("XScraper", "Finished checking all X accounts in parallel.");
+    this.logger.info(
+      "XScraper",
+      `Finished checking all X accounts. Total updated accounts: ${updatedAccountIds.length}`,
+    );
+    return updatedAccountIds; // Return the array of updated account IDs
   }
 
   /**

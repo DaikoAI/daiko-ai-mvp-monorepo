@@ -12,6 +12,7 @@
     "@daiko-ai/shared": "workspace:*",
     "@daiko-ai/x-scraper": "workspace:*",
     "dotenv": "^16.4.5",
+    "inngest": "^3.35.1",
     "openai": "^4.52.7"
   },
   "devDependencies": {

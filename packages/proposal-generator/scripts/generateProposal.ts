@@ -4,10 +4,10 @@ import { config } from "dotenv";
 config();
 
 const main = async () => {
-  const { initProposalAgentGraph } = await import("../src/agents");
-  const { agent, config } = await initProposalAgentGraph("test-user");
+  const { initProposalGeneratorGraph } = await import("../src/index");
+  const { graph, config } = await initProposalGeneratorGraph("signal-id");
 
-  const result = await agent.invoke(
+  const result = await graph.invoke(
     {
       messages: [
         new HumanMessage(

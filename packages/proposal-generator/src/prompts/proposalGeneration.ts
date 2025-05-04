@@ -10,7 +10,7 @@ export const parser = StructuredOutputParser.fromZodSchema(
   }),
 );
 
-export const analyzerPrompt = ChatPromptTemplate.fromMessages([
+export const proposalGenerationPrompt = ChatPromptTemplate.fromMessages([
   [
     "system",
     `You are a Solana blockchain analytics expert responsible for finalizing a user's on-chain action proposal by integrating multiple data sources. Your role is to analyze the user's profile and onchain portfolio status, along with trigger event details, DB news data, and twitter data, to make a comprehensive decision on the most appropriate on-chain action.

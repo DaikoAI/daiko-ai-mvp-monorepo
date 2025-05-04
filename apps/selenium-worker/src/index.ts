@@ -1,5 +1,6 @@
-import { Logger, LogLevel } from "@daiko-ai/shared";
+import { Logger, LogLevel, eventSchemas } from "@daiko-ai/shared";
 import { XScraper } from "@daiko-ai/x-scraper";
+import { inngest } from "@daiko-ai/shared";
 
 const logger = new Logger({ level: LogLevel.INFO });
 
@@ -35,9 +36,36 @@ async function runWorker() {
 
   try {
     logger.info("SeleniumWorker", "Running checkXAccounts...");
-    // Assuming checkXAccounts handles login internally
-    await scraper.checkXAccounts();
-    logger.info("SeleniumWorker", "checkXAccounts finished.");
+    // Get the list of updated account IDs
+    const updatedAccountIds = await scraper.checkXAccounts();
+    logger.info("SeleniumWorker", `checkXAccounts finished. Found ${updatedAccountIds.length} updated accounts.`);
+
+    // Send Inngest event for each updated account
+    if (updatedAccountIds.length > 0) {
+      logger.info("SeleniumWorker", "Sending events to Inngest...");
+      const sendPromises = updatedAccountIds.map((xId) => {
+        return inngest.send({
+          name: "data/tweet.updated", // Use the defined event name
+          data: {
+            xId: xId,
+            // latestTweetId is not readily available here, signal processing
+            // will need to fetch the latest based on xId.
+          },
+        });
+      });
+      // Wait for all events to be sent
+      const results = await Promise.allSettled(sendPromises);
+      const successfulSends = results.filter((r) => r.status === "fulfilled").length;
+      const failedSends = results.length - successfulSends;
+      logger.info(
+        "SeleniumWorker",
+        `Finished sending Inngest events. Successful: ${successfulSends}, Failed: ${failedSends}`,
+      );
+      if (failedSends > 0) {
+        logger.error("SeleniumWorker", "Some Inngest events failed to send.", { results });
+        // Optionally, handle failures (e.g., retry logic or specific error logging)
+      }
+    }
   } catch (error) {
     logger.error("SeleniumWorker", "Error during scraping process:", error);
   } finally {

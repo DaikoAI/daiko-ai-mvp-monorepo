@@ -6,7 +6,7 @@ import { Writable } from "node:stream";
 config();
 
 const main = async () => {
-  const { initProposalAgentGraph } = await import("../src/agents");
+  const { initProposalAgentGraph } = await import("../src/index");
   const { agent } = await initProposalAgentGraph("analysis-manual");
 
   const graphBlob = await (
