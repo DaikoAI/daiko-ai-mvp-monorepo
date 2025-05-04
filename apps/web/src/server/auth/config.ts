@@ -1,7 +1,7 @@
 import { generateSolanaWalletAddress } from "@/utils";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { accountsTable, db, sessionsTable, usersTable, verificationTokensTable } from "@daiko-ai/shared";
-import { setupInitialPortfolio } from "@daiko-ai/shared/src/utils/portfolio";
+import { setupInitialPortfolio } from "@daiko-ai/shared";
 import { sql } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";

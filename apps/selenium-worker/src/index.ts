@@ -1,5 +1,8 @@
-import { Logger, LogLevel } from "@daiko-ai/shared";
+import { Logger, LogLevel, eventSchemas } from "@daiko-ai/shared";
 import { XScraper } from "@daiko-ai/x-scraper";
+import { inngest } from "@daiko-ai/shared";
+// Import the specific event payload type if needed for type safety
+// import type { XAccountsCheckedPayload } from "@daiko-ai/shared/lib/inngest/events";
 
 const logger = new Logger({ level: LogLevel.INFO });
 
@@ -19,6 +22,7 @@ async function runWorker() {
   if (!process.env.OPENAI_API_KEY) {
     logger.warn("SeleniumWorker", "OPENAI_API_KEY environment variable is not set.");
     // Decide if this is critical - process.exit(1) or just continue?
+    process.exit(1);
   }
 
   // Ensure Database URL is set if needed by db functions in x-scraper/shared
@@ -35,9 +39,32 @@ async function runWorker() {
 
   try {
     logger.info("SeleniumWorker", "Running checkXAccounts...");
-    // Assuming checkXAccounts handles login internally
-    await scraper.checkXAccounts();
-    logger.info("SeleniumWorker", "checkXAccounts finished.");
+    // Get the list of updated account IDs (assuming returns string[])
+    const updatedAccountIds: string[] = await scraper.checkXAccounts();
+    logger.info("SeleniumWorker", `checkXAccounts finished. Found ${updatedAccountIds.length} updated accounts.`);
+
+    // Send a single Inngest event if there are updated accounts
+    if (updatedAccountIds.length > 0) {
+      logger.info(
+        "SeleniumWorker",
+        `Sending single batch event for ${updatedAccountIds.length} updated accounts to Inngest...`,
+      );
+      try {
+        // Send the new batch event
+        const eventResult = await inngest.send({
+          name: "data/tweet.updated", // Use the new event name
+          data: {
+            updatedAccountIds: updatedAccountIds, // Pass the array of IDs
+          },
+        });
+        logger.info("SeleniumWorker", "Successfully sent batch accounts checked event to Inngest.", {
+          eventId: eventResult.ids,
+        });
+      } catch (error) {
+        logger.error("SeleniumWorker", "Failed to send batch accounts checked event to Inngest.", { error });
+        // Consider if this failure should cause process.exit(1)
+      }
+    }
   } catch (error) {
     logger.error("SeleniumWorker", "Error during scraping process:", error);
   } finally {

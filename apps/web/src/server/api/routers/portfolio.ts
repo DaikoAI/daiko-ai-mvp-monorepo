@@ -6,8 +6,7 @@ import {
   userBalancesTable,
   usersTable,
 } from "@daiko-ai/shared";
-import type { NeonHttpDatabase } from "@daiko-ai/shared/src/db";
-import { tokenPriceHistory } from "@daiko-ai/shared/src/db/schema";
+import { tokenPriceHistory, type NeonHttpDatabase } from "@daiko-ai/shared";
 import BigNumber from "bignumber.js";
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 

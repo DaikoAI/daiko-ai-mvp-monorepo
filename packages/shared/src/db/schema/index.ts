@@ -15,6 +15,7 @@ export * from "./portfolio_snapshots";
 export * from "./proposals";
 export * from "./push_subscriptions";
 export * from "./sessions";
+export * from "./signals";
 export * from "./token_price_history";
 export * from "./token_prices";
 export * from "./tokens";
