@@ -4,7 +4,6 @@ import { RunnableSequence } from "@langchain/core/runnables";
 import { gpt4oMini } from "../utils/model";
 import { proposalGenerationPrompt, parser } from "../prompts/proposalGeneration";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 const proposalGenerationChain = RunnableSequence.from([proposalGenerationPrompt, gpt4oMini, parser]);
 
