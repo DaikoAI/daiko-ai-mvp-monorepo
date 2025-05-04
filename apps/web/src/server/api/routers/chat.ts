@@ -3,8 +3,7 @@ import { z } from "zod";
 
 import { revalidateChatList, revalidateThread } from "@/app/actions";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { chatMessagesTable, chatThreadsTable } from "@daiko-ai/shared";
-import { chatMessageSelectSchema } from "@daiko-ai/shared/src/db";
+import { chatMessagesTable, chatThreadsTable, chatMessageSelectSchema } from "@daiko-ai/shared";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 

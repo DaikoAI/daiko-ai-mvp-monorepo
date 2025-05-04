@@ -6,13 +6,14 @@ export { TweetRepository } from "./repositories/interface/TweetRepository";
 export { XAccountRepository } from "./repositories/interface/XAccountRepository";
 
 // PostgreSQL実装のexport
-export { db } from "./db/connection";
+export { db, type NeonHttpDatabase } from "./db/connection";
 
 export * from "./db/schema";
 
 // ユーティリティのexport
 export * from "./types";
 export { Logger } from "./utils/logger";
+export * from "./utils/portfolio";
 
 // 追加の型をここで明示的にエクスポート
 export { CryptoAnalysis, Tweet } from "./types";

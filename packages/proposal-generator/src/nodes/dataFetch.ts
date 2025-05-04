@@ -3,8 +3,6 @@ import { tokenPricesTable, tweetTable, newsSiteTable, portfolioSnapshots } from 
 import { and, eq, gte, desc } from "drizzle-orm";
 import { proposalGeneratorState } from "../utils/state";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
-import { BaseMessage } from "@langchain/core/messages";
-import { RunnableConfig } from "@langchain/core/runnables";
 
 export const dataFetchNode = async (state: typeof proposalGeneratorState.State, options: LangGraphRunnableConfig) => {
   const threadId = options.configurable?.thread_id;
