@@ -1,6 +1,8 @@
 import { Logger, LogLevel, eventSchemas } from "@daiko-ai/shared";
 import { XScraper } from "@daiko-ai/x-scraper";
 import { inngest } from "@daiko-ai/shared";
+// Import the specific event payload type if needed for type safety
+// import type { XAccountsCheckedPayload } from "@daiko-ai/shared/lib/inngest/events";
 
 const logger = new Logger({ level: LogLevel.INFO });
 
@@ -20,6 +22,7 @@ async function runWorker() {
   if (!process.env.OPENAI_API_KEY) {
     logger.warn("SeleniumWorker", "OPENAI_API_KEY environment variable is not set.");
     // Decide if this is critical - process.exit(1) or just continue?
+    process.exit(1);
   }
 
   // Ensure Database URL is set if needed by db functions in x-scraper/shared
@@ -36,34 +39,30 @@ async function runWorker() {
 
   try {
     logger.info("SeleniumWorker", "Running checkXAccounts...");
-    // Get the list of updated account IDs
-    const updatedAccountIds = await scraper.checkXAccounts();
+    // Get the list of updated account IDs (assuming returns string[])
+    const updatedAccountIds: string[] = await scraper.checkXAccounts();
     logger.info("SeleniumWorker", `checkXAccounts finished. Found ${updatedAccountIds.length} updated accounts.`);
 
-    // Send Inngest event for each updated account
+    // Send a single Inngest event if there are updated accounts
     if (updatedAccountIds.length > 0) {
-      logger.info("SeleniumWorker", "Sending events to Inngest...");
-      const sendPromises = updatedAccountIds.map((xId) => {
-        return inngest.send({
-          name: "data/tweet.updated", // Use the defined event name
-          data: {
-            xId: xId,
-            // latestTweetId is not readily available here, signal processing
-            // will need to fetch the latest based on xId.
-          },
-        });
-      });
-      // Wait for all events to be sent
-      const results = await Promise.allSettled(sendPromises);
-      const successfulSends = results.filter((r) => r.status === "fulfilled").length;
-      const failedSends = results.length - successfulSends;
       logger.info(
         "SeleniumWorker",
-        `Finished sending Inngest events. Successful: ${successfulSends}, Failed: ${failedSends}`,
+        `Sending single batch event for ${updatedAccountIds.length} updated accounts to Inngest...`,
       );
-      if (failedSends > 0) {
-        logger.error("SeleniumWorker", "Some Inngest events failed to send.", { results });
-        // Optionally, handle failures (e.g., retry logic or specific error logging)
+      try {
+        // Send the new batch event
+        const eventResult = await inngest.send({
+          name: "data/tweet.updated", // Use the new event name
+          data: {
+            updatedAccountIds: updatedAccountIds, // Pass the array of IDs
+          },
+        });
+        logger.info("SeleniumWorker", "Successfully sent batch accounts checked event to Inngest.", {
+          eventId: eventResult.ids,
+        });
+      } catch (error) {
+        logger.error("SeleniumWorker", "Failed to send batch accounts checked event to Inngest.", { error });
+        // Consider if this failure should cause process.exit(1)
       }
     }
   } catch (error) {

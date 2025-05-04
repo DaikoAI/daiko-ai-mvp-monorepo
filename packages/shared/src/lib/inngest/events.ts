@@ -15,9 +15,7 @@ type ProposalSerialized = Omit<ProposalSelect, "createdAt" | "updatedAt" | "expi
  * Defines the structure for the 'data/tweet.updated' event payload.
  */
 type TweetUpdatedPayload = {
-  xId: string; // The ID of the X account that was updated
-  latestTweetId?: string; // Optional: The ID of the latest tweet saved for this account
-  // Add other relevant fields if needed, e.g., timestamp
+  updatedAccountIds: string[];
 };
 
 /**
