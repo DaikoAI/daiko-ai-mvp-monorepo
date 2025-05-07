@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useOnboarding } from "@/lib/onboarding-context";
+import { useOnboarding } from "@/app/onboarding/onboarding-context";
 import { signIn, useSession } from "next-auth/react";
 import { useEffect } from "react";
 

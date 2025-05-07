@@ -8,12 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
+    "inngest:dev": "npx inngest-cli@latest dev",
     "generate-pwa-assets": "npx pwa-asset-generator src/app/icon.jpg public/pwa --background '#080808'"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.11",
     "@ai-sdk/react": "^1.2.9",
     "@auth/drizzle-adapter": "^1.8.0",
+    "@daiko-ai/proposal-generator": "workspace:*",
     "@daiko-ai/shared": "workspace:*",
     "@daiko-ai/token-price-fetcher": "workspace:*",
     "@daiko-ai/x-scraper": "workspace:*",
@@ -41,13 +43,14 @@
     "@trpc/react-query": "^11.1.0",
     "@trpc/server": "^11.1.0",
     "@trpc/tanstack-react-query": "^11.1.0",
+    "@types/web-push": "^3.6.4",
     "ai": "^4.3.6",
     "bignumber.js": "^9.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "drizzle-orm": "^0.42.0",
     "framer-motion": "^12.6.5",
     "idle-task": "^4.3.1",
+    "inngest": "^3.35.1",
     "lucide-react": "^0.483.0",
     "neverthrow": "^8.2.0",
     "next": "15.3.1-canary.7",
@@ -69,6 +72,7 @@
     "use-haptic": "^1.1.10",
     "usehooks-ts": "^3.1.1",
     "vaul": "^1.1.2",
+    "web-push": "^3.6.7",
     "zod": "^3.24.2"
   },
   "devDependencies": {

@@ -5,9 +5,13 @@ PACKAGES=(
     "apps/news-scraper-job"
     "apps/x-scraper-job"
     "apps/web"
-    "packages/client"
+    "apps/lp"
+    "apps/selenium-worker"
+    "packages/proposal-generator"
     "packages/shared"
     "packages/news-scraper"
+    "packages/farcaster-scraper"
+    "packages/token-price-fetcher"
     "packages/x-scraper"
 )
 

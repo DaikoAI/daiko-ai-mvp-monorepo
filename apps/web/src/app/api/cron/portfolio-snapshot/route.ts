@@ -1,5 +1,5 @@
 import { portfolioSnapshots, tokenPricesTable, userBalancesTable } from "@daiko-ai/shared";
-import { db } from "@daiko-ai/shared/src/db";
+import { db } from "@daiko-ai/shared";
 import BigNumber from "bignumber.js";
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "daiko ai mvp monorepo",
   "scripts": {
+    "format": "prettier --write \"**/*.{js,ts,json}\"",
     "dev:x-scraper": "turbo run dev --filter=@daiko-ai/x-scraper",
     "dev:news-scraper": "turbo run dev --filter=@daiko-ai/news-scraper",
     "dev:web": "turbo run dev --filter=@daiko-ai/web",
@@ -24,10 +25,17 @@
     "jobs:cron": "turbo run dev:cron --filter=\"@daiko-ai/*-job\"",
     "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\""
   },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "drizzle-orm": "^0.43.1"
+  },
   "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.30.6",
     "prettier": "^3.5.3",
-    "turbo": "^2.5.2"
+    "turbo": "^2.5.2",
+    "typescript": "^5.8.3"
   },
   "prettier": {
     "printWidth": 120,
@@ -39,8 +47,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.10.0",
+  "packageManager": "bun@1.2.12",
   "engines": {
     "node": ">=18"
-  }
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

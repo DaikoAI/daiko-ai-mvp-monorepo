@@ -1,6 +1,6 @@
 ---
-description: 
-globs: apps/web
+description:
+globs: apps/web/*
 alwaysApply: false
 ---
 # Nextjs Coding Rules

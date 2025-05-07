@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePushNotifications } from "@/hooks/use-push-notifications"; // Import the custom hook
-import { useOnboarding } from "@/lib/onboarding-context";
+import { useOnboarding } from "@/app/onboarding/onboarding-context";
 import { useEffect } from "react";
 
 export const NotificationStep: React.FC = () => {

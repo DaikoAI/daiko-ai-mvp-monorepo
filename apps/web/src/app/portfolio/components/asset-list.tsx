@@ -10,7 +10,7 @@ type AssetListProps = {
 
 export const AssetListComponent: React.FC<AssetListProps> = ({ assets }) => {
   return (
-    <section className="space-y-2 overscroll-contain">
+    <section className="space-y-2">
       {assets.map((asset, index) => (
         <Card
           key={asset.tokenAddress || index}

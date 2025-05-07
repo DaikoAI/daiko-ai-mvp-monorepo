@@ -1,5 +1,12 @@
-import { db, tokenPricesTable, tokensTable } from "@daiko-ai/shared";
-import * as schema from "@daiko-ai/shared/src/db/schema";
+import {
+  db,
+  tokenPricesTable,
+  tokensTable,
+  usersTable,
+  userBalancesTable,
+  transactionsTable,
+  investmentsTable,
+} from "@daiko-ai/shared";
 import BigNumber from "bignumber.js";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -160,7 +167,7 @@ export const tokenRouter = createTRPCRouter({
 
       try {
         const user = await db.query.usersTable.findFirst({
-          where: eq(schema.usersTable.walletAddress, walletAddress),
+          where: eq(usersTable.walletAddress, walletAddress),
         });
 
         if (!user) {
@@ -168,10 +175,10 @@ export const tokenRouter = createTRPCRouter({
         }
 
         const fromTokenInfo = await db.query.tokensTable.findFirst({
-          where: eq(schema.tokensTable.symbol, fromToken),
+          where: eq(tokensTable.symbol, fromToken),
         });
         const toTokenInfo = await db.query.tokensTable.findFirst({
-          where: eq(schema.tokensTable.symbol, toToken),
+          where: eq(tokensTable.symbol, toToken),
         });
 
         if (!fromTokenInfo || !toTokenInfo) {
@@ -192,10 +199,7 @@ export const tokenRouter = createTRPCRouter({
 
         // 1. Get current balance for the fromToken
         const fromBalanceRecord = await db.query.userBalancesTable.findFirst({
-          where: and(
-            eq(schema.userBalancesTable.userId, user.id),
-            eq(schema.userBalancesTable.tokenAddress, fromTokenInfo.address),
-          ),
+          where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, fromTokenInfo.address)),
         });
 
         if (!fromBalanceRecord) {
@@ -215,14 +219,14 @@ export const tokenRouter = createTRPCRouter({
         // 3. Decrement fromToken balance
         const newFromBalance = currentFromBalance.minus(fromAmountBN).toString();
         await db
-          .update(schema.userBalancesTable)
+          .update(userBalancesTable)
           .set({ balance: newFromBalance, updatedAt: new Date() })
-          .where(eq(schema.userBalancesTable.id, fromBalanceRecord.id));
+          .where(eq(userBalancesTable.id, fromBalanceRecord.id));
 
         // 4. Record transaction
         const transaction = (
           await db
-            .insert(schema.transactionsTable)
+            .insert(transactionsTable)
             .values({
               userId: user.id,
               transactionType: "swap",
@@ -246,21 +250,18 @@ export const tokenRouter = createTRPCRouter({
         try {
           // 5. Increment toToken balance (Upsert)
           const toBalanceRecord = await db.query.userBalancesTable.findFirst({
-            where: and(
-              eq(schema.userBalancesTable.userId, user.id),
-              eq(schema.userBalancesTable.tokenAddress, toTokenInfo.address),
-            ),
+            where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, toTokenInfo.address)),
           });
 
           if (toBalanceRecord) {
             const currentToBalance = new BigNumber(toBalanceRecord.balance || "0");
             const newToBalance = currentToBalance.plus(toAmountBN).toString();
             await db
-              .update(schema.userBalancesTable)
+              .update(userBalancesTable)
               .set({ balance: newToBalance, updatedAt: new Date() })
-              .where(eq(schema.userBalancesTable.id, toBalanceRecord.id));
+              .where(eq(userBalancesTable.id, toBalanceRecord.id));
           } else {
-            await db.insert(schema.userBalancesTable).values({
+            await db.insert(userBalancesTable).values({
               userId: user.id,
               tokenAddress: toTokenInfo.address,
               balance: toAmountBN.toString(),
@@ -270,14 +271,14 @@ export const tokenRouter = createTRPCRouter({
 
           // 6. Update transaction status
           await db
-            .update(schema.transactionsTable)
+            .update(transactionsTable)
             .set({
               details: {
                 ...input,
                 status: "completed",
               },
             })
-            .where(eq(schema.transactionsTable.id, transaction.id));
+            .where(eq(transactionsTable.id, transaction.id));
 
           return {
             success: true,
@@ -286,13 +287,13 @@ export const tokenRouter = createTRPCRouter({
         } catch (error) {
           // Compensating transaction: Revert fromToken balance
           await db
-            .update(schema.userBalancesTable)
+            .update(userBalancesTable)
             .set({ balance: currentFromBalance.toString(), updatedAt: new Date() })
-            .where(eq(schema.userBalancesTable.id, fromBalanceRecord.id));
+            .where(eq(userBalancesTable.id, fromBalanceRecord.id));
 
           // Update transaction status
           await db
-            .update(schema.transactionsTable)
+            .update(transactionsTable)
             .set({
               details: {
                 ...input,
@@ -301,7 +302,7 @@ export const tokenRouter = createTRPCRouter({
                 errorCode: error instanceof TokenError ? error.code : ErrorCodes.TRANSACTION_FAILED,
               },
             })
-            .where(eq(schema.transactionsTable.id, transaction.id));
+            .where(eq(transactionsTable.id, transaction.id));
 
           throw error;
         }
@@ -327,7 +328,7 @@ export const tokenRouter = createTRPCRouter({
       const { fromToken: baseTokenSymbol, toToken: lstTokenSymbol, amount, walletAddress } = input;
 
       const user = await db.query.usersTable.findFirst({
-        where: eq(schema.usersTable.walletAddress, walletAddress),
+        where: eq(usersTable.walletAddress, walletAddress),
       });
 
       if (!user) {
@@ -336,7 +337,7 @@ export const tokenRouter = createTRPCRouter({
 
       // ベーストークン（例：SOL）の情報を取得
       const baseToken = await db.query.tokensTable.findFirst({
-        where: eq(schema.tokensTable.symbol, baseTokenSymbol),
+        where: eq(tokensTable.symbol, baseTokenSymbol),
       });
 
       if (!baseToken) {
@@ -345,7 +346,7 @@ export const tokenRouter = createTRPCRouter({
 
       // LSTトークン（例：jupSOL）の情報を取得
       const lstToken = await db.query.tokensTable.findFirst({
-        where: and(eq(schema.tokensTable.symbol, lstTokenSymbol), eq(schema.tokensTable.type, "liquid_staking")),
+        where: and(eq(tokensTable.symbol, lstTokenSymbol), eq(tokensTable.type, "liquid_staking")),
       });
 
       if (!lstToken) {
@@ -366,10 +367,7 @@ export const tokenRouter = createTRPCRouter({
       try {
         // 1. ベーストークンの残高を確認
         const baseBalanceRecord = await db.query.userBalancesTable.findFirst({
-          where: and(
-            eq(schema.userBalancesTable.userId, user.id),
-            eq(schema.userBalancesTable.tokenAddress, baseToken.address),
-          ),
+          where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, baseToken.address)),
         });
 
         if (!baseBalanceRecord) {
@@ -386,7 +384,7 @@ export const tokenRouter = createTRPCRouter({
         // 3. トランザクションを記録
         const transaction = (
           await db
-            .insert(schema.transactionsTable)
+            .insert(transactionsTable)
             .values({
               userId: user.id,
               transactionType: "stake",
@@ -411,16 +409,13 @@ export const tokenRouter = createTRPCRouter({
           // 4. ベーストークンの残高を減少
           const newBaseBalance = currentBaseBalance.minus(amountBN).toString();
           await db
-            .update(schema.userBalancesTable)
+            .update(userBalancesTable)
             .set({ balance: newBaseBalance, updatedAt: new Date() })
-            .where(eq(schema.userBalancesTable.id, baseBalanceRecord.id));
+            .where(eq(userBalancesTable.id, baseBalanceRecord.id));
 
           // 5. LSTの残高を取得または作成
           let lstBalanceRecord = await db.query.userBalancesTable.findFirst({
-            where: and(
-              eq(schema.userBalancesTable.userId, user.id),
-              eq(schema.userBalancesTable.tokenAddress, lstToken.address),
-            ),
+            where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, lstToken.address)),
           });
 
           if (lstBalanceRecord) {
@@ -428,12 +423,12 @@ export const tokenRouter = createTRPCRouter({
             const currentLstBalance = new BigNumber(lstBalanceRecord.balance || "0");
             const newLstBalance = currentLstBalance.plus(amountBN).toString();
             await db
-              .update(schema.userBalancesTable)
+              .update(userBalancesTable)
               .set({ balance: newLstBalance, updatedAt: new Date() })
-              .where(eq(schema.userBalancesTable.id, lstBalanceRecord.id));
+              .where(eq(userBalancesTable.id, lstBalanceRecord.id));
           } else {
             // 新しいLST残高レコードを作成
-            await db.insert(schema.userBalancesTable).values({
+            await db.insert(userBalancesTable).values({
               userId: user.id,
               tokenAddress: lstToken.address,
               balance: amountBN.toString(),
@@ -442,7 +437,7 @@ export const tokenRouter = createTRPCRouter({
           }
 
           // 6. 投資記録を作成
-          await db.insert(schema.investmentsTable).values({
+          await db.insert(investmentsTable).values({
             userId: user.id,
             tokenAddress: baseToken.address,
             actionType: "staking",
@@ -456,14 +451,14 @@ export const tokenRouter = createTRPCRouter({
 
           // 7. トランザクションステータスを更新
           await db
-            .update(schema.transactionsTable)
+            .update(transactionsTable)
             .set({
               details: {
                 ...input,
                 status: "completed",
               },
             })
-            .where(eq(schema.transactionsTable.id, transaction.id));
+            .where(eq(transactionsTable.id, transaction.id));
 
           return {
             success: true,
@@ -472,7 +467,7 @@ export const tokenRouter = createTRPCRouter({
         } catch (error) {
           // トランザクションステータスを更新
           await db
-            .update(schema.transactionsTable)
+            .update(transactionsTable)
             .set({
               details: {
                 ...input,
@@ -480,7 +475,7 @@ export const tokenRouter = createTRPCRouter({
                 error: error instanceof Error ? error.message : "Unknown error",
               },
             })
-            .where(eq(schema.transactionsTable.id, transaction.id));
+            .where(eq(transactionsTable.id, transaction.id));
 
           throw error;
         }

@@ -1,6 +1,5 @@
 import { XAccountInsert, XAccountRepository, XAccountSelect, db, xAccountTable } from "@daiko-ai/shared";
 import { eq, sql } from "drizzle-orm";
-
 export class PostgresXAccountRepository implements XAccountRepository {
   async findAll(): Promise<XAccountSelect[]> {
     const accounts = await db.select().from(xAccountTable);
