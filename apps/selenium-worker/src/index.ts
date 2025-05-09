@@ -1,8 +1,6 @@
-import { Logger, LogLevel, eventSchemas } from "@daiko-ai/shared";
+import { Logger, LogLevel } from "@daiko-ai/shared";
 import { XScraper } from "@daiko-ai/x-scraper";
 import { inngest } from "@daiko-ai/shared";
-// Import the specific event payload type if needed for type safety
-// import type { XAccountsCheckedPayload } from "@daiko-ai/shared/lib/inngest/events";
 
 const logger = new Logger({ level: LogLevel.INFO });
 

@@ -6,6 +6,6 @@ import { eventSchemas } from "./events"; // Changed to relative path
  */
 export const inngest = new Inngest({
   // Remove the <DaikoEvents> type argument
-  id: "daiko-ai-web",
+  id: "daiko-ai",
   schemas: eventSchemas, // Provide the schemas for type safety
 });
