@@ -507,7 +507,7 @@ const seedProposals = async (userIds: string[]) => {
         type: "trade",
         proposedBy: "Daiko AI",
         userId: userIds[0],
-        expires_at: new Date(Date.now() + 1000 * 40),
+        expiresAt: new Date(Date.now() + 1000 * 40),
         financialImpact: {
           currentValue: 5000,
           projectedValue: 5615,
@@ -548,7 +548,7 @@ const seedProposals = async (userIds: string[]) => {
         type: "risk",
         proposedBy: "Daiko AI",
         userId: userIds[0],
-        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         financialImpact: {
           currentValue: 1200, // Assuming 100M MELANIA = $1200
           projectedValue: 720, // Assuming 40% potential decline
@@ -591,7 +591,7 @@ const seedProposals = async (userIds: string[]) => {
         type: "stake",
         proposedBy: "Daiko AI",
         userId: userIds[0],
-        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 72),
         financialImpact: {
           currentValue: 595.92, // Updated value (4 * 148.98)
           projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)

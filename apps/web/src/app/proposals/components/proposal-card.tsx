@@ -219,7 +219,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
             {currentTypeStyle.icon}
             <span className={cn("text-sm font-semibold", currentTypeStyle.textColor)}>{currentTypeStyle.label}</span>
           </div>
-          {proposal.expires_at && <TimeRemaining expiresAt={proposal.expires_at} />}
+          {proposal.expiresAt && <TimeRemaining expiresAt={proposal.expiresAt} />}
         </div>
         <CardTitle className="text-base font-bold text-white">{proposal.title}</CardTitle>
         {proposal.financialImpact && (

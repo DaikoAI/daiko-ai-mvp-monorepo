@@ -1,5 +1,5 @@
 import { Inngest } from "inngest";
-import { eventSchemas } from "@daiko-ai/shared"; // Import the shared event schemas
+import { eventSchemas } from "./events"; // Changed to relative path
 
 /**
  * Shared Inngest client instance with default settings

@@ -46,7 +46,7 @@ export const proposalTable = pgTable("proposals", {
       positions?: Record<string, unknown>;
     };
   }>(),
-  expires_at: timestamp("expires_at").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   status: varchar("status").default("active"),
   contractCall: json("contract_call").$type<z.infer<typeof contractCallSchema>>(),
   createdAt: timestamp("created_at")

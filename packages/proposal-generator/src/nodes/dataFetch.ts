@@ -1,6 +1,6 @@
 import { db } from "@daiko-ai/shared";
-import { tokenPricesTable, tweetTable, newsSiteTable } from "@daiko-ai/shared";
-import { gte, desc } from "drizzle-orm";
+import { tokenPricesTable, tweetTable, userBalancesTable, usersTable, signalsTable } from "@daiko-ai/shared";
+import { gte, desc, eq } from "drizzle-orm";
 import { proposalGeneratorState } from "../utils/state";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 
@@ -8,7 +8,15 @@ export const dataFetchNode = async (state: typeof proposalGeneratorState.State, 
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
   // シグナルに関連するデータをDBから取得
-  const [marketData, tweets, news] = await Promise.all([
+  const [user, signal, tokenPrices, tweets, userBalance] = await Promise.all([
+    db.query.usersTable.findFirst({
+      where: eq(usersTable.id, options.configurable?.userId),
+    }),
+
+    db.query.signalsTable.findFirst({
+      where: eq(signalsTable.id, options.configurable?.signalId),
+    }),
+
     // 市場データ取得 (直近5分)
     db.query.tokenPricesTable.findMany({
       where: gte(tokenPricesTable.lastUpdated, fiveMinutesAgo),
@@ -23,22 +31,17 @@ export const dataFetchNode = async (state: typeof proposalGeneratorState.State, 
       limit: 20,
     }),
 
-    // 関連ニュース取得 (直近5分) - news_sites テーブルを代替として使用
-    db.query.newsSiteTable.findMany({
-      where: gte(newsSiteTable.updatedAt, fiveMinutesAgo),
-      orderBy: [desc(newsSiteTable.updatedAt)],
-      limit: 10,
-    }),
-
     // ユーザーポートフォリオ取得 (直近5分)
+    db.query.userBalancesTable.findMany({
+      where: eq(userBalancesTable.userId, options.configurable?.userId),
+    }),
   ]);
 
   return {
-    dbData: {
-      marketData,
-      tweets,
-      news,
-    },
-    processingStage: "analysis",
+    user,
+    signal,
+    tokenPrices,
+    latestTweets: tweets,
+    userBalance,
   };
 };
