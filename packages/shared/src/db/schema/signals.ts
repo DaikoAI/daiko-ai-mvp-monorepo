@@ -1,7 +1,16 @@
 import { pgTable, varchar, timestamp, integer, real, json, text, pgEnum } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 
-export const suggestionTypeEnum = pgEnum("suggestion_type_enum", ["buy", "sell", "close_position", "stake"]);
+export const suggestionTypeEnum = pgEnum("suggestion_type_enum", [
+  "buy",
+  "sell",
+  "close_position",
+  "stake",
+  "technical_analysis",
+  "fundamentals",
+  "news",
+  "other",
+]);
 
 export const signalsTable = pgTable("signals", {
   id: varchar("id", { length: 255 })
