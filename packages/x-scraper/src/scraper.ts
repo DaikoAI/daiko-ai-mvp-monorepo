@@ -1,7 +1,6 @@
-import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-// execSync import is unnecessary as cleanupChromeProcesses is removed
+import { Logger, LogLevel, Tweet } from "@daiko-ai/shared";
 import * as fs from "node:fs"; // Import fs for screenshots
-import { OpenAI } from "openai";
+import * as path from "node:path"; // Added to handle screenshot directory
 import {
   Browser,
   Builder,
@@ -13,9 +12,6 @@ import {
 } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
-// Remove Inngest imports
-// import { Inngest } from "inngest";
-// import { DaikoEvents } from "@daiko-ai/shared";
 
 // Helper function to create random delays
 const randomDelay = (min = 1500, max = 3500) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -31,7 +27,6 @@ export class XScraper {
   // shared session cookies for login reuse
   private sessionCookies: any[] | null = null;
 
-  private openai: OpenAI;
   private driver: WebDriver | null = null;
   private logger = new Logger({
     level: LogLevel.INFO,
@@ -39,23 +34,8 @@ export class XScraper {
   private credentials: XCredentials | null = null;
   // static flag to ensure Chrome processes are cleaned up only once
   private static chromeCleaned = false;
-  // Remove Inngest client instance
-  // private inngest: Inngest;
 
   constructor(credentials?: XCredentials, sessionCookies?: any[]) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    // Remove Inngest initialization
-    /*
-    this.inngest = new Inngest({
-      id: "x-scraper-worker",
-      eventKey: process.env.INNGEST_EVENT_KEY,
-      logger: this.logger,
-    });
-    */
-
     if (credentials) {
       this.credentials = credentials;
     }
@@ -253,7 +233,6 @@ export class XScraper {
             await driver.wait(until.elementIsVisible(usernameInput), 5000);
             await driver.wait(until.elementIsEnabled(usernameInput), 5000);
 
-            const placeholder = await usernameInput.getAttribute("placeholder");
             // A simple check: if a visible input[name='text'] exists here, assume it's username verification
             this.logger.info("XScraper", "Username verification step detected. Entering username...");
             await usernameInput.sendKeys(this.credentials.username);
@@ -348,27 +327,8 @@ export class XScraper {
         stack: error instanceof Error ? error.stack : undefined,
       });
 
-      // Enable screenshot capture on failure
-      if (driver) {
-        // Ensure driver exists before taking screenshot
-        try {
-          const screenshotPath = "login_failure_screenshot.png"; // Define path
-          await driver.takeScreenshot().then((img) => fs.writeFileSync(screenshotPath, img, "base64"));
-          this.logger.info("XScraper", `Screenshot saved to ${screenshotPath}`);
-        } catch (screenshotError) {
-          this.logger.error("XScraper", "Failed to take or save screenshot", screenshotError);
-        }
-
-        // Log HTML source on final failure
-        // Ensure driver exists before getting source
-        try {
-          this.logger.info("XScraper", "HTML source on final login failure:", {
-            html: await driver.getPageSource(),
-          });
-        } catch (logError) {
-          this.logger.warn("XScraper", "Failed to get page source on final login failure", logError);
-        }
-      }
+      // Capture and save failure screenshot
+      await this.captureFailureScreenshot("login");
       return false;
     }
   }
@@ -401,6 +361,7 @@ export class XScraper {
 
       if (tweets.length === 0) {
         this.logger.warn("XScraper", `No tweets found for ${xId}`);
+        await this.captureFailureScreenshot("checkSingleAccount");
         return null;
       }
 
@@ -418,23 +379,7 @@ export class XScraper {
 
       if (latestTweetId && latestTweetId !== account.lastTweetId) {
         this.logger.info("XScraper", `Change detected for ${xId}. New latest tweet ID: ${latestTweetId}`);
-        // Remove Inngest event sending
-        /*
-        try {
-          await this.inngest.send({
-            name: "data/tweet.updated",
-            data: {
-              xId: xId,
-              latestTweetId: latestTweetId,
-            },
-          });
-          this.logger.info("XScraper", `Sent 'data/tweet.updated' event for ${xId} to Inngest.`);
-        } catch (inngestError) {
-          this.logger.error("XScraper", `Failed to send 'data/tweet.updated' event for ${xId} to Inngest`, {
-            error: inngestError instanceof Error ? inngestError.message : String(inngestError),
-          });
-        }
-        */
+
         // Return latestTweetId if changed
         return latestTweetId;
       } else {
@@ -452,53 +397,34 @@ export class XScraper {
    */
   private async extractTweets(driver: WebDriver): Promise<Tweet[]> {
     const tweets: Tweet[] = [];
-
-    return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  }
-
-  /**
-   * コンテンツが仮想通貨関連かどうかをチェック
-   */
-  private async isCryptoRelated(content: string): Promise<CryptoAnalysis> {
-    try {
-      this.logger.info("XScraper", "Analyzing content for crypto relevance");
-
-      const prompt = `
-      以下のコンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連しているかどうかを判断してください:
-
-      ${content}
-
-      関連していない場合は「関連なし」と回答してください。
-      ただの仮想通貨の情報であれば「関連なし」と回答してください。
-      コンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連している場合は特定のコインの情報を含んでいるかも確認してください、コインの情報を含んでいる場合はそのコインの情報を解説してください。
-      `;
-
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "あなたはコンテンツの分析を行う専門家です。",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 150,
-      });
-
-      const result = response.choices[0].message.content || "";
-      this.logger.debug("XScraper", `OpenAI analysis result: ${result}`);
-
-      return {
-        isCryptoRelated: !result.includes("関連なし"),
-        analysisResult: result,
-      };
-    } catch (error) {
-      this.logger.error("XScraper", "Error checking crypto relevance:", error);
-      return {
-        isCryptoRelated: false,
-        analysisResult: "Error analyzing content",
-      };
+    // Find all tweet articles on the page
+    const elements = await driver.findElements(By.css('article[data-testid="tweet"]'));
+    for (const el of elements) {
+      try {
+        // Extract timestamp
+        const timeElem = await el.findElement(By.css("time"));
+        const time = await timeElem.getAttribute("datetime");
+        // Extract text content of tweet
+        let data = "";
+        const textNodes = await el.findElements(By.css('div[data-testid="tweetText"]'));
+        if (textNodes.length > 0) {
+          for (const node of textNodes) {
+            data += await node.getText();
+          }
+        } else {
+          // Fallback: gather all language-specific divs
+          const langNodes = await el.findElements(By.css("div[lang]"));
+          for (const node of langNodes) {
+            data += (await node.getText()) + " ";
+          }
+        }
+        tweets.push({ time, data: data.trim() });
+      } catch (e) {
+        this.logger.debug("XScraper", "Failed to extract single tweet", e);
+      }
     }
+    // Sort tweets by newest first
+    return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }
 
   /**
@@ -556,27 +482,20 @@ export class XScraper {
    * @returns {Promise<string[]>} 変更が検出されたアカウントIDの配列
    */
   public async checkXAccounts(concurrency: number = 10): Promise<string[]> {
-    // ログイン専用の一時的なスクレイパーインスタンスを作成
     const mainScraper = new XScraper(this.credentials ?? undefined);
-    let baseCookies: any[] = [];
-
-    try {
-      this.logger.info("XScraper", "Attempting initial login to retrieve session cookies...");
+    // Load or refresh cookies
+    let baseCookies = this.loadCookies();
+    if (baseCookies.length > 0 && !this.areCookiesExpired(baseCookies)) {
+      this.logger.info("XScraper", `Loaded ${baseCookies.length} cookies, skipping login`);
+    } else {
+      this.logger.info("XScraper", "No valid cookies, performing initial login");
       const loggedIn = await mainScraper.login();
       if (!loggedIn) {
-        this.logger.error("XScraper", "Initial login failed, cannot proceed with checking accounts.");
-        return []; // Return empty array if login fails
+        this.logger.error("XScraper", "Initial login failed, cannot proceed");
+        return [];
       }
-
-      // ログイン成功後、クッキーを取得
       baseCookies = mainScraper.sessionCookies ?? [];
-      if (baseCookies.length === 0) {
-        this.logger.warn("XScraper", "Retrieved session cookies are empty, proceeding without them.");
-      }
-      this.logger.info("XScraper", `Initial login successful. Retrieved ${baseCookies.length} cookies.`);
-    } catch (loginError) {
-      this.logger.error("XScraper", "Error during initial login process:", loginError);
-      return []; // Return empty array if login fails
+      this.saveCookies(baseCookies);
     }
 
     // DBからアカウントリストを取得
@@ -666,6 +585,65 @@ export class XScraper {
         this.logger.error("XScraper", "Error closing WebDriver", err);
       }
       this.driver = null;
+    }
+  }
+
+  /**
+   * Return path to cookies file, ensuring directory exists.
+   */
+  private getCookiesFilePath(): string {
+    const dir = path.resolve(process.cwd(), "cookies");
+    fs.mkdirSync(dir, { recursive: true });
+    return path.join(dir, "x-scraper_cookies.json");
+  }
+
+  /** Load cookies from disk or return empty array. */
+  private loadCookies(): any[] {
+    const file = this.getCookiesFilePath();
+    if (!fs.existsSync(file)) return [];
+    try {
+      const data = fs.readFileSync(file, "utf-8");
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  /** Save cookies array to disk. */
+  private saveCookies(cookies: any[]): void {
+    const file = this.getCookiesFilePath();
+    try {
+      fs.writeFileSync(file, JSON.stringify(cookies, null, 2), "utf-8");
+      this.logger.info("XScraper", `Cookies saved to ${file}`);
+    } catch (err) {
+      this.logger.error("XScraper", "Failed to save cookies", err);
+    }
+  }
+
+  /** Check if any cookie is expired based on `expiry` field. */
+  private areCookiesExpired(cookies: any[]): boolean {
+    const now = Date.now();
+    return cookies.some((c) => typeof c.expiry === "number" && c.expiry * 1000 < now);
+  }
+
+  /** Return screenshot path for a given context, ensuring directory exists. */
+  private getScreenshotPath(context: string): string {
+    const dir = path.resolve(process.cwd(), "screenshots");
+    fs.mkdirSync(dir, { recursive: true });
+    const name = `${context}_${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+    return path.join(dir, name);
+  }
+
+  /** Capture a failure screenshot and log its location. */
+  private async captureFailureScreenshot(context: string): Promise<void> {
+    const screenshotPath = this.getScreenshotPath(context);
+    if (!this.driver) return;
+    try {
+      const img = await this.driver.takeScreenshot();
+      fs.writeFileSync(screenshotPath, img, "base64");
+      this.logger.info("XScraper", `Screenshot saved to ${screenshotPath}`);
+    } catch (err) {
+      this.logger.error("XScraper", `Failed to capture ${context} screenshot`, err);
     }
   }
 }
