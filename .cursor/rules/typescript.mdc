@@ -1,5 +1,5 @@
 ---
-description: 
+description:
 globs: *.tsx,*.ts
 alwaysApply: false
 ---
@@ -41,46 +41,76 @@ TypeScript でのコーディングにおける一般的なベストプラクテ
 
 ### エラー処理
 
-1. Result 型の使用
-
+1. 早期リターンを徹底してネストを浅く保つ
    ```ts
-   import { err, ok, Result } from "npm:neverthrow";
-
-   type ApiError =
-     | { type: "network"; message: string }
-     | { type: "notFound"; message: string }
-     | { type: "unauthorized"; message: string };
-
-   async function fetchUser(id: string): Promise<Result<User, ApiError>> {
-     try {
-       const response = await fetch(`/api/users/${id}`);
-       if (!response.ok) {
-         switch (response.status) {
-           case 404:
-             return err({ type: "notFound", message: "User not found" });
-           case 401:
-             return err({ type: "unauthorized", message: "Unauthorized" });
-           default:
-             return err({
-               type: "network",
-               message: `HTTP error: ${response.status}`,
-             });
+   // 悪い例: ネストが深い
+   function process(x: number) {
+     if (x > 0) {
+       try {
+         // ...
+         if (y) {
+           // 処理
+         } else {
+           // 別処理
          }
+       } catch (err) {
+         // エラー処理
        }
-       return ok(await response.json());
-     } catch (error) {
-       return err({
-         type: "network",
-         message: error instanceof Error ? error.message : "Unknown error",
-       });
      }
+   }
+
+   // 良い例: 早期リターンでネストをフラットに
+   function process(x: number) {
+     if (x <= 0) return;
+     try {
+       // ...
+     } catch {
+       return;
+     }
+     if (!y) return;
+     // 主処理
    }
    ```
 
-2. エラー型の定義
-   - 具体的なケースを列挙
-   - エラーメッセージを含める
-   - 型の網羅性チェックを活用
+2. neverthrow を用いた関数型エラーハンドリング
+   ```ts
+   import { ok, err, Result } from "npm:neverthrow";
+
+   type FetchError = { type: "network" | "notFound"; message: string };
+
+   async function fetchData(url: string): Promise<Result<Data, FetchError>> {
+     if (!url) {
+       return err({ type: "network", message: "URL is empty" });
+     }
+     try {
+       const res = await fetch(url);
+       if (!res.ok) {
+         return err({
+           type: res.status === 404 ? "notFound" : "network",
+           message: `HTTP ${res.status}`
+         });
+       }
+       const data = await res.json();
+       return ok(data);
+     } catch (e) {
+       return err({ type: "network", message: e instanceof Error ? e.message : "Unknown" });
+     }
+   }
+
+   async function handle() {
+     const result = await fetchData("/api");
+     if (result.isErr()) {
+       console.error(result.error);
+       return;
+     }
+     // 成功時の処理
+     const data = result.value;
+   }
+   ```
+
+3. 局所的適用
+   - 全体に neverthrow を強制せず、特にネストが深くなりがちな部分に限定して導入
+   - 既存の try/catch を無理に置き換えず、可読性が向上する箇所から段階的に適用
 
 ### 実装パターン
 

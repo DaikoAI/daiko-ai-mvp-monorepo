@@ -19,8 +19,12 @@ const logger = new Logger({ level: LogLevel.INFO });
 // Define Zod schema for the expected LLM response
 const LlmSignalResponseSchema = z.object({
   signalDetected: z.boolean(),
+  tokenAddress: z.string(),
+  sources: z.array(z.object({ url: z.string(), label: z.string() })),
+  sentimentScore: z.number(),
+  suggestionType: z.enum(["buy", "sell", "close_position", "stake"]),
+  strength: z.number().min(1).max(100),
   confidence: z.number().nullable(),
-  signalType: z.string().nullable(),
   reasoning: z.string(),
   relatedTweetIds: z.array(z.string()),
 });
@@ -109,21 +113,35 @@ export const processBatchTweetUpdate = inngest.createFunction(
       const promptInputText = JSON.stringify(promptData, null, 2);
 
       const prompt = `
-Analyze the following recent data (tweets, market info, news) related to crypto project updates:
+Analyze the following recent tweets related to crypto projects:
 \`\`\`json
 ${promptInputText}
 \`\`\`
-Based *only* on the provided data, determine if there is a potential trading signal (e.g., significant announcement, upcoming launch, partnership, sudden sentiment shift) that suggests a short-term price movement.
-
-Respond in JSON format with the following structure:
+Based *only* on the tweets provided, generate a market sentiment signal JSON object with the following fields:
+- signalDetected: boolean
+- tokenAddress: string
+- sources: array of { url: string, label: string }
+- sentimentScore: number (-1.0 to 1.0)
+- suggestionType: one of "buy", "sell", "close_position", "stake"
+- strength: integer (1 to 100)
+- confidence: number (0.0 to 1.0)
+- rationaleSummary: string
+- relatedTweetIds: string[]
+Return only the JSON object, for example:
+\`\`\`json
 {
-  "signalDetected": boolean, // true if a signal is detected, false otherwise
-  "confidence": number, // Confidence score (0.0 to 1.0) if signalDetected is true, null otherwise
-  "signalType": string, // Type of signal (e.g., "launch_announcement", "partnership", "sentiment_spike") if signalDetected is true, null otherwise
-  "reasoning": string, // Brief explanation for the decision
-  "relatedTweetIds": string[] // IDs of the tweet(s) most relevant to the signal, empty array if none
+  "signalDetected": true,
+  "tokenAddress": "SOL",
+  "sources": [{ "url": "https://twitter.com/.../123", "label": "Tweet by @foo" }],
+  "sentimentScore": 0.75,
+  "suggestionType": "buy",
+  "strength": 80,
+  "confidence": 0.9,
+  "rationaleSummary": "Strong positive sentiment around SOL after announcement.",
+  "relatedTweetIds": ["12345", "67890"]
 }
-      `;
+\`\`\`
+`;
 
       let llmResponse: { object: z.infer<typeof LlmSignalResponseSchema> } | null = null;
       try {
@@ -144,20 +162,19 @@ Respond in JSON format with the following structure:
         logger.info("processBatchTweetUpdate", "Signal detected by LLM", llmResult);
 
         const signalToInsert: SignalInsert = {
-          type: llmResult.signalType || "llm_detected",
-          confidence: llmResult.confidence ?? 0.5,
-          description: llmResult.reasoning,
-          status: "new",
-          triggerData: {
-            eventId: event.id,
-            llmRelatedTweetIds: llmResult.relatedTweetIds ?? [],
-            processedAccountIds: updatedAccountIds,
-          },
-          tokenAddress: "N/A",
-          tokenSymbol: "N/A",
-          strength: 0.5,
-          source: "llm_batch_tweet_update_processor",
+          tokenAddress: llmResult.tokenAddress,
+          sources: llmResult.sources,
+          sentimentScore: llmResult.sentimentScore,
+          suggestionType: llmResult.suggestionType,
+          strength: Math.round(llmResult.strength),
+          confidence: llmResult.confidence ?? 0,
+          rationaleSummary: llmResult.reasoning,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          metadata: {
+            eventId: event.id,
+            processedAccountIds: updatedAccountIds,
+            relatedTweetIds: llmResult.relatedTweetIds,
+          },
         };
 
         const insertedSignalQuery = await db.insert(signalsTable).values(signalToInsert).returning();
