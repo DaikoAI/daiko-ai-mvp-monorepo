@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { json, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-
+import { usersTable } from "./users";
 // Simplified Contract Call schema
 const contractCallSchema = z.object({
   type: z.string(),
@@ -27,7 +27,9 @@ export const proposalTable = pgTable("proposals", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   triggerEventId: varchar("trigger_event_id"),
-  userId: varchar("user_id"),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => usersTable.id),
   title: text("title").notNull(),
   summary: text("summary").notNull(),
   reason: json("reason").notNull().$type<string[]>(),

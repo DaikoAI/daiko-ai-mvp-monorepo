@@ -1,14 +1,12 @@
-import { db, inngest } from "@daiko-ai/shared";
 import { sendWebPush } from "@/lib/notify";
+import { db, inngest, Logger, LogLevel, proposalTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
-import { proposalTable } from "@daiko-ai/shared";
-import { Logger, LogLevel } from "@daiko-ai/shared";
 
 const logger = new Logger({ level: LogLevel.INFO });
 
 export const notifyUser = inngest.createFunction(
   { id: "notification-proposal", name: "Notification Workflow" },
-  { event: "notification/proposal.created" },
+  { event: "proposal/generated" },
   async ({ event, step }) => {
     const { proposalId } = event.data;
 

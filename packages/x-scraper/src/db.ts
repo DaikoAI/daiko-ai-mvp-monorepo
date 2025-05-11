@@ -62,6 +62,9 @@ export const saveTweets = async (accountId: string, tweets: Tweet[]): Promise<Da
       const newTweet = await tweetRepository.create({
         authorId: accountId,
         url: tweet.url,
+        retweetCount: tweet.retweetCount ?? 0,
+        replyCount: tweet.replyCount ?? 0,
+        likeCount: tweet.likeCount ?? 0,
         content: tweet.data,
         tweetTime: tweetDate,
       });

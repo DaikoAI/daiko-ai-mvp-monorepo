@@ -19,6 +19,7 @@ import {
   ELEMENT_LOCATE_TIMEOUT_MS,
   INITIAL_INPUT_SELECTOR_CSS,
   LANG_SELECTOR_CSS,
+  LIKE_COUNT_SELECTOR_CSS,
   LOGIN_SUCCESS_DELAY_MAX,
   LOGIN_SUCCESS_DELAY_MIN,
   LOGIN_URL,
@@ -31,6 +32,8 @@ import {
   PAGE_LOAD_WAIT_MS,
   PASSWORD_SELECTOR_CSS,
   PRIMARY_COLUMN_SELECTOR_CSS,
+  REPLY_COUNT_SELECTOR_CSS,
+  RETWEET_COUNT_SELECTOR_CSS,
   SCREENSHOTS_DIR_RELATIVE,
   SHORT_DELAY_MAX,
   SHORT_DELAY_MIN,
@@ -43,6 +46,21 @@ import {
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
 import { createChromeOptions } from "./driver-config"; // Import createChromeOptions
 import { randomDelay } from "./utils";
+
+// Helper function to parse engagement strings (e.g., "1.3K", "61") into numbers
+function parseEngagementCount(text: string | null): number | null {
+  if (!text) return null;
+  const num = parseFloat(text.replace(/,/g, ""));
+  if (isNaN(num)) return null;
+
+  if (text.toUpperCase().includes("K")) {
+    return Math.round(num * 1000);
+  }
+  if (text.toUpperCase().includes("M")) {
+    return Math.round(num * 1000000);
+  }
+  return num;
+}
 
 // Xアカウントのログイン情報の型定義
 export interface XCredentials {
@@ -57,7 +75,7 @@ export class XScraper {
 
   private driver: WebDriver | null = null;
   private logger = new Logger({
-    level: LogLevel.INFO,
+    level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG,
   });
   private credentials: XCredentials | null = null;
 
@@ -715,13 +733,79 @@ export class XScraper {
           continue;
         }
 
-        // Get tweet URL - this involves navigation, so 'el' might become stale if not careful.
-        // However, 'el' is from the 'articles' list re-fetched at the start of this outer loop iteration.
+        // Extract engagement metrics BEFORE navigation
+        let replyCount: number | null = null;
+        let retweetCount: number | null = null;
+        let likeCount: number | null = null;
+
+        try {
+          const replyButton = await el.findElement(By.css(REPLY_COUNT_SELECTOR_CSS));
+          const replyText = await replyButton.getText();
+          this.logger.info("XScraper", `Reply text: '${replyText}' for tweet: ${tweetMomentIdentifier}`);
+          replyCount = parseEngagementCount(replyText);
+          this.logger.info("XScraper", `Parsed reply count: ${replyCount} for tweet: ${tweetMomentIdentifier}`);
+        } catch (e) {
+          // Log as WARN if count couldn't be found/parsed, as it might indicate outdated selectors or page structure changes
+          this.logger.warn("XScraper", `Could not find or parse reply count for tweet: ${tweetMomentIdentifier}`, {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        try {
+          const retweetButton = await el.findElement(By.css(RETWEET_COUNT_SELECTOR_CSS));
+          const retweetText = await retweetButton.getText();
+          this.logger.info("XScraper", `Retweet text: '${retweetText}' for tweet: ${tweetMomentIdentifier}`);
+          retweetCount = parseEngagementCount(retweetText);
+          this.logger.info("XScraper", `Parsed retweet count: ${retweetCount} for tweet: ${tweetMomentIdentifier}`);
+        } catch (e) {
+          this.logger.warn("XScraper", `Could not find or parse retweet count for tweet: ${tweetMomentIdentifier}`, {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        try {
+          const likeButton = await el.findElement(By.css(LIKE_COUNT_SELECTOR_CSS));
+          const likeText = await likeButton.getText();
+          this.logger.info("XScraper", `Like text: '${likeText}' for tweet: ${tweetMomentIdentifier}`);
+          likeCount = parseEngagementCount(likeText);
+          this.logger.info("XScraper", `Parsed like count: ${likeCount} for tweet: ${tweetMomentIdentifier}`);
+        } catch (e) {
+          this.logger.warn("XScraper", `Could not find or parse like count for tweet: ${tweetMomentIdentifier}`, {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        this.logger.debug("XScraper", "Fetched counts (before URL navigation)", {
+          replyCount,
+          retweetCount,
+          likeCount,
+          identifier: tweetMomentIdentifier,
+        });
+
+        // Get tweet URL - this involves navigation.
+        // Engagement metrics are now fetched BEFORE this step to avoid StaleElementReferenceError.
         const tweetUrl = await this.getTweetUrlViaNavigation(driver, el);
+
+        // Engagement metrics were previously extracted here, moved above.
+
+        this.logger.debug("XScraper", "fetched counts", {
+          // This log line might be redundant now or could be removed/adjusted
+          replyCount,
+          retweetCount,
+          likeCount,
+        });
 
         if (tweetUrl) {
           // Check if URL was successfully fetched
-          tweets.push({ time: tweetTime, data: tweetText, url: tweetUrl });
+          tweets.push({
+            time: tweetTime,
+            data: tweetText,
+            url: tweetUrl,
+            replyCount,
+            retweetCount,
+            likeCount,
+            impressionCount: null, // Placeholder for now
+          });
           processedTweetIdentifiers.add(tweetMomentIdentifier);
           this.logger.info(
             "XScraper",

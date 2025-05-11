@@ -50,6 +50,13 @@
       "when": 1746986310049,
       "tag": "0006_optimal_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1746992154517,
+      "tag": "0007_regular_leo",
+      "breakpoints": true
     }
   ]
 }

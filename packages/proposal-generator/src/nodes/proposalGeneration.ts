@@ -1,8 +1,9 @@
-import { proposalGeneratorState } from "../utils/state";
+import { HumanMessage } from "@langchain/core/messages";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { gpt4oMini } from "../utils/model";
-import { proposalGenerationPrompt, parser } from "../prompts/proposalGeneration";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
+import { parser, proposalGenerationPrompt } from "../prompts/proposalGeneration";
+import { gpt4oMini } from "../utils/model";
+import { proposalGeneratorState } from "../utils/state";
 
 const proposalGenerationChain = RunnableSequence.from([proposalGenerationPrompt, gpt4oMini, parser]);
 
@@ -10,9 +11,13 @@ export const proposalGenerationNode = async (
   state: typeof proposalGeneratorState.State,
   options: LangGraphRunnableConfig,
 ) => {
-  const threadId = options.configurable?.thread_id;
-  if (!threadId) {
-    throw new Error("thread_id is missing in config");
+  const signalId = options.configurable?.signalId;
+  if (!signalId) {
+    throw new Error("signalId is missing in config");
+  }
+  const userId = options.configurable?.userId;
+  if (!userId) {
+    throw new Error("userId is missing in config");
   }
 
   const { signal, user, tokenPrices, latestTweets, userBalance } = state;
@@ -21,14 +26,29 @@ export const proposalGenerationNode = async (
     throw new Error("Required data (signal, user, tokenPrices, latestTweets, userBalance) is missing in state.");
   }
 
+  const inputText = `
+Data for proposal generation:
+User ID: ${userId}
+
+Signal Details:
+${JSON.stringify(signal, null, 2)}
+
+User Profile:
+${JSON.stringify(user, null, 2)}
+
+Token Prices:
+${JSON.stringify(tokenPrices, null, 2)}
+
+Latest Tweets:
+${JSON.stringify(latestTweets, null, 2)}
+
+User Balance:
+${JSON.stringify(userBalance, null, 2)}
+`;
+
   // 提案生成チェーンを実行
   const result = await proposalGenerationChain.invoke({
-    signal,
-    user,
-    tokenPrices,
-    latestTweets,
-    userBalance,
-    userId: threadId,
+    messages: [new HumanMessage(inputText)],
   });
 
   if (!result.proposal) {

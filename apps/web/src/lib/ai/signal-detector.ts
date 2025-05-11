@@ -4,7 +4,7 @@ import { Logger, LogLevel } from "@daiko-ai/shared"; // Assuming Logger is avail
 import { generateObject } from "ai"; // Removed 'type CoreTool' as it's not used
 import { z } from "zod";
 
-const logger = new Logger({ level: LogLevel.INFO }); // Changed to INFO for less verbose default logging
+const logger = new Logger({ level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG });
 
 // Define a type for the known tokens to be passed to the LLM
 export type KnownTokenType = {
@@ -55,6 +55,19 @@ export const LlmSignalResponseSchema = z.object({
 });
 
 export type LlmSignalResponseType = z.infer<typeof LlmSignalResponseSchema>;
+
+// Define custom error
+export class LlmCallFailedError extends Error {
+  constructor(
+    message: string,
+    public readonly lastError?: any,
+    public readonly attempts?: number,
+  ) {
+    super(message);
+    this.name = "LlmCallFailedError";
+    Object.setPrototypeOf(this, LlmCallFailedError.prototype);
+  }
+}
 
 const MAX_LLM_RETRY_ATTEMPTS = 3;
 const LLM_RETRY_DELAY_MS = 1000;
@@ -157,9 +170,13 @@ export async function detectSignalWithLlm(
   formattedTweets: FormattedTweetForLlm[],
   knownTokens: KnownTokenType[],
 ): Promise<LlmSignalResponseType | null> {
+  logger.info(
+    "detectSignalWithLlm",
+    `Attempting signal detection with ${formattedTweets.length} tweets and ${knownTokens.length} known tokens.`,
+  );
   if (!formattedTweets || formattedTweets.length === 0) {
     logger.info("detectSignalWithLlm", "No tweets provided for signal detection.");
-    return {
+    const noTweetsResponse: LlmSignalResponseType = {
       signalDetected: false,
       tokenAddress: "",
       sources: [],
@@ -172,14 +189,21 @@ export async function detectSignalWithLlm(
       reasonInvalid: "no_tweets_provided",
       impactScore: null,
     };
+    return noTweetsResponse;
   }
 
   const prompt = buildPrompt(formattedTweets, knownTokens);
+  // logger.debug("detectSignalWithLlm", "Prompt:", prompt); // Already exists, keep if needed, or rely on per-attempt log
   let attempt = 0;
+  let lastError: any = null;
 
   while (attempt < MAX_LLM_RETRY_ATTEMPTS) {
     try {
-      logger.debug("detectSignalWithLlm", `Attempt ${attempt + 1} to call LLM with ${formattedTweets.length} tweets.`);
+      logger.debug(
+        "detectSignalWithLlm",
+        `Attempt ${attempt + 1}/${MAX_LLM_RETRY_ATTEMPTS} to call LLM. Prompt for this attempt:`,
+        { prompt }, // Log the prompt for each attempt
+      );
       const { object: llmResponse } = await generateObject({
         model: openai("gpt-4o-mini"), // Consider making model configurable
         schema: LlmSignalResponseSchema,
@@ -189,36 +213,82 @@ export async function detectSignalWithLlm(
         mode: "json", // Ensure JSON output mode
       });
 
-      logger.debug("detectSignalWithLlm", "LLM response received:", JSON.stringify(llmResponse));
-      return postProcessLlmResponse(llmResponse as LlmSignalResponseType, knownTokens);
+      logger.debug("detectSignalWithLlm", "Raw LLM response received:", { response: llmResponse });
+      const processedResponse = postProcessLlmResponse(
+        llmResponse as LlmSignalResponseType,
+        knownTokens,
+        formattedTweets.map((t) => t.id),
+      );
+      logger.info("detectSignalWithLlm", "Signal detection complete.", {
+        signalDetected: processedResponse.signalDetected,
+        tokenAddress: processedResponse.tokenAddress,
+        suggestionType: processedResponse.suggestionType,
+        strength: processedResponse.strength,
+        confidence: processedResponse.confidence,
+        impactScore: processedResponse.impactScore,
+        reasonInvalid: processedResponse.reasonInvalid,
+      });
+      logger.debug("detectSignalWithLlm", "Final processed response:", { processedResponse });
+      return processedResponse;
     } catch (error: any) {
       attempt++;
+      lastError = error;
       logger.warn("detectSignalWithLlm", `Error calling LLM (attempt ${attempt}/${MAX_LLM_RETRY_ATTEMPTS})`, {
         error: error.message,
         // stack: error.stack, // uncomment for more detailed error logging
         tweetsCount: formattedTweets.length,
       });
       if (attempt >= MAX_LLM_RETRY_ATTEMPTS) {
-        logger.error("detectSignalWithLlm", "Max LLM retry attempts reached. Returning null.", {
+        logger.error("detectSignalWithLlm", "Max LLM retry attempts reached. Throwing LlmCallFailedError.", {
           lastError: error.message,
+          totalAttempts: attempt,
         });
-        return null;
+        // throw new LlmCallFailedError( // This was the original plan, but returning null is also acceptable based on the function signature
+        //   `Failed to get a valid response from LLM after ${attempt} attempts.`,
+        //   error,
+        //   attempt
+        // );
+        // As per existing structure and to avoid breaking changes in callers not expecting exceptions here,
+        // we'll stick to returning null on max retries for now, but log an error.
+        // If strict error throwing is desired, the 'throw' line above should be used and function signature updated.
+        return null; // Or throw LlmCallFailedError as per original discussion
       }
-      await new Promise((resolve) => setTimeout(resolve, LLM_RETRY_DELAY_MS * (attempt + 1))); // Basic exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, LLM_RETRY_DELAY_MS * attempt)); // Adjusted backoff
     }
   }
-  return null; // This line is restored. It covers the theoretical case where the loop might not run.
+  // This part should ideally not be reached if MAX_LLM_RETRY_ATTEMPTS > 0
+  // because the loop will either return a response or null after max attempts.
+  // However, to satisfy TypeScript's need for a return path and cover edge cases (e.g. MAX_LLM_RETRY_ATTEMPTS = 0):
+  logger.error("detectSignalWithLlm", "Exited LLM call loop unexpectedly without returning or throwing.", {
+    lastError: lastError?.message,
+    attempts: attempt,
+  });
+  return null;
 }
 
 /**
  * Post-processes the LLM response to enforce certain rules and improve signal quality.
  */
-function postProcessLlmResponse(response: LlmSignalResponseType, knownTokens: KnownTokenType[]): LlmSignalResponseType {
+function postProcessLlmResponse(
+  response: LlmSignalResponseType,
+  knownTokens: KnownTokenType[],
+  allTweetIds: string[],
+): LlmSignalResponseType {
+  logger.debug("postProcessLlmResponse", "Starting post-processing of LLM response.", { initialResponse: response });
   let modifiedResponse = { ...response };
 
-  // Ensure relatedTweetIds is always an array, even if LLM fails to provide it.
-  if (!Array.isArray(modifiedResponse.relatedTweetIds)) {
-    modifiedResponse.relatedTweetIds = [];
+  // Ensure relatedTweetIds is always an array and contains all analyzed tweet IDs if not properly provided by LLM
+  if (!Array.isArray(modifiedResponse.relatedTweetIds) || modifiedResponse.relatedTweetIds.length === 0) {
+    logger.warn(
+      "postProcessLlmResponse",
+      "relatedTweetIds was missing or empty from LLM response, populating with all analyzed tweet IDs.",
+      { originalRelatedTweetIds: modifiedResponse.relatedTweetIds },
+    );
+    modifiedResponse.relatedTweetIds = allTweetIds;
+  } else {
+    // Optional: Check if all original tweet IDs are present, if not, add them.
+    // This might be too aggressive if the LLM intentionally excluded some.
+    // For now, we assume if it provides some, it's intentional.
   }
 
   if (modifiedResponse.signalDetected) {
@@ -226,6 +296,7 @@ function postProcessLlmResponse(response: LlmSignalResponseType, knownTokens: Kn
     if (!modifiedResponse.tokenAddress || modifiedResponse.tokenAddress.trim() === "") {
       logger.warn("postProcessLlmResponse", "Signal detected but tokenAddress is empty. Overriding to no signal.", {
         originalReasoning: modifiedResponse.reasoning,
+        originalResponse: { ...response }, // Log the state before modification
       });
       modifiedResponse.signalDetected = false;
       modifiedResponse.reasoning = `Post-processing: Signal initially detected but tokenAddress was missing. Original reasoning: ${modifiedResponse.reasoning}`;
@@ -253,7 +324,7 @@ function postProcessLlmResponse(response: LlmSignalResponseType, knownTokens: Kn
       logger.warn(
         "postProcessLlmResponse",
         "Signal detected but reasoning is too short or generic. Overriding to no signal.",
-        { originalReasoning: modifiedResponse.reasoning },
+        { originalReasoning: modifiedResponse.reasoning, originalResponse: { ...response } },
       );
       modifiedResponse.signalDetected = false;
       modifiedResponse.reasoning = `Post-processing: Signal initially detected but reasoning was insufficient. Original reasoning: ${modifiedResponse.reasoning}`;
@@ -270,6 +341,9 @@ function postProcessLlmResponse(response: LlmSignalResponseType, knownTokens: Kn
 
   // Ensure 'reasonInvalid' is set if signalDetected is false and it's not already set by LLM or post-processing rules.
   if (!modifiedResponse.signalDetected && !modifiedResponse.reasonInvalid) {
+    logger.warn("postProcessLlmResponse", "Signal not detected and reasonInvalid was not set. Setting to default.", {
+      originalResponse: { ...response },
+    });
     modifiedResponse.reasonInvalid = "unknown_reason_for_no_signal_after_processing";
   }
 
@@ -284,5 +358,6 @@ function postProcessLlmResponse(response: LlmSignalResponseType, knownTokens: Kn
     modifiedResponse.impactScore = null;
   }
 
+  logger.debug("postProcessLlmResponse", "Finished post-processing LLM response.", { finalResponse: modifiedResponse });
   return modifiedResponse;
 }

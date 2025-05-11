@@ -41,3 +41,11 @@ export const ELEMENT_INTERACTION_TIMEOUT_MS = 2000; // Adjusted for copy link it
 export const BATCH_PROCESSING_WAIT_MS = 2000; // Reverted to 2s
 
 export const MAX_TWEETS_TO_PROCESS_PER_ACCOUNT = 20;
+
+// Engagement metric selectors
+export const REPLY_COUNT_SELECTOR_CSS =
+  "button[data-testid='reply'] span[data-testid='app-text-transition-container'] > span > span";
+export const RETWEET_COUNT_SELECTOR_CSS =
+  "button[data-testid='retweet'] span[data-testid='app-text-transition-container'] > span > span";
+export const LIKE_COUNT_SELECTOR_CSS =
+  "button[data-testid='like'] span[data-testid='app-text-transition-container'] > span > span";

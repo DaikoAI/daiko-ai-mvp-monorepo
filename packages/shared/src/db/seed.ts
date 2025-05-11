@@ -486,27 +486,26 @@ const seedStakingTokenInterestRates = async () => {
 /**
  * proposalデータを挿入するシード関数
  */
-const seedProposals = async (userIds: string[]) => {
+const seedProposals = async (generatedUsers: UserSelect[]) => {
   try {
     console.log("提案データを挿入中...");
 
-    const proposals: ProposalInsert[] = [
+    const staticProposals: Omit<ProposalInsert, "userId">[] = [
       {
-        title: "Take Profit SOL 5x Long Position on Jupiter",
-        summary: "Close 50% of your 5x leveraged SOL long position on Jupiter Exchange to secure profits",
+        title: "Take Profit SOL 5x Long Position on Drift Protocol",
+        summary: "Close 50% of your 5x leveraged SOL long position on Drift Protocol to secure profits",
         reason: [
           "Your position is currently up 12.3% ($615) with potential for reversal",
-          "On-chain data shows 23% decrease in SOL perpetual open interest over past 12 hours",
+          "On-chain data from Drift Protocol shows 23% decrease in SOL perpetual open interest over past 12 hours",
           "Whale wallets reduced leveraged long positions by 18% in last 6 hours",
         ],
         sources: [
-          { name: "Jupiter Exchange On-Chain Data", url: "#" },
+          { name: "Drift Protocol On-Chain Data", url: "https://docs.drift.trade/" },
           { name: "Solana Whale Wallet Tracker", url: "#" },
           { name: "Perpetual Market Open Interest Analysis", url: "#" },
         ],
         type: "trade",
         proposedBy: "Daiko AI",
-        userId: userIds[0],
         expiresAt: new Date(Date.now() + 1000 * 40),
         financialImpact: {
           currentValue: 5000,
@@ -547,7 +546,6 @@ const seedProposals = async (userIds: string[]) => {
         ],
         type: "risk",
         proposedBy: "Daiko AI",
-        userId: userIds[0],
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         financialImpact: {
           currentValue: 1200, // Assuming 100M MELANIA = $1200
@@ -590,7 +588,6 @@ const seedProposals = async (userIds: string[]) => {
         ],
         type: "stake",
         proposedBy: "Daiko AI",
-        userId: userIds[0],
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 72),
         financialImpact: {
           currentValue: 595.92, // Updated value (4 * 148.98)
@@ -621,15 +618,22 @@ const seedProposals = async (userIds: string[]) => {
     // すでに存在する提案を確認
     const existingProposals = await db.select().from(proposalTable);
 
-    for (const proposal of proposals) {
-      // タイトルによる重複チェック
-      const existingProposal = existingProposals.find((p) => p.title === proposal.title);
+    for (const user of generatedUsers) {
+      for (const staticProposal of staticProposals) {
+        const proposal: ProposalInsert = {
+          ...staticProposal,
+          userId: user.id,
+        };
 
-      if (!existingProposal) {
-        await db.insert(proposalTable).values(proposal);
-        console.log(`提案 "${proposal.title}" を挿入しました`);
-      } else {
-        console.log(`提案 "${proposal.title}" は既に存在します。スキップします。`);
+        // タイトルとユーザーIDによる重複チェック
+        const existingProposal = existingProposals.find((p) => p.title === proposal.title && p.userId === user.id);
+
+        if (!existingProposal) {
+          await db.insert(proposalTable).values(proposal);
+          console.log(`ユーザー "${user.name}" の提案 "${proposal.title}" を挿入しました`);
+        } else {
+          console.log(`ユーザー "${user.name}" の提案 "${proposal.title}" は既に存在します。スキップします。`);
+        }
       }
     }
   } catch (error) {
@@ -645,6 +649,7 @@ async function seed() {
   console.log("シードデータ挿入を開始します...");
 
   // const generatedUsers = await seedUsers();
+  const users = await db.select().from(usersTable); // usersをここで取得
 
   // // トークン挿入
   // console.log("トークンデータを挿入中...");
@@ -659,17 +664,17 @@ async function seed() {
   // await seedStakingTokenInterestRates();
 
   // // Xアカウント挿入
-  console.log("Xアカウントデータを挿入中...");
-  const users = await db.select().from(usersTable);
-  await seedXAccounts(users);
+  // console.log("Xアカウントデータを挿入中...");
+  // const users = await db.select().from(usersTable); // seedProposalsに渡すためにここで宣言
+  // await seedXAccounts(users);
 
   // // ニュースサイト挿入
   // console.log("ニュースサイトデータを挿入中...");
   // await seedNewsSites(generatedUsers);
 
   // 提案データ挿入 (New)
-  // console.log("提案データを挿入中...");
-  // await seedProposals(["614d9720-b18e-462b-8032-003ccc6cb819"]);
+  console.log("提案データを挿入中...");
+  await seedProposals(users); // usersを引数として渡す
 
   console.log("シードデータの挿入が完了しました！");
 }

@@ -34,8 +34,7 @@ export type DaikoEvents = {
   "proposal/generated": {
     // New event sent after a specific user's proposal is generated
     data: {
-      signalId: string;
-      userId: string;
+      proposalId: string;
     };
   };
 
