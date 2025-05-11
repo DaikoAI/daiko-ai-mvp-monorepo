@@ -36,6 +36,7 @@ export interface LogEntry {
 /** Structure of a tweet */
 export interface Tweet {
   time: string;
+  url: string;
   data: string;
 }
 

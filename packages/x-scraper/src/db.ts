@@ -60,7 +60,8 @@ export const saveTweets = async (accountId: string, tweets: Tweet[]): Promise<st
 
     for (const tweet of tweets) {
       const newTweet = await tweetRepository.create({
-        xAccountId: accountId,
+        authorId: accountId,
+        url: tweet.url,
         content: tweet.data,
         tweetTime: new Date(tweet.time),
       });

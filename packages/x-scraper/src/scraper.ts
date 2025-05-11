@@ -59,12 +59,24 @@ export class XScraper {
       // this.cleanupChromeProcesses(); // Call removed
 
       const options = new chrome.Options();
-      options.addArguments("--headless");
+      // options.addArguments("--headless");
       options.addArguments("--window-size=1920,3000");
       options.addArguments("--disable-blink-features=AutomationControlled");
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
       options.addArguments("--disable-gpu");
+
+      // --- Persistent Profile Setup ---
+      // 1. IMPORTANT: Replace this with the actual path to your desired Chrome profile directory.
+      //    Examples:
+      //    macOS: "/Users/YOUR_USERNAME/Library/Application Support/Google/Chrome/XScraperProfile"
+      //    Windows: "C:/Users/YOUR_USERNAME/AppData/Local/Google/Chrome/User Data/XScraperProfile"
+      //    Linux: "/home/YOUR_USERNAME/.config/google-chrome/XScraperProfile"
+      const profilePath = "./chrome-user-profile"; // <--- CHANGE THIS PATH
+      options.addArguments(`user-data-dir=${profilePath}`);
+
+      // IMPORTANT: Remove incognito mode when using a persistent profile for permissions
+      // options.addArguments("--incognito");
 
       // 固定User-Agentを設定
       options.addArguments(
@@ -76,17 +88,43 @@ export class XScraper {
       options.addArguments("--disable-notifications");
       options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
       options.addArguments("--disable-automation");
+      options.addArguments("--disable-popup-blocking"); // Added to prevent potential interference
 
       // インコグニートモードを使用してクリーンな状態を保証
-      options.addArguments("--incognito");
+      // options.addArguments("--incognito"); // This was removed above as it conflicts with user-data-dir for persistent permissions
+
+      // Clipboard permissions (can be kept as a fallback, but profile settings should take precedence)
+      options.setUserPreferences({
+        // Global allow as a fallback
+        "profile.default_content_setting_values.clipboard": 1,
+        // Specific exceptions for both x.com and twitter.com
+        "profile.content_settings.exceptions.clipboard": {
+          "https://x.com,*": {
+            last_modified: Date.now(),
+            setting: 1, // 1: Allow
+          },
+          "https://twitter.com,*": {
+            // Add twitter.com as well
+            last_modified: Date.now(),
+            setting: 1, // 1: Allow
+          },
+        },
+      });
 
       this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
 
+      // Set script timeout
+      await this.driver.manage().setTimeouts({ script: 30000 }); // 30 seconds
+
       // CDP経由で自動化フラグを変更
+      // Refined script: Only attempt to redefine if navigator.webdriver is true.
       await this.driver.executeScript(`
-        Object.defineProperty(navigator, 'webdriver', {
-          get: () => undefined
-        });
+        if (navigator.webdriver === true) {
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+            configurable: true // Explicitly try to make it configurable
+          });
+        }
       `);
 
       // inject session cookies if present
@@ -400,7 +438,48 @@ export class XScraper {
     // Find all tweet articles on the page
     const elements = await driver.findElements(By.css('article[data-testid="tweet"]'));
     for (const el of elements) {
+      let tweetUrl = ""; // Define tweetUrl to store the fetched URL
       try {
+        // Click the share button within the tweet element
+        // Note: The actual selector for the share button needs to be identified.
+        // Using a placeholder selector for now.
+        const shareButtonSelector = By.css('button[aria-label="Share post"]'); // Updated selector
+        await driver.wait(until.elementLocated(shareButtonSelector), 5000);
+        const shareButton = await el.findElement(shareButtonSelector);
+        await driver.wait(until.elementIsVisible(shareButton), 5000);
+        await driver.wait(until.elementIsEnabled(shareButton), 5000);
+        await shareButton.click();
+        this.logger.debug("XScraper", "Clicked share button");
+        await driver.sleep(randomDelay(500, 1000)); // Wait for dropdown
+
+        // Click the "Copy Link" option from the dropdown
+        // Note: The actual selector for "Copy Link" needs to be identified.
+        // Using a placeholder selector for now. It often is a menuitem role.
+        const copyLinkSelector = By.xpath(
+          "//div[@data-testid='Dropdown']//div[@role='menuitem'][.//span[contains(text(),'Copy link') or contains(text(),'リンクをコピー')]]",
+        );
+        await driver.wait(until.elementLocated(copyLinkSelector), 5000);
+        const copyLinkButton = await driver.findElement(copyLinkSelector);
+        await driver.wait(until.elementIsVisible(copyLinkButton), 5000);
+        await driver.wait(until.elementIsEnabled(copyLinkButton), 5000);
+        await copyLinkButton.click();
+        this.logger.debug("XScraper", "Clicked copy link button");
+        await driver.sleep(randomDelay(500, 1000)); // Wait for clipboard action
+
+        // Get URL from clipboard
+        try {
+          tweetUrl = (await driver.executeScript("return await navigator.clipboard.readText();")) as string;
+          this.logger.info("XScraper", `Copied URL from clipboard: ${tweetUrl}`);
+        } catch (clipboardError) {
+          this.logger.error("XScraper", "Failed to read from clipboard", clipboardError);
+          // Attempt to close the dropdown/modal if it's still open to prevent interference
+          try {
+            await driver.actions().sendKeys(Key.ESCAPE).perform();
+          } catch (escapeError) {
+            this.logger.warn("XScraper", "Failed to send ESCAPE key to close dropdown", escapeError);
+          }
+        }
+
         // Extract timestamp
         const timeElem = await el.findElement(By.css("time"));
         const time = await timeElem.getAttribute("datetime");
@@ -418,9 +497,19 @@ export class XScraper {
             data += (await node.getText()) + " ";
           }
         }
-        tweets.push({ time, data: data.trim() });
+        tweets.push({ time, data: data.trim(), url: tweetUrl });
       } catch (e) {
-        this.logger.debug("XScraper", "Failed to extract single tweet", e);
+        this.logger.error("XScraper", "Failed to extract single tweet details (including URL)", {
+          error: e instanceof Error ? e.message : String(e),
+          currentTweetUrlAttempt: tweetUrl, // Log what was fetched if anything
+        });
+        // Attempt to close any lingering dialogs/dropdowns if an error occurred during extraction
+        try {
+          await driver.actions().sendKeys(Key.ESCAPE).perform();
+          this.logger.debug("XScraper", "Sent ESCAPE key after an error during tweet extraction.");
+        } catch (escapeError) {
+          this.logger.warn("XScraper", "Failed to send ESCAPE key after an error", escapeError);
+        }
       }
     }
     // Sort tweets by newest first

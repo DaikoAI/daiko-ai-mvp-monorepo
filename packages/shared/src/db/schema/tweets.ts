@@ -8,9 +8,10 @@ export const tweetTable = pgTable("tweets", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`), // ツイートの一意識別子
-  xAccountId: varchar("x_account_id")
+  authorId: varchar("author_id")
     .notNull()
     .references(() => xAccountTable.id), // アカウントへの参照
+  url: text("url").notNull(), // ツイートのURL
   content: text("content").notNull(), // ツイート本文
   tweetTime: timestamp("tweet_time").notNull(), // ツイート時間
   metadata: json("metadata"), // リンク、メディア、メンションなどの追加情報
