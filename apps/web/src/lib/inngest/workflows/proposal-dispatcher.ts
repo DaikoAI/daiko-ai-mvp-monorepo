@@ -14,7 +14,7 @@ export const proposalDispatcher = inngest.createFunction(
     const { signalId } = event.data;
     logger.info("dispatch-start", `Proposal dispatcher started for signalId: ${signalId}`);
 
-    const tokenAddress = await fetchTokenAddress(step, signalId);
+    const tokenAddress = await fetchTokenAddress(signalId);
     if (!tokenAddress) {
       return {
         message: "Signal has no tokenAddress, no holders to dispatch to.",
@@ -42,12 +42,10 @@ export const proposalDispatcher = inngest.createFunction(
 );
 
 // Helpers for readability and single responsibility
-async function fetchTokenAddress(step: any, signalId: string): Promise<string | null> {
-  const signal = await step.run("get-signal-details-for-dispatch", async () => {
-    return db.query.signalsTable.findFirst({
-      where: eq(signalsTable.id, signalId),
-      columns: { tokenAddress: true },
-    });
+async function fetchTokenAddress(signalId: string): Promise<string | null> {
+  const signal = await db.query.signalsTable.findFirst({
+    where: eq(signalsTable.id, signalId),
+    columns: { tokenAddress: true },
   });
   if (!signal) {
     logger.error("fetchTokenAddress", `Signal not found: ${signalId}`);

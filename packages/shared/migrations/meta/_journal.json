@@ -36,6 +36,20 @@
       "when": 1746965900999,
       "tag": "0004_glamorous_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1746986076416,
+      "tag": "0005_common_lady_mastermind",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1746986310049,
+      "tag": "0006_optimal_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

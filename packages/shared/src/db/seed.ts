@@ -305,45 +305,45 @@ const seedXAccounts = async (generatedUsers: UserSelect[]) => {
   // Xアカウントデータ
   const xAccounts: XAccountInsert[] = [
     {
-      id: "DriftProtocol",
-      displayName: "Drift Protocol",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1884910583621042176/mdGXo6iq_400x400.png",
-      lastTweetId: null,
+      id: "whalewatchalert",
+      displayName: "Whale Watch by Moby",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1897776430341083140/aY2MwRYH_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "FlashTrade_",
-      displayName: "Flash Trade",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1884285029485834241/CkkSyrQq_400x400.jpg",
-      lastTweetId: null,
+      id: "mobyagent",
+      displayName: "Moby Agent",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1897771159573110784/MyGL15Y0_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "JupiterExchange",
-      displayName: "Jupiter Exchange",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1661738815890022410/F8y4vBky_400x400.jpg",
-      lastTweetId: null,
+      id: "HOLLYAIAGENT",
+      displayName: "HOLLY AI",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1884276107991736321/i0Kak51G_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "RaydiumProtocol",
-      displayName: "Raydium Protocol",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1742621757230678016/_Av2hYEY_400x400.jpg",
-      lastTweetId: null,
+      id: "WatcherGuru",
+      displayName: "Watcher.Guru",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1641221212578754562/DfiC0KW2_400x400.png",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "jito_sol",
-      displayName: "Jito",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1687112019563188224/mnbhxwox_400x400.png",
-      lastTweetId: null,
+      id: "aixbt_agent",
+      displayName: "aixbt",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1874758416658509824/UPaVddbm_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "sanctumso",
-      displayName: "Sanctum",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1890242588025974784/5PeY6P87_400x400.jpg",
-      lastTweetId: null,
+      id: "glassnode",
+      displayName: "glassnode",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1587118531556130816/dLPGGpUC_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
   ];
@@ -659,16 +659,17 @@ async function seed() {
   // await seedStakingTokenInterestRates();
 
   // // Xアカウント挿入
-  // console.log("Xアカウントデータを挿入中...");
-  // await seedXAccounts(generatedUsers);
+  console.log("Xアカウントデータを挿入中...");
+  const users = await db.select().from(usersTable);
+  await seedXAccounts(users);
 
   // // ニュースサイト挿入
   // console.log("ニュースサイトデータを挿入中...");
   // await seedNewsSites(generatedUsers);
 
   // 提案データ挿入 (New)
-  console.log("提案データを挿入中...");
-  await seedProposals(["614d9720-b18e-462b-8032-003ccc6cb819"]);
+  // console.log("提案データを挿入中...");
+  // await seedProposals(["614d9720-b18e-462b-8032-003ccc6cb819"]);
 
   console.log("シードデータの挿入が完了しました！");
 }

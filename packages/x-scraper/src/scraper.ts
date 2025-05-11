@@ -1,4 +1,4 @@
-import { Logger, LogLevel, Tweet } from "@daiko-ai/shared";
+import { Logger, LogLevel, Tweet, XAccountInsert, XAccountSelect } from "@daiko-ai/shared";
 import * as fs from "node:fs"; // Import fs for screenshots
 import * as path from "node:path"; // Added to handle screenshot directory
 import {
@@ -390,13 +390,13 @@ export class XScraper {
 
   /**
    * 単一のXアカウントをチェック
-   * @returns {Promise<string | null>} 変更があった場合は最新のツイートID、なければnull
+   * @returns {Promise<Date | null>} 変更があった場合は最新のツイートのタイムスタンプ、なければnull
    */
-  public async checkSingleAccount(xId: string): Promise<string | null> {
-    const driver = await this.initDriver(); // This line is removed as driver is now passed as an argument
+  public async checkSingleAccount(xId: string): Promise<Date | null> {
+    const driver = await this.initDriver();
 
     if (!driver) {
-      this.logger.error("XScraper", "Driver not found");
+      this.logger.error("XScraper", "Driver not found for checkSingleAccount");
       return null;
     }
 
@@ -404,28 +404,19 @@ export class XScraper {
       this.logger.info("XScraper", `Checking X account: ${xId}`);
 
       const url = `${X_BASE_URL}/${xId}`;
-
-      // ページに移動
-      this.logger.debug("XScraper", `Navigating to ${url}`);
       await driver.get(url);
-
-      // Xのページが完全に読み込まれるのを十分な時間待つ
       await driver.sleep(PAGE_LOAD_WAIT_MS);
-
-      // ページが読み込まれるのを待つ
       await driver.wait(until.elementLocated(By.css(TWEET_ARTICLE_SELECTOR_CSS)), ELEMENT_LOCATE_TIMEOUT_MS);
 
-      // ツイートを抽出
-      const tweets = await this.extractTweets(driver);
-      this.logger.info("XScraper", `Extracted ${tweets.length} tweets from ${xId}`);
+      const extractedTweets = await this.extractTweets(driver);
+      this.logger.info("XScraper", `Extracted ${extractedTweets.length} tweets from ${xId}`);
 
-      if (tweets.length === 0) {
+      if (extractedTweets.length === 0) {
         this.logger.warn("XScraper", `No tweets found for ${xId}`);
-        await this.captureFailureScreenshot(driver, "checkSingleAccount_no_tweets"); // Pass driver
+        await this.captureFailureScreenshot(driver, "checkSingleAccount_no_tweets");
         return null;
       }
 
-      // アカウント情報を取得
       const accounts = await getAllXAccounts();
       const account = accounts.find((acc) => acc.id === xId);
 
@@ -434,21 +425,44 @@ export class XScraper {
         return null;
       }
 
-      // 最新のツイートを保存し、アカウントを更新
-      const latestTweetId = await saveTweets(xId, tweets);
+      // Filter tweets newer than lastTweetUpdatedAt
+      const newTweets = extractedTweets.filter((tweet) => {
+        const tweetDate = new Date(tweet.time);
+        return !account.lastTweetUpdatedAt || tweetDate > new Date(account.lastTweetUpdatedAt);
+      });
 
-      if (latestTweetId && latestTweetId !== account.lastTweetId) {
-        this.logger.info("XScraper", `Change detected for ${xId}. New latest tweet ID: ${latestTweetId}`);
+      if (newTweets.length === 0) {
+        this.logger.info(
+          "XScraper",
+          `No new tweets found for ${xId} since ${account.lastTweetUpdatedAt ? new Date(account.lastTweetUpdatedAt).toISOString() : "the beginning"}.`,
+        );
+        return null;
+      }
 
-        // Return latestTweetId if changed
-        return latestTweetId;
+      this.logger.info("XScraper", `Found ${newTweets.length} new tweets for ${xId}.`);
+
+      // Save new tweets and get the timestamp of the newest one processed
+      const latestTweetTimestampProcessed = await saveTweets(xId, newTweets);
+
+      if (latestTweetTimestampProcessed) {
+        this.logger.info(
+          "XScraper",
+          `Change detected for ${xId}. New latest tweet timestamp: ${latestTweetTimestampProcessed.toISOString()}`,
+        );
+        // The account's lastTweetUpdatedAt is updated within saveTweets -> repository.
+        return latestTweetTimestampProcessed;
       } else {
-        this.logger.info("XScraper", `No change for ${xId}. Last checked tweet ID: ${account.lastTweetId}`);
+        // This case should ideally not be reached if newTweets.length > 0,
+        // but as a fallback if saveTweets returns null despite having new tweets.
+        this.logger.info(
+          "XScraper",
+          `No change for ${xId} after attempting to save new tweets. Last checked: ${account.lastTweetUpdatedAt ? new Date(account.lastTweetUpdatedAt).toISOString() : "N/A"}`,
+        );
         return null;
       }
     } catch (error) {
       this.logger.error("XScraper", `Error checking account ${xId}:`, error);
-      await this.captureFailureScreenshot(driver, `checkSingleAccount_error_${xId}`); // Pass driver
+      await this.captureFailureScreenshot(driver, `checkSingleAccount_error_${xId}`);
       return null;
     }
   }
@@ -760,44 +774,43 @@ export class XScraper {
     try {
       this.logger.info("XScraper", `Adding/updating account ${xId} for user ${userId}`);
 
-      // アカウントリストを取得
       const accounts = await getAllXAccounts();
-      let account = accounts.find((acc) => acc.id === xId);
+      let accountData = accounts.find((acc) => acc.id === xId);
 
-      if (account) {
-        // 既存のアカウントを更新
-        if (!account.userIds) {
-          account.userIds = [];
-        }
-
-        if (!account.userIds.includes(userId)) {
-          account.userIds.push(userId);
+      if (accountData) {
+        const currentUserIdSet = new Set(accountData.userIds || []);
+        if (!currentUserIdSet.has(userId)) {
+          const updatedUserIds = [...currentUserIdSet, userId];
+          await saveXAccount({ ...accountData, userIds: updatedUserIds, updatedAt: new Date() });
           this.logger.info("XScraper", `Added user ${userId} to existing account ${xId}`);
         } else {
           this.logger.info("XScraper", `User ${userId} already following account ${xId}`);
         }
       } else {
-        // 新しいアカウントを作成
-        account = {
+        // New account
+        const newAccountData: XAccountInsert = {
           id: xId,
           displayName: null,
           profileImageUrl: null,
-          lastTweetId: null,
+          lastTweetUpdatedAt: null,
           userIds: [userId],
           createdAt: new Date(),
           updatedAt: new Date(),
         };
+        await saveXAccount(newAccountData);
         this.logger.info("XScraper", `Created new account entry for ${xId}`);
+        accountData = newAccountData as XAccountSelect;
       }
 
-      // アカウントを保存
-      await saveXAccount(account);
-
-      if (this.driver) {
-        // 初回チェックを実施
-        await this.checkSingleAccount(xId);
+      // Perform initial check only if driver is available and accountData is valid
+      if (this.driver && accountData) {
+        const checkResult = await this.checkSingleAccount(xId);
+        if (checkResult) {
+          this.logger.info("XScraper", `Initial check for ${xId} found new tweets up to ${checkResult.toISOString()}`);
+        } else {
+          this.logger.info("XScraper", `Initial check for ${xId} found no new tweets.`);
+        }
       }
-
       return true;
     } catch (error) {
       this.logger.error("XScraper", `Error adding account ${xId}:`, error);
@@ -810,7 +823,6 @@ export class XScraper {
    * @returns {Promise<string[]>} 変更が検出されたアカウントIDの配列
    */
   public async checkXAccounts(maxConcurrency: number = 10): Promise<string[]> {
-    // Ensure a logged-in state and get session cookies for parallel instances
     const isLoggedIn = await this.ensureLoggedIn();
     if (!isLoggedIn || !this.sessionCookies || this.sessionCookies.length === 0) {
       this.logger.error(
@@ -821,13 +833,12 @@ export class XScraper {
       return [];
     }
 
-    const masterSessionCookies = [...this.sessionCookies]; // Copy cookies for use in parallel instances
+    const masterSessionCookies = [...this.sessionCookies];
     this.logger.info(
       "XScraper",
-      `Master session cookies obtained (${masterSessionCookies.length}). Closing main driver before starting parallel runs.`,
+      `Master session cookies obtained (${masterSessionCookies.length}). Closing main driver if it exists.`,
     );
     if (this.driver) {
-      // Close the main driver instance used for login, it won't be used for checks
       await this.closeDriver();
     }
 
@@ -843,7 +854,13 @@ export class XScraper {
     );
 
     const updatedAccountIds: string[] = [];
-    const settledResults = [];
+
+    type AccountCheckOutcome = {
+      accountId: string;
+      status: "fulfilled" | "failed";
+      value?: string | null; // AccountId if changed
+      error?: string;
+    };
 
     for (let i = 0; i < accounts.length; i += maxConcurrency) {
       const batch = accounts.slice(i, i + maxConcurrency);
@@ -852,22 +869,26 @@ export class XScraper {
         `Processing batch ${Math.floor(i / maxConcurrency) + 1}/${Math.ceil(accounts.length / maxConcurrency)}: accounts ${accountIdsInBatch(batch)}`,
       );
 
-      const batchPromises = batch.map(async (account) => {
+      const batchPromises = batch.map(async (account): Promise<AccountCheckOutcome> => {
         let parallelDriver: WebDriver | null = null;
         try {
           this.logger.debug("XScraper", `Initializing new driver for account: ${account.id}`);
-          parallelDriver = await this.initDriver(false, masterSessionCookies as SeleniumCookie[]); // false: don't reuse, create new. Pass master cookies.
+          parallelDriver = await this.initDriver(false, masterSessionCookies as SeleniumCookie[]);
           if (!parallelDriver) {
             this.logger.error("XScraper", `Failed to initialize parallel driver for account ${account.id}.`);
             return { accountId: account.id, status: "failed", error: "Driver initialization failed" };
           }
 
+          const tempScraper = new XScraper(undefined, masterSessionCookies);
+          (tempScraper as any).driver = parallelDriver;
+
           this.logger.info("XScraper", `Driver initialized for ${account.id}. Starting checkSingleAccount.`);
-          const changedTweetId = await this.checkSingleAccount(account.id);
-          if (changedTweetId) {
+          const latestUpdateTimestamp = await tempScraper.checkSingleAccount(account.id);
+
+          if (latestUpdateTimestamp) {
             this.logger.info(
               "XScraper",
-              `Change detected for ${account.id} (parallel). New latest tweet ID: ${changedTweetId}`,
+              `Change detected for ${account.id} (parallel). New latest tweet timestamp: ${latestUpdateTimestamp.toISOString()}`,
             );
             return { accountId: account.id, status: "fulfilled", value: account.id };
           } else {
@@ -875,14 +896,14 @@ export class XScraper {
             return { accountId: account.id, status: "fulfilled", value: null };
           }
         } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
           this.logger.error("XScraper", `Error scraping ${account.id} in parallel:`, {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorMessage,
           });
           if (parallelDriver) {
-            // Use non-null assertion operator as a final attempt to satisfy the linter
-            await this.captureFailureScreenshot(parallelDriver!, `checkXAccounts_parallel_error_${account.id}`);
+            await this.captureFailureScreenshot(parallelDriver, `checkXAccounts_parallel_error_${account.id}`);
           }
-          return { accountId: account.id, status: "failed", error: err instanceof Error ? err.message : String(err) };
+          return { accountId: account.id, status: "failed", error: errorMessage };
         } finally {
           if (parallelDriver) {
             this.logger.debug("XScraper", `Closing driver for account: ${account.id}`);
@@ -893,18 +914,22 @@ export class XScraper {
         }
       });
 
-      // Wait for all promises in the current batch to settle
-      const results = await Promise.allSettled(batchPromises);
-      settledResults.push(...results);
+      const results: PromiseSettledResult<AccountCheckOutcome>[] = await Promise.allSettled(batchPromises);
 
       results.forEach((result) => {
-        if (
-          result.status === "fulfilled" &&
-          result.value &&
-          result.value.status === "fulfilled" &&
-          result.value.value
-        ) {
-          updatedAccountIds.push(result.value.value);
+        if (result.status === "fulfilled") {
+          const outcome = result.value;
+          if (outcome.status === "fulfilled" && outcome.value) {
+            updatedAccountIds.push(outcome.value);
+          } else if (outcome.status === "failed") {
+            this.logger.error("XScraper", `Batch processing failure for account ${outcome.accountId}:`, {
+              error: outcome.error,
+            });
+          }
+        } else {
+          // result.status === 'rejected'
+          // This path means an error occurred outside the try/catch in the map, or the promise was unexpectedly rejected.
+          this.logger.error("XScraper", `Unexpected batch promise rejection:`, { reason: result.reason });
         }
       });
 
@@ -914,7 +939,7 @@ export class XScraper {
       );
 
       if (i + maxConcurrency < accounts.length) {
-        const waitTime = BATCH_PROCESSING_WAIT_MS; // Use existing constant for delay between batches
+        const waitTime = BATCH_PROCESSING_WAIT_MS;
         this.logger.debug("XScraper", `Waiting ${waitTime}ms before next batch...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
@@ -924,8 +949,6 @@ export class XScraper {
       "XScraper",
       `Finished all parallel batches. Total accounts processed: ${accounts.length}. Total updated accounts: ${updatedAccountIds.length}`,
     );
-    // Log all settled results for debugging if needed
-    // this.logger.debug("XScraper", "All settled results:", settledResults);
     return updatedAccountIds;
   }
 

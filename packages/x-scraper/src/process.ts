@@ -34,7 +34,7 @@ export async function processXScraping(options?: { specificAccountId?: string })
         return {
           success: true,
           message: `Xアカウント ${options.specificAccountId} のスクレイピングが完了しました`,
-          data: { accountId: options.specificAccountId, tweets: result?.length || 0 },
+          data: { accountId: options.specificAccountId, tweets: result },
         };
       } catch (error) {
         return {

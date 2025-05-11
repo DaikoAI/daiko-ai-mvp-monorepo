@@ -7,7 +7,7 @@ export const xAccountTable = pgTable("x_accounts", {
   id: varchar("id").primaryKey().notNull(),
   displayName: text("display_name"),
   profileImageUrl: text("profile_image_url"),
-  lastTweetId: varchar("last_tweet_id"), // 最新ツイートIDへの参照
+  lastTweetUpdatedAt: timestamp("last_tweet_updated_at").defaultNow(),
   userIds: json("user_ids").$type<string[]>(),
   createdAt: timestamp("created_at")
     .default(sql`NOW()`)

@@ -3,6 +3,8 @@ import { XScraper } from "@daiko-ai/x-scraper";
 
 const logger = new Logger({ level: LogLevel.INFO });
 
+process.setMaxListeners(15);
+
 async function main() {
   logger.info("SeleniumWorker", "Starting worker process...");
   const env = getValidatedEnvVars();
