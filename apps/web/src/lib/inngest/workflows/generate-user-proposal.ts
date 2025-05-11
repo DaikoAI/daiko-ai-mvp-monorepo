@@ -35,19 +35,34 @@ export const generateUserProposal = inngest.createFunction(
       throw new Error("Proposal not found");
     }
 
-    await db.insert(proposalTable).values({
-      userId,
-      triggerEventId: signalId,
-      title: result.proposal.title,
-      summary: result.proposal.summary,
-      reason: result.proposal.reason,
-      sources: result.proposal.sources,
-      type: result.proposal.type,
-      proposedBy: "Daiko AI",
-      financialImpact: result.proposal.financialImpact,
-      expiresAt: result.proposal.expiresAt,
-      contractCall: result.proposal.contractCall,
-      status: "active",
+    const [proposal] = await db
+      .insert(proposalTable)
+      .values({
+        userId,
+        triggerEventId: signalId,
+        title: result.proposal.title,
+        summary: result.proposal.summary,
+        reason: result.proposal.reason,
+        sources: result.proposal.sources,
+        type: result.proposal.type,
+        proposedBy: "Daiko AI",
+        financialImpact: result.proposal.financialImpact,
+        expiresAt: result.proposal.expiresAt,
+        contractCall: result.proposal.contractCall,
+        status: "active",
+      })
+      .returning();
+
+    if (!proposal) {
+      logger.error("proposal-creation-failed", `Failed to create proposal for signal ${signalId}`);
+      throw new Error("Failed to create proposal");
+    }
+
+    await inngest.send({
+      name: "proposal/generated",
+      data: {
+        proposalId: proposal.id,
+      },
     });
   },
 );
