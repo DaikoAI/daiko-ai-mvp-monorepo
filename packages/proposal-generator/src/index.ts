@@ -4,9 +4,9 @@ import { dataFetchNode } from "./nodes/dataFetch";
 import { signalValidationNode } from "./nodes/signalValidation";
 import { proposalGenerationNode } from "./nodes/proposalGeneration";
 
-export async function initProposalGeneratorGraph(signalId: string) {
+export async function initProposalGeneratorGraph(signalId: string, userId: string) {
   try {
-    const config = { configurable: { signalId } };
+    const config = { configurable: { signalId, userId } };
 
     const workflow = new StateGraph(proposalGeneratorState)
       // 主要ノード

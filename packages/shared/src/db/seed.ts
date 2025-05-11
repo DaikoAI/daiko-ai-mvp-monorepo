@@ -305,45 +305,45 @@ const seedXAccounts = async (generatedUsers: UserSelect[]) => {
   // Xアカウントデータ
   const xAccounts: XAccountInsert[] = [
     {
-      id: "DriftProtocol",
-      displayName: "Drift Protocol",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1884910583621042176/mdGXo6iq_400x400.png",
-      lastTweetId: null,
+      id: "whalewatchalert",
+      displayName: "Whale Watch by Moby",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1897776430341083140/aY2MwRYH_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "FlashTrade_",
-      displayName: "Flash Trade",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1884285029485834241/CkkSyrQq_400x400.jpg",
-      lastTweetId: null,
+      id: "mobyagent",
+      displayName: "Moby Agent",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1897771159573110784/MyGL15Y0_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "JupiterExchange",
-      displayName: "Jupiter Exchange",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1661738815890022410/F8y4vBky_400x400.jpg",
-      lastTweetId: null,
+      id: "HOLLYAIAGENT",
+      displayName: "HOLLY AI",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1884276107991736321/i0Kak51G_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "RaydiumProtocol",
-      displayName: "Raydium Protocol",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1742621757230678016/_Av2hYEY_400x400.jpg",
-      lastTweetId: null,
+      id: "WatcherGuru",
+      displayName: "Watcher.Guru",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1641221212578754562/DfiC0KW2_400x400.png",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "jito_sol",
-      displayName: "Jito",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1687112019563188224/mnbhxwox_400x400.png",
-      lastTweetId: null,
+      id: "aixbt_agent",
+      displayName: "aixbt",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1874758416658509824/UPaVddbm_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
     {
-      id: "sanctumso",
-      displayName: "Sanctum",
-      profileImageUrl: "https://pbs.twimg.com/profile_images/1890242588025974784/5PeY6P87_400x400.jpg",
-      lastTweetId: null,
+      id: "glassnode",
+      displayName: "glassnode",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1587118531556130816/dLPGGpUC_400x400.jpg",
+      lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
   ];
@@ -486,28 +486,29 @@ const seedStakingTokenInterestRates = async () => {
 /**
  * proposalデータを挿入するシード関数
  */
-const seedProposals = async (userIds: string[]) => {
+const seedProposals = async (generatedUsers: UserSelect[]) => {
   try {
     console.log("提案データを挿入中...");
 
-    const proposals: ProposalInsert[] = [
+    const SIX_MONTHS_SECONDS = 1000 * 60 * 60 * 24 * 30 * 6;
+
+    const staticProposals: Omit<ProposalInsert, "userId">[] = [
       {
-        title: "Take Profit SOL 5x Long Position on Jupiter",
-        summary: "Close 50% of your 5x leveraged SOL long position on Jupiter Exchange to secure profits",
+        title: "Take Profit SOL 5x Long Position on Drift Protocol",
+        summary: "Close 50% of your 5x leveraged SOL long position on Drift Protocol to secure profits",
         reason: [
           "Your position is currently up 12.3% ($615) with potential for reversal",
-          "On-chain data shows 23% decrease in SOL perpetual open interest over past 12 hours",
+          "On-chain data from Drift Protocol shows 23% decrease in SOL perpetual open interest over past 12 hours",
           "Whale wallets reduced leveraged long positions by 18% in last 6 hours",
         ],
         sources: [
-          { name: "Jupiter Exchange On-Chain Data", url: "#" },
+          { name: "Drift Protocol On-Chain Data", url: "https://docs.drift.trade/" },
           { name: "Solana Whale Wallet Tracker", url: "#" },
           { name: "Perpetual Market Open Interest Analysis", url: "#" },
         ],
         type: "trade",
         proposedBy: "Daiko AI",
-        userId: userIds[0],
-        expires_at: new Date(Date.now() + 1000 * 40),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
         financialImpact: {
           currentValue: 5000,
           projectedValue: 5615,
@@ -547,8 +548,7 @@ const seedProposals = async (userIds: string[]) => {
         ],
         type: "risk",
         proposedBy: "Daiko AI",
-        userId: userIds[0],
-        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
         financialImpact: {
           currentValue: 1200, // Assuming 100M MELANIA = $1200
           projectedValue: 720, // Assuming 40% potential decline
@@ -590,8 +590,7 @@ const seedProposals = async (userIds: string[]) => {
         ],
         type: "stake",
         proposedBy: "Daiko AI",
-        userId: userIds[0],
-        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 72),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
         financialImpact: {
           currentValue: 595.92, // Updated value (4 * 148.98)
           projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)
@@ -621,15 +620,22 @@ const seedProposals = async (userIds: string[]) => {
     // すでに存在する提案を確認
     const existingProposals = await db.select().from(proposalTable);
 
-    for (const proposal of proposals) {
-      // タイトルによる重複チェック
-      const existingProposal = existingProposals.find((p) => p.title === proposal.title);
+    for (const user of generatedUsers) {
+      for (const staticProposal of staticProposals) {
+        const proposal: ProposalInsert = {
+          ...staticProposal,
+          userId: user.id,
+        };
 
-      if (!existingProposal) {
-        await db.insert(proposalTable).values(proposal);
-        console.log(`提案 "${proposal.title}" を挿入しました`);
-      } else {
-        console.log(`提案 "${proposal.title}" は既に存在します。スキップします。`);
+        // タイトルとユーザーIDによる重複チェック
+        const existingProposal = existingProposals.find((p) => p.title === proposal.title && p.userId === user.id);
+
+        if (!existingProposal) {
+          await db.insert(proposalTable).values(proposal);
+          console.log(`ユーザー "${user.name}" の提案 "${proposal.title}" を挿入しました`);
+        } else {
+          console.log(`ユーザー "${user.name}" の提案 "${proposal.title}" は既に存在します。スキップします。`);
+        }
       }
     }
   } catch (error) {
@@ -645,6 +651,7 @@ async function seed() {
   console.log("シードデータ挿入を開始します...");
 
   // const generatedUsers = await seedUsers();
+  const users = await db.select().from(usersTable); // usersをここで取得
 
   // // トークン挿入
   // console.log("トークンデータを挿入中...");
@@ -660,7 +667,8 @@ async function seed() {
 
   // // Xアカウント挿入
   // console.log("Xアカウントデータを挿入中...");
-  // await seedXAccounts(generatedUsers);
+  // const users = await db.select().from(usersTable); // seedProposalsに渡すためにここで宣言
+  // await seedXAccounts(users);
 
   // // ニュースサイト挿入
   // console.log("ニュースサイトデータを挿入中...");
@@ -668,7 +676,7 @@ async function seed() {
 
   // 提案データ挿入 (New)
   console.log("提案データを挿入中...");
-  await seedProposals(["614d9720-b18e-462b-8032-003ccc6cb819"]);
+  await seedProposals(users); // usersを引数として渡す
 
   console.log("シードデータの挿入が完了しました！");
 }

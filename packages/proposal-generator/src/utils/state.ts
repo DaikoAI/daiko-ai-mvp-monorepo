@@ -1,22 +1,13 @@
 import type {
-  NewsSiteSelect,
-  PortfolioSnapshot,
-  ProposalSelect,
+  ProposalInsert,
   SignalSelect,
   TokenPriceSelect,
   TweetSelect,
+  UserBalanceSelect,
   UserSelect,
 } from "@daiko-ai/shared";
 import type { BaseMessage } from "@langchain/core/messages";
 import { Annotation, MemorySaver, messagesStateReducer } from "@langchain/langgraph";
-
-// dbData の型定義 (dataFetchNode の戻り値に基づく)
-export interface DbData {
-  marketData: TokenPriceSelect[];
-  tweets: TweetSelect[];
-  news: NewsSiteSelect[];
-  portfolio: PortfolioSnapshot | undefined;
-}
 
 export const memory = new MemorySaver();
 
@@ -26,23 +17,33 @@ export const proposalGeneratorState = Annotation.Root({
     default: () => [],
   }),
 
-  // シグナル情報
-  signalData: Annotation<SignalSelect | null>({
-    reducer: (oldValue, newValue) => newValue ?? oldValue,
-    default: () => null,
-  }),
-
-  dbData: Annotation<DbData | null>({
-    reducer: (oldValue, newValue) => newValue ?? oldValue,
-    default: () => null,
-  }),
-
-  proposal: Annotation<ProposalSelect | null>({
-    reducer: (oldValue, newValue) => newValue ?? oldValue,
-    default: () => null,
-  }),
-
   user: Annotation<UserSelect | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
+
+  // シグナル情報
+  signal: Annotation<SignalSelect | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
+
+  tokenPrices: Annotation<TokenPriceSelect[] | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
+
+  latestTweets: Annotation<TweetSelect[] | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
+
+  userBalance: Annotation<UserBalanceSelect | null>({
+    reducer: (oldValue, newValue) => newValue ?? oldValue,
+    default: () => null,
+  }),
+
+  proposal: Annotation<ProposalInsert | null>({
     reducer: (oldValue, newValue) => newValue ?? oldValue,
     default: () => null,
   }),

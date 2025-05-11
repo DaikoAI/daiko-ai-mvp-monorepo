@@ -1,9 +1,9 @@
-import { db, proposalTable } from "@daiko-ai/shared";
-import { proposalGeneratorState } from "../utils/state";
+import { HumanMessage } from "@langchain/core/messages";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { gpt4oMini } from "../utils/model";
-import { proposalGenerationPrompt, parser } from "../prompts/proposalGeneration";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
+import { parser, proposalGenerationPrompt } from "../prompts/proposalGeneration";
+import { gpt4oMini } from "../utils/model";
+import { proposalGeneratorState } from "../utils/state";
 
 const proposalGenerationChain = RunnableSequence.from([proposalGenerationPrompt, gpt4oMini, parser]);
 
@@ -11,52 +11,51 @@ export const proposalGenerationNode = async (
   state: typeof proposalGeneratorState.State,
   options: LangGraphRunnableConfig,
 ) => {
-  const threadId = options.configurable?.thread_id;
-  if (!threadId) {
-    throw new Error("thread_id is missing in config");
+  const signalId = options.configurable?.signalId;
+  if (!signalId) {
+    throw new Error("signalId is missing in config");
+  }
+  const userId = options.configurable?.userId;
+  if (!userId) {
+    throw new Error("userId is missing in config");
   }
 
-  const { signalData, dbData } = state;
+  const { signal, user, tokenPrices, latestTweets, userBalance } = state;
 
-  if (!signalData || !dbData) {
-    throw new Error("Required data (signalData, dbData) is missing in state.");
+  if (!signal || !user || !tokenPrices || !latestTweets || !userBalance) {
+    throw new Error("Required data (signal, user, tokenPrices, latestTweets, userBalance) is missing in state.");
   }
+
+  const inputText = `
+Data for proposal generation:
+User ID: ${userId}
+
+Signal Details:
+${JSON.stringify(signal, null, 2)}
+
+User Profile:
+${JSON.stringify(user, null, 2)}
+
+Token Prices:
+${JSON.stringify(tokenPrices, null, 2)}
+
+Latest Tweets:
+${JSON.stringify(latestTweets, null, 2)}
+
+User Balance:
+${JSON.stringify(userBalance, null, 2)}
+`;
 
   // 提案生成チェーンを実行
   const result = await proposalGenerationChain.invoke({
-    signalData,
-    marketData: dbData.marketData,
-    tweets: dbData.tweets,
-    news: dbData.news,
-    portfolio: dbData.portfolio,
-    userId: threadId,
+    messages: [new HumanMessage(inputText)],
   });
 
-  // 生成された提案をDBに保存
-  const insertedProposal = await db
-    .insert(proposalTable)
-    .values({
-      userId: threadId,
-      triggerEventId: signalData.id,
-      title: result.proposal.title,
-      summary: result.proposal.summary,
-      reason: result.proposal.reason,
-      sources: result.proposal.sources,
-      type: result.proposal.type,
-      proposedBy: "Daiko AI",
-      financialImpact: result.proposal.financialImpact,
-      expires_at: new Date(result.proposal.expires_at),
-      contractCall: result.proposal.contractCall,
-      status: "active",
-    })
-    .returning();
-
-  if (!insertedProposal || insertedProposal.length === 0) {
-    throw new Error("Failed to insert proposal into database.");
+  if (!result.proposal) {
+    throw new Error("Failed to generate proposal.");
   }
 
   return {
-    proposal: insertedProposal[0],
-    processingStage: "moderation",
+    proposal: result.proposal,
   };
 };

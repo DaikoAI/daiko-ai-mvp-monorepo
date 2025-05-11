@@ -36,7 +36,7 @@ export class PostgresXAccountRepository implements XAccountRepository {
         id: data.id,
         displayName: data.displayName,
         profileImageUrl: data.profileImageUrl,
-        lastTweetId: data.lastTweetId,
+        lastTweetUpdatedAt: data.lastTweetUpdatedAt,
         userIds: (data.userIds as string[]) || [],
         createdAt: data.createdAt || new Date(),
         updatedAt: data.updatedAt || new Date(),
@@ -70,11 +70,11 @@ export class PostgresXAccountRepository implements XAccountRepository {
     return accounts;
   }
 
-  async updateLastTweetId(accountId: string, tweetId: string): Promise<void> {
+  async updateLastTweetUpdatedAt(accountId: string, tweetTimestamp: Date): Promise<void> {
     await db
       .update(xAccountTable)
       .set({
-        lastTweetId: tweetId,
+        lastTweetUpdatedAt: tweetTimestamp,
         updatedAt: new Date(),
       })
       .where(eq(xAccountTable.id, accountId));

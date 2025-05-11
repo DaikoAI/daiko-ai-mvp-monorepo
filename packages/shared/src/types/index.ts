@@ -37,6 +37,11 @@ export interface LogEntry {
 export interface Tweet {
   time: string;
   data: string;
+  url: string;
+  replyCount?: number | null; // Optional, as it might not always be available
+  retweetCount?: number | null;
+  likeCount?: number | null;
+  impressionCount?: number | null;
 }
 
 /** Structure of crypto analysis result */

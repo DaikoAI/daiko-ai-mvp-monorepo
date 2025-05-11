@@ -12,8 +12,7 @@ export * from "./db/schema";
 
 // ユーティリティのexport
 export * from "./types";
-export { Logger } from "./utils/logger";
-export * from "./utils/portfolio";
+export * from "./utils";
 
 // 追加の型をここで明示的にエクスポート
 export { CryptoAnalysis, Tweet } from "./types";

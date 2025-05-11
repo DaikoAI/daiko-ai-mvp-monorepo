@@ -47,38 +47,44 @@ export const saveXAccount = async (account: XAccountInsert): Promise<void> => {
 };
 
 /**
- * ツイートを保存し、アカウントの最新ツイートIDを更新
+ * ツイートを保存し、アカウントの最新ツイート更新日時を更新
  */
-export const saveTweets = async (accountId: string, tweets: Tweet[]): Promise<string | null> => {
+export const saveTweets = async (accountId: string, tweets: Tweet[]): Promise<Date | null> => {
   try {
     if (!tweets.length) {
       return null;
     }
 
-    // 最新のツイートから保存
-    let latestTweetId = null;
+    let newestTweetDate: Date | null = null;
 
     for (const tweet of tweets) {
+      const tweetDate = new Date(tweet.time);
       const newTweet = await tweetRepository.create({
-        xAccountId: accountId,
+        authorId: accountId,
+        url: tweet.url,
+        retweetCount: tweet.retweetCount ?? 0,
+        replyCount: tweet.replyCount ?? 0,
+        likeCount: tweet.likeCount ?? 0,
         content: tweet.data,
-        tweetTime: new Date(tweet.time),
+        tweetTime: tweetDate,
       });
       log.info("x-scraper:db", `Saved tweet: ${newTweet.id}`);
 
-      // 最初のツイート（最新）のIDを記録
-      if (!latestTweetId) {
-        latestTweetId = newTweet.id;
+      if (!newestTweetDate || tweetDate > newestTweetDate) {
+        newestTweetDate = tweetDate;
       }
     }
 
-    // アカウントの最新ツイートIDを更新
-    if (latestTweetId) {
-      await xAccountRepository.updateLastTweetId(accountId, latestTweetId);
-      log.info("x-scraper:db", `Updated latest tweet ID for account ${accountId}: ${latestTweetId}`);
+    // アカウントの最新ツイート更新日時を更新
+    if (newestTweetDate) {
+      await xAccountRepository.updateLastTweetUpdatedAt(accountId, newestTweetDate);
+      log.info(
+        "x-scraper:db",
+        `Updated lastTweetUpdatedAt for account ${accountId} to: ${newestTweetDate.toISOString()}`,
+      );
     }
 
-    return latestTweetId;
+    return newestTweetDate;
   } catch (error) {
     log.error("x-scraper:db", `Error saving tweets for account ${accountId}:`, error);
     return null;

@@ -14,7 +14,7 @@ This worker service is responsible for running the X (Twitter) scraper using Sel
 ### 1. Prerequisites
 
 - Node.js (v22+ recommended)
-- pnpm
+- bun
 - Google Chrome installed locally
 - ChromeDriver installed locally and available in your `PATH` (matching your Chrome version).
 
@@ -23,7 +23,7 @@ This worker service is responsible for running the X (Twitter) scraper using Sel
 From the monorepo root:
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 3. Environment Variables
@@ -52,16 +52,102 @@ From the monorepo root:
 
 ```bash
 # Run once
-pnpm --filter @daiko-ai/selenium-worker start
+bun --filter @daiko-ai/selenium-worker start
 
 # Run in watch mode for development
-pnpm --filter @daiko-ai/selenium-worker dev
+bun --filter @daiko-ai/selenium-worker dev
 
 # Type check
-pnpm --filter @daiko-ai/selenium-worker typecheck
+bun --filter @daiko-ai/selenium-worker typecheck
 ```
 
 The `start` and `dev` scripts use `tsx` to run the `src/index.ts` file directly.
+
+## Alternative: Running with PM2 (for Cron on Raspberry Pi)
+
+For running this worker as a persistent background service and managing cron-like scheduling, especially on a device like a Raspberry Pi, PM2 is a recommended process manager. This setup assumes you are using `bun` as your package manager and runtime.
+
+### 1. Install PM2
+
+If you haven't already, install PM2 globally. While PM2 is often installed via npm, you can try with bun:
+
+```bash
+bun add -g pm2
+# If the above doesn't work or isn't standard for PM2, you might need to use npm:
+# npm install -g pm2
+```
+
+### 2. Create an Ecosystem File
+
+Create an `ecosystem.config.js` file in the `apps/selenium-worker` directory. This file will define how PM2 runs your worker.
+
+```javascript
+// apps/selenium-worker/ecosystem.config.js
+module.exports = {
+  apps: [
+    {
+      name: "selenium-worker",
+      script: "./src/index.ts", // Path to your worker's entry point
+      interpreter: "bun", // Use bun to run the TypeScript script directly
+      cwd: __dirname, // Set current working directory to where ecosystem.config.js is
+      cron_restart: "0 */1 * * *", // Example: Run every hour
+      env: {
+        // Environment variables will be loaded from the .env file in the monorepo root
+        // by the application's dotenv setup.
+        // You can also define or override them here if needed for PM2.
+        // NODE_ENV: 'production',
+        // X_USERNAME: 'your_x_username_pm2', // Example override
+      },
+      autorestart: false, // Important for cron jobs; let cron_restart handle scheduled restarts
+      watch: false, // Disable watching for a cron-style job; not needed for scheduled tasks
+      max_memory_restart: "300M", // Optional: Restart if it exceeds memory limit (adjust as needed for RPi)
+    },
+  ],
+};
+```
+
+**Note:**
+
+- Ensure `script: './src/index.ts'` correctly points to your worker's entry file, relative to `cwd`.
+- The application's `dotenv` setup should load variables from the `.env` file in the monorepo root.
+
+### 3. Starting the Worker with PM2
+
+Navigate to the `apps/selenium-worker` directory (or the directory where you placed `ecosystem.config.js`) and run:
+
+```bash
+pm2 start ecosystem.config.js
+```
+
+### 4. Managing the Worker
+
+- **List processes:** `pm2 list`
+- **Show logs:** `pm2 logs selenium-worker` (or `pm2 logs` for all)
+- **Stop a process:** `pm2 stop selenium-worker`
+- **Restart a process:** `pm2 restart selenium-worker`
+- **Delete a process:** `pm2 delete selenium-worker`
+
+### 5. Persisting PM2 on Raspberry Pi Reboots
+
+To ensure PM2 automatically restarts your worker after the Raspberry Pi reboots:
+
+```bash
+pm2 save        # Save the current process list managed by PM2
+pm2 startup     # Generate and configure a startup script for the current OS
+```
+
+Follow the instructions output by the `pm2 startup` command. This will typically provide a command to run with `sudo` to enable the startup script.
+
+### 6. Environment Variables with PM2
+
+As mentioned, your application likely uses `dotenv` to load variables from the monorepo root's `.env` file. PM2 executes your `bun` script, which then loads these variables. If you need to override or set specific variables solely for the PM2 environment, you can do so within the `env` block of the `ecosystem.config.js`.
+
+**Note on Raspberry Pi & Selenium:**
+Running Selenium with Chrome/Chromium on a Raspberry Pi can be resource-intensive, especially on older models.
+
+- Ensure your Raspberry Pi has sufficient RAM (e.g., RPi 4 with 2GB+ is recommended).
+- Use headless mode for the browser to conserve resources. This is typically configured in your Selenium setup within `@daiko-ai/x-scraper`.
+- If you are setting up Chrome/Chromium and ChromeDriver manually on the Raspberry Pi (not using Docker), ensure they are compatible and correctly installed. The `Dockerfile` in this project might offer clues for necessary dependencies.
 
 ## Deployment to Railway
 
@@ -81,8 +167,8 @@ This worker is designed to be deployed using the provided `Dockerfile` which han
 - **Deploy Settings:**
   - Set up a **Cron Schedule** to run the worker periodically. For example, to run every hour:
     - Schedule: `0 * * * *`
-    - Command: (Leave empty to use the Dockerfile `CMD`, which is `pnpm start`)
-      _Alternatively, you could explicitly set the command here: `pnpm --filter @daiko-ai/selenium-worker start`._
+    - Command: (Leave empty to use the Dockerfile `CMD`, which should be updated to use `bun start`)
+      _Alternatively, you could explicitly set the command here: `bun --filter @daiko-ai/selenium-worker start`._
 
 ### 3. Set Environment Variables
 

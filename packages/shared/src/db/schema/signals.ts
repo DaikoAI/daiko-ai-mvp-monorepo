@@ -1,25 +1,22 @@
-import { pgTable, varchar, timestamp, integer, json, real, text } from "drizzle-orm/pg-core";
+import { jsonb, pgEnum, pgTable, real, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
+
+export const sentimentTypeEnum = pgEnum("sentiment_type", ["positive", "negative", "neutral"]);
+export const suggestionTypeEnum = pgEnum("suggestion_type", ["buy", "sell", "hold", "stake", "close_position"]);
 
 export const signalsTable = pgTable("signals", {
   id: varchar("id", { length: 255 })
     .notNull()
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  tokenAddress: varchar("token_address").notNull(),
-  tokenSymbol: varchar("token_symbol").notNull(),
-  type: varchar("type").notNull(),
-  strength: integer("strength").notNull(),
+  tokenAddress: varchar("token_address", { length: 255 }).notNull(),
+  detectedAt: timestamp("detected_at").notNull().defaultNow(),
+  sources: jsonb("sources").notNull(),
+  sentimentType: sentimentTypeEnum("sentiment_type").notNull(),
+  suggestionType: suggestionTypeEnum("suggestion_type").notNull(),
   confidence: real("confidence").notNull(),
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
-  source: varchar("source").notNull(),
-  description: text("description").notNull(),
-  relatedTokens: json("related_tokens").notNull().default([]),
-  relatedAccounts: json("related_accounts").notNull().default([]),
-  triggerData: json("trigger_data").notNull(),
-  projectedImpact: real("projected_impact"),
+  rationaleSummary: text("rationale_summary").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  status: varchar("status").notNull().default("active"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

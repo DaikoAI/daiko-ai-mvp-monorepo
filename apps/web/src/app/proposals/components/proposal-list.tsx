@@ -27,7 +27,7 @@ export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProp
       const aboutToExpire = proposals
         .filter(
           (p) =>
-            p.expires_at && p.expires_at.getTime() - now.getTime() < 30000 && p.id && !expiringProposals.includes(p.id),
+            p.expiresAt && p.expiresAt.getTime() - now.getTime() < 30000 && p.id && !expiringProposals.includes(p.id),
         )
         .map((p) => p.id!)
         .filter((id): id is string => id !== undefined);
@@ -38,8 +38,8 @@ export const ProposalListComponent: React.FC<ProposalListProps> = ({ initialProp
 
       // 期限切れのプロポーザルをフィルタリング
       const updatedProposals = proposals.filter((proposal) => {
-        if (!proposal.expires_at) return true;
-        return proposal.expires_at.getTime() > now.getTime();
+        if (!proposal.expiresAt) return true;
+        return proposal.expiresAt.getTime() > now.getTime();
       });
 
       // 期限切れのプロポーザルが見つかった場合のみ更新

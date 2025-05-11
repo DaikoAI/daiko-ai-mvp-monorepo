@@ -30,11 +30,11 @@
     "drizzle-orm": "^0.43.1"
   },
   "devDependencies": {
-    "@types/node": "^22.15.3",
+    "@types/node": "^22.15.17",
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.30.6",
     "prettier": "^3.5.3",
-    "turbo": "^2.5.2",
+    "turbo": "^2.5.3",
     "typescript": "^5.8.3"
   },
   "prettier": {

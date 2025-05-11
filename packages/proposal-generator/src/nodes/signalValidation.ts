@@ -15,18 +15,18 @@ export const signalValidationNode = async (
   console.log(`[Signal Validation] Validating signal: ${signalId}`);
 
   // データベースからシグナルデータを取得
-  const signalData = await db.query.signalsTable.findFirst({
+  const signal = await db.query.signalsTable.findFirst({
     where: eq(signalsTable.id, signalId),
   });
 
-  if (!signalData) {
+  if (!signal) {
     console.error(`[Signal Validation] Signal not found: ${signalId}`);
     throw new Error(`Signal not found: ${signalId}`);
   }
 
   // ここでシグナルの有効性チェックを行う (例: タイムスタンプ、関連データなど)
   // 例: 一定時間以上経過したシグナルは無効とする
-  const signalAge = Date.now() - new Date(signalData.createdAt).getTime();
+  const signalAge = Date.now() - new Date(signal.createdAt).getTime();
   const maxAge = 24 * 60 * 60 * 1000; // 24時間
   if (signalAge > maxAge) {
     console.warn(`[Signal Validation] Signal is too old: ${signalId}`);
@@ -38,7 +38,6 @@ export const signalValidationNode = async (
 
   // stateにシグナルデータを格納
   return {
-    signalData: signalData,
-    processingStage: "dataFetch",
+    signal,
   };
 };

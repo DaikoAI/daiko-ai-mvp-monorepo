@@ -1,7 +1,6 @@
-import { CryptoAnalysis, Logger, LogLevel, Tweet } from "@daiko-ai/shared";
-// execSync import is unnecessary as cleanupChromeProcesses is removed
+import { Logger, LogLevel, Tweet, XAccountInsert, XAccountSelect } from "@daiko-ai/shared";
 import * as fs from "node:fs"; // Import fs for screenshots
-import { OpenAI } from "openai";
+import * as path from "node:path"; // Added to handle screenshot directory
 import {
   Browser,
   Builder,
@@ -10,15 +9,58 @@ import {
   IWebDriverOptionsCookie as SeleniumCookie,
   until,
   WebDriver,
+  WebElement,
 } from "selenium-webdriver";
-import chrome from "selenium-webdriver/chrome";
+import {
+  BATCH_PROCESSING_WAIT_MS,
+  COOKIES_DIR_RELATIVE,
+  COOKIES_FILENAME,
+  DEFAULT_SELENIUM_SCRIPT_TIMEOUT,
+  ELEMENT_LOCATE_TIMEOUT_MS,
+  INITIAL_INPUT_SELECTOR_CSS,
+  LANG_SELECTOR_CSS,
+  LIKE_COUNT_SELECTOR_CSS,
+  LOGIN_SUCCESS_DELAY_MAX,
+  LOGIN_SUCCESS_DELAY_MIN,
+  LOGIN_URL,
+  LONG_DELAY_MAX,
+  LONG_DELAY_MIN,
+  MAX_TWEETS_TO_PROCESS_PER_ACCOUNT,
+  MEDIUM_DELAY_MAX,
+  MEDIUM_DELAY_MIN,
+  NEXT_BUTTON_XPATH,
+  PAGE_LOAD_WAIT_MS,
+  PASSWORD_SELECTOR_CSS,
+  PRIMARY_COLUMN_SELECTOR_CSS,
+  REPLY_COUNT_SELECTOR_CSS,
+  RETWEET_COUNT_SELECTOR_CSS,
+  SCREENSHOTS_DIR_RELATIVE,
+  SHORT_DELAY_MAX,
+  SHORT_DELAY_MIN,
+  TIME_SELECTOR_CSS,
+  TWEET_ARTICLE_SELECTOR_CSS,
+  TWEET_TEXT_SELECTOR_CSS,
+  USERNAME_VERIFICATION_SELECTOR_CSS,
+  X_BASE_URL,
+} from "./constants";
 import { getAllXAccounts, saveTweets, saveXAccount } from "./db";
-// Remove Inngest imports
-// import { Inngest } from "inngest";
-// import { DaikoEvents } from "@daiko-ai/shared";
+import { createChromeOptions } from "./driver-config"; // Import createChromeOptions
+import { randomDelay } from "./utils";
 
-// Helper function to create random delays
-const randomDelay = (min = 1500, max = 3500) => Math.floor(Math.random() * (max - min + 1)) + min;
+// Helper function to parse engagement strings (e.g., "1.3K", "61") into numbers
+function parseEngagementCount(text: string | null): number | null {
+  if (!text) return null;
+  const num = parseFloat(text.replace(/,/g, ""));
+  if (isNaN(num)) return null;
+
+  if (text.toUpperCase().includes("K")) {
+    return Math.round(num * 1000);
+  }
+  if (text.toUpperCase().includes("M")) {
+    return Math.round(num * 1000000);
+  }
+  return num;
+}
 
 // Xアカウントのログイン情報の型定義
 export interface XCredentials {
@@ -31,31 +73,13 @@ export class XScraper {
   // shared session cookies for login reuse
   private sessionCookies: any[] | null = null;
 
-  private openai: OpenAI;
   private driver: WebDriver | null = null;
   private logger = new Logger({
-    level: LogLevel.INFO,
+    level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG,
   });
   private credentials: XCredentials | null = null;
-  // static flag to ensure Chrome processes are cleaned up only once
-  private static chromeCleaned = false;
-  // Remove Inngest client instance
-  // private inngest: Inngest;
 
   constructor(credentials?: XCredentials, sessionCookies?: any[]) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    // Remove Inngest initialization
-    /*
-    this.inngest = new Inngest({
-      id: "x-scraper-worker",
-      eventKey: process.env.INNGEST_EVENT_KEY,
-      logger: this.logger,
-    });
-    */
-
     if (credentials) {
       this.credentials = credentials;
     }
@@ -66,90 +90,105 @@ export class XScraper {
   }
 
   /**
-   * Seleniumドライバーを初期化（シングルインスタンス）
+   * Initializes a new WebDriver instance or returns the existing one if `reuseExistingInstance` is true.
+   * If `sessionCookiesToInject` are provided, they will be injected into the new instance.
+   *
+   * @param reuseExistingInstance If true, returns this.driver if it exists. Otherwise, always creates a new one if this.driver is null, or if reuseExistingInstance is false.
+   * @param cookiesToInject Optional. Cookies to inject into a new driver instance.
+   * @returns A promise that resolves to a WebDriver instance, or null if creation fails.
    */
-  private async initDriver(): Promise<WebDriver> {
-    if (this.driver) {
+  private async initDriver(
+    reuseExistingInstance: boolean = false,
+    cookiesToInject?: SeleniumCookie[],
+  ): Promise<WebDriver | null> {
+    if (reuseExistingInstance && this.driver) {
+      this.logger.info("XScraper", "Reusing existing WebDriver instance for main operations.");
+      // If reusing, and cookiesToInject are provided, prefer them. Otherwise, it might have already been handled or rely on this.sessionCookies.
+      // This logic might need refinement based on exact cookie management strategy for reused instances.
+      // For now, assume if reusing, cookies are either already set or will be handled by ensureLoggedIn if this.sessionCookies is updated.
+      // For now, assume if reusing, cookies are either already set or will be handled by ensureLoggedIn if this.sessionCookies is updated.
       return this.driver;
     }
 
-    this.logger.info("XScraper", "Initializing Selenium WebDriver");
+    this.logger.info("XScraper", "Initializing new Selenium WebDriver instance.");
+    let newDriver: WebDriver | null = null;
 
     try {
-      // this.cleanupChromeProcesses(); // Call removed
+      const options = createChromeOptions();
+      newDriver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
+      await newDriver.manage().setTimeouts({ script: DEFAULT_SELENIUM_SCRIPT_TIMEOUT });
 
-      const options = new chrome.Options();
-      options.addArguments("--headless");
-      options.addArguments("--window-size=1920,3000");
-      options.addArguments("--disable-blink-features=AutomationControlled");
-      options.addArguments("--no-sandbox");
-      options.addArguments("--disable-dev-shm-usage");
-      options.addArguments("--disable-gpu");
-
-      // 固定User-Agentを設定
-      options.addArguments(
-        "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-      );
-
-      // 自動化検出を回避するための設定
-      options.addArguments("--disable-infobars");
-      options.addArguments("--disable-notifications");
-      options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
-      options.addArguments("--disable-automation");
-
-      // インコグニートモードを使用してクリーンな状態を保証
-      options.addArguments("--incognito");
-
-      this.driver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
-
-      // CDP経由で自動化フラグを変更
-      await this.driver.executeScript(`
-        Object.defineProperty(navigator, 'webdriver', {
-          get: () => undefined
-        });
+      await newDriver.executeScript(`
+        if (navigator.webdriver === true) {
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+            configurable: true
+          });
+        }
       `);
 
-      // inject session cookies if present
-      if (this.sessionCookies && this.sessionCookies.length > 0) {
-        // navigate to base domain to apply cookies
-        await this.driver.get("https://x.com");
-        for (const cookie of this.sessionCookies) {
-          try {
-            // cast to SeleniumCookie to satisfy overload
-            await this.driver.manage().addCookie(cookie as SeleniumCookie);
-          } catch (e) {
-            this.logger.debug("XScraper", "Failed to add cookie", e);
+      // Determine which cookies to inject.
+      // If cookiesToInject is provided, use that.
+      // Else, if reusing and this.sessionCookies exist, initDriver might have been called after loading them, so use them.
+      // Else, no cookies to inject at this stage.
+      const effectiveCookiesToInject =
+        cookiesToInject || (reuseExistingInstance && this.sessionCookies ? this.sessionCookies : []);
+
+      if (effectiveCookiesToInject && effectiveCookiesToInject.length > 0) {
+        this.logger.info(
+          "XScraper",
+          `Attempting to inject ${effectiveCookiesToInject.length} cookies into new driver instance.`,
+        );
+        await newDriver.get(X_BASE_URL); // Navigate to base domain to apply cookies
+        for (const cookie of effectiveCookiesToInject) {
+          if (cookie.name && cookie.value && cookie.domain) {
+            try {
+              await newDriver.manage().addCookie(cookie as SeleniumCookie);
+              this.logger.debug(
+                "XScraper",
+                `Successfully added cookie: ${cookie.name} for domain: ${cookie.domain} to new driver`,
+              );
+            } catch (addCookieError) {
+              this.logger.warn("XScraper", "Failed to add a session cookie to new driver", {
+                cookieName: cookie.name,
+                error: addCookieError,
+              });
+            }
+          } else {
+            this.logger.warn("XScraper", "Skipping malformed cookie for new driver", { cookie });
           }
         }
+        this.logger.info("XScraper", "Finished attempting to inject cookies into new driver.");
+        // Verify by navigating to home, helps session stick
+        await newDriver.get(X_BASE_URL + "/home");
+        await newDriver.wait(until.elementLocated(By.css(PRIMARY_COLUMN_SELECTOR_CSS)), PAGE_LOAD_WAIT_MS);
+        this.logger.info("XScraper", "Cookie injection and navigation to /home successful for new driver.");
       }
 
-      // --- Check if JavaScript is enabled after initialization ---
-      try {
-        const readyState = await this.driver.executeScript("return document.readyState");
-        const userAgent = await this.driver.executeScript("return navigator.userAgent");
-        this.logger.info("XScraper", "JavaScript execution check after init", {
-          readyState,
-          userAgent,
-        });
-        if (readyState !== "complete" && readyState !== "interactive") {
-          this.logger.warn("XScraper", `Potential JS issue: readyState is '${readyState}'`);
-        }
-      } catch (jsError) {
-        this.logger.error("XScraper", "Failed to execute basic JavaScript after init!", {
-          error: jsError instanceof Error ? jsError.message : String(jsError),
-        });
-        // Optionally throw an error here if JS is critical
-        // throw new Error("JavaScript failed to execute in browser.");
+      // Assign to the class member only if this instance is meant for main, shared operations
+      if (reuseExistingInstance) {
+        this.driver = newDriver;
       }
 
-      return this.driver;
+      return newDriver; // Return the newly created (or existing if logic was different) driver
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error("XScraper", "Failed to initialize WebDriver", {
+      this.logger.error("XScraper", "Failed to initialize WebDriver instance", {
         error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw new Error(`WebDriver initialization failed: ${errorMessage}`);
+      if (newDriver) {
+        try {
+          await newDriver.quit();
+        } catch {
+          /* ignore quit error */
+        }
+      }
+      // If this was an attempt to set the main shared driver and it failed, ensure this.driver is null.
+      if (reuseExistingInstance) {
+        this.driver = null;
+      }
+      return null; // Indicate failure
     }
   }
 
@@ -164,40 +203,50 @@ export class XScraper {
 
     let driver: WebDriver | null = null;
     try {
-      driver = await this.initDriver();
+      // Call initDriver to get the main driver instance for login
+      // The 'true' argument for reuseExistingInstance implies we want to set/use this.driver
+      driver = await this.initDriver(true);
+
+      if (!driver) {
+        this.logger.error("XScraper", "Failed to initialize driver for login process. Aborting login.");
+        // No screenshot here as driver is null
+        return false;
+      }
+      // From this point, 'driver' can be treated as WebDriver (not null)
+
       this.logger.info("XScraper", "Starting login process");
 
       // ログインページにアクセス
-      await driver.get("https://x.com/i/flow/login");
+      await driver.get(LOGIN_URL);
 
       // --- Find and interact with the initial input field (Email/Phone/Username) ---
-      const initialInputSelector = By.css("input[autocomplete='username']"); // Simpler selector
+      const initialInputSelector = By.css(INITIAL_INPUT_SELECTOR_CSS);
 
       try {
         this.logger.info("XScraper", `Waiting for initial input field (${initialInputSelector}) to be located...`);
-        await driver.wait(until.elementLocated(initialInputSelector), 30000);
+        await driver.wait(until.elementLocated(initialInputSelector), ELEMENT_LOCATE_TIMEOUT_MS); // Increased timeout
         const emailOrUsernameInput = await driver.findElement(initialInputSelector);
 
         this.logger.info("XScraper", "Waiting for initial input field to be visible and enabled...");
-        await driver.wait(until.elementIsVisible(emailOrUsernameInput), 15000);
-        await driver.wait(until.elementIsEnabled(emailOrUsernameInput), 15000);
+        await driver.wait(until.elementIsVisible(emailOrUsernameInput), ELEMENT_LOCATE_TIMEOUT_MS); // Consistent timeout
+        await driver.wait(until.elementIsEnabled(emailOrUsernameInput), ELEMENT_LOCATE_TIMEOUT_MS); // Consistent timeout
 
         this.logger.info("XScraper", "Initial input field located and ready. Entering email...");
         await emailOrUsernameInput.sendKeys(this.credentials.email);
-        await driver.sleep(randomDelay(500, 1500));
+        await driver.sleep(randomDelay(SHORT_DELAY_MIN, SHORT_DELAY_MAX));
 
         // Revert to clicking the "Next" button explicitly
         this.logger.info("XScraper", "Locating and clicking the Next button for initial input...");
-        const nextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
-        await driver.wait(until.elementIsEnabled(nextButton), 10000);
+        const nextButton = await driver.findElement(By.xpath(NEXT_BUTTON_XPATH));
+        await driver.wait(until.elementIsEnabled(nextButton), ELEMENT_LOCATE_TIMEOUT_MS);
         await nextButton.click();
         this.logger.info("XScraper", "Initial input (email) submitted via Next button click.");
 
         // --- Wait for page transition after clicking Next ---
         this.logger.info("XScraper", "Waiting for page transition after submitting email...");
-        const passwordSelector = By.css("input[name='password']");
-        const usernameVerificationSelector = By.css("input[name='text']"); // Re-using this selector for check
-        const expectedUrlPattern = /login\/(identifier|password)/; // Correct regex literal
+        const passwordSelector = By.css(PASSWORD_SELECTOR_CSS);
+        const usernameVerificationSelector = By.css(USERNAME_VERIFICATION_SELECTOR_CSS);
+        const expectedUrlPattern = /login\/(identifier|password)/;
 
         // Ensure driver is not null before proceeding
         if (!driver) {
@@ -214,7 +263,7 @@ export class XScraper {
             const passwordField = await nonNullDriver.findElements(passwordSelector);
             const usernameField = await nonNullDriver.findElements(usernameVerificationSelector);
             return expectedUrlPattern.test(currentUrl) || passwordField.length > 0 || usernameField.length > 0;
-          }, 40000);
+          }, ELEMENT_LOCATE_TIMEOUT_MS * 4); // Longer timeout for page transition
           this.logger.info("XScraper", `Page transitioned. Current URL: ${await nonNullDriver.getCurrentUrl()}`);
         } catch (transitionError) {
           this.logger.error(
@@ -248,21 +297,20 @@ export class XScraper {
           try {
             this.logger.info("XScraper", "Password input not found, checking for username verification step...");
             // Use a more specific wait for the username input in this context
-            await driver.wait(until.elementLocated(usernameVerificationSelector), 5000);
+            await driver.wait(until.elementLocated(usernameVerificationSelector), ELEMENT_LOCATE_TIMEOUT_MS / 2);
             const usernameInput = await driver.findElement(usernameVerificationSelector);
-            await driver.wait(until.elementIsVisible(usernameInput), 5000);
-            await driver.wait(until.elementIsEnabled(usernameInput), 5000);
+            await driver.wait(until.elementIsVisible(usernameInput), ELEMENT_LOCATE_TIMEOUT_MS / 2);
+            await driver.wait(until.elementIsEnabled(usernameInput), ELEMENT_LOCATE_TIMEOUT_MS / 2);
 
-            const placeholder = await usernameInput.getAttribute("placeholder");
             // A simple check: if a visible input[name='text'] exists here, assume it's username verification
             this.logger.info("XScraper", "Username verification step detected. Entering username...");
             await usernameInput.sendKeys(this.credentials.username);
-            await driver.sleep(randomDelay(500, 1500));
+            await driver.sleep(randomDelay(SHORT_DELAY_MIN, SHORT_DELAY_MAX));
 
             // Click the "Next" button explicitly for username step
             this.logger.info("XScraper", "Locating and clicking the Next button for username...");
-            const usernameNextButton = await driver.findElement(By.xpath("//button[.//span[text()='Next']]"));
-            await driver.wait(until.elementIsEnabled(usernameNextButton), 10000);
+            const usernameNextButton = await driver.findElement(By.xpath(NEXT_BUTTON_XPATH));
+            await driver.wait(until.elementIsEnabled(usernameNextButton), ELEMENT_LOCATE_TIMEOUT_MS);
             await usernameNextButton.click();
 
             this.logger.info("XScraper", "Username submitted for verification via Next button click.");
@@ -270,7 +318,7 @@ export class XScraper {
             this.logger.info("XScraper", `URL after username submit: ${urlAfterUsernameSubmit}`);
             // Wait specifically for the password field after submitting username
             this.logger.info("XScraper", "Waiting for password field after username submission...");
-            await driver.wait(until.elementLocated(passwordSelector), 30000); // Wait for password field
+            await driver.wait(until.elementLocated(passwordSelector), ELEMENT_LOCATE_TIMEOUT_MS * 3);
           } catch (e) {
             this.logger.error(
               "XScraper",
@@ -288,15 +336,15 @@ export class XScraper {
           // We already waited for the element, just need to find and interact
           const passwordInput = await driver.findElement(passwordSelector);
           this.logger.info("XScraper", "Password input field found.");
-          await driver.wait(until.elementIsVisible(passwordInput), 10000); // Add visibility check
-          await driver.wait(until.elementIsEnabled(passwordInput), 10000); // Add enabled check
-          await driver.sleep(randomDelay());
+          await driver.wait(until.elementIsVisible(passwordInput), ELEMENT_LOCATE_TIMEOUT_MS);
+          await driver.wait(until.elementIsEnabled(passwordInput), ELEMENT_LOCATE_TIMEOUT_MS);
+          await driver.sleep(randomDelay(SHORT_DELAY_MIN, SHORT_DELAY_MAX));
           await passwordInput.sendKeys(this.credentials.password);
-          await driver.sleep(randomDelay());
+          await driver.sleep(randomDelay(SHORT_DELAY_MIN, SHORT_DELAY_MAX));
           await passwordInput.sendKeys(Key.RETURN);
           this.logger.info("XScraper", "Password submitted.");
           // Add a significant delay after password submission to appear less suspicious
-          await driver.sleep(randomDelay(5000, 10000));
+          await driver.sleep(randomDelay(LOGIN_SUCCESS_DELAY_MIN, LOGIN_SUCCESS_DELAY_MAX));
         } catch (error) {
           const currentUrl = await driver.getCurrentUrl();
           this.logger.error("XScraper", "Failed to find or interact with password input after confirming transition", {
@@ -316,13 +364,14 @@ export class XScraper {
 
         // login success check
         this.logger.info("XScraper", "Waiting for login success confirmation (e.g., main timeline)...");
-        await driver.sleep(randomDelay(2000, 4000)); // Keep a small delay before the main wait
-        await driver.wait(until.elementLocated(By.css("div[data-testid='primaryColumn']")), 45000); // Increased timeout slightly
+        await driver.sleep(randomDelay(LONG_DELAY_MIN, LONG_DELAY_MAX)); // Keep a small delay before the main wait
+        await driver.wait(until.elementLocated(By.css(PRIMARY_COLUMN_SELECTOR_CSS)), ELEMENT_LOCATE_TIMEOUT_MS * 4.5);
         this.logger.info("XScraper", "Login successful");
 
         // store cookies for reuse in child instances
         try {
           this.sessionCookies = await driver.manage().getCookies();
+          this.saveCookies(this.sessionCookies);
         } catch (e) {
           this.logger.debug("XScraper", "Unable to retrieve cookies", e);
         }
@@ -348,26 +397,10 @@ export class XScraper {
         stack: error instanceof Error ? error.stack : undefined,
       });
 
-      // Enable screenshot capture on failure
+      // Capture and save failure screenshot
       if (driver) {
-        // Ensure driver exists before taking screenshot
-        try {
-          const screenshotPath = "login_failure_screenshot.png"; // Define path
-          await driver.takeScreenshot().then((img) => fs.writeFileSync(screenshotPath, img, "base64"));
-          this.logger.info("XScraper", `Screenshot saved to ${screenshotPath}`);
-        } catch (screenshotError) {
-          this.logger.error("XScraper", "Failed to take or save screenshot", screenshotError);
-        }
-
-        // Log HTML source on final failure
-        // Ensure driver exists before getting source
-        try {
-          this.logger.info("XScraper", "HTML source on final login failure:", {
-            html: await driver.getPageSource(),
-          });
-        } catch (logError) {
-          this.logger.warn("XScraper", "Failed to get page source on final login failure", logError);
-        }
+        // Check if driver is not null before capturing screenshot
+        await this.captureFailureScreenshot(driver, "login");
       }
       return false;
     }
@@ -375,36 +408,33 @@ export class XScraper {
 
   /**
    * 単一のXアカウントをチェック
-   * @returns {Promise<string | null>} 変更があった場合は最新のツイートID、なければnull
+   * @returns {Promise<Date | null>} 変更があった場合は最新のツイートのタイムスタンプ、なければnull
    */
-  public async checkSingleAccount(xId: string): Promise<string | null> {
+  public async checkSingleAccount(xId: string): Promise<Date | null> {
     const driver = await this.initDriver();
+
+    if (!driver) {
+      this.logger.error("XScraper", "Driver not found for checkSingleAccount");
+      return null;
+    }
 
     try {
       this.logger.info("XScraper", `Checking X account: ${xId}`);
 
-      const url = `https://x.com/${xId}`;
-
-      // ページに移動
-      this.logger.debug("XScraper", `Navigating to ${url}`);
+      const url = `${X_BASE_URL}/${xId}`;
       await driver.get(url);
+      await driver.sleep(PAGE_LOAD_WAIT_MS);
+      await driver.wait(until.elementLocated(By.css(TWEET_ARTICLE_SELECTOR_CSS)), ELEMENT_LOCATE_TIMEOUT_MS);
 
-      // Xのページが完全に読み込まれるのを十分な時間待つ
-      await driver.sleep(5000);
+      const extractedTweets = await this.extractTweets(driver);
+      this.logger.info("XScraper", `Extracted ${extractedTweets.length} tweets from ${xId}`);
 
-      // ページが読み込まれるのを待つ
-      await driver.wait(until.elementLocated(By.css('article[data-testid="tweet"]')), 10000);
-
-      // ツイートを抽出
-      const tweets = await this.extractTweets(driver);
-      this.logger.info("XScraper", `Extracted ${tweets.length} tweets from ${xId}`);
-
-      if (tweets.length === 0) {
+      if (extractedTweets.length === 0) {
         this.logger.warn("XScraper", `No tweets found for ${xId}`);
+        await this.captureFailureScreenshot(driver, "checkSingleAccount_no_tweets");
         return null;
       }
 
-      // アカウント情報を取得
       const accounts = await getAllXAccounts();
       const account = accounts.find((acc) => acc.id === xId);
 
@@ -413,38 +443,137 @@ export class XScraper {
         return null;
       }
 
-      // 最新のツイートを保存し、アカウントを更新
-      const latestTweetId = await saveTweets(xId, tweets);
+      // Filter tweets newer than lastTweetUpdatedAt
+      const newTweets = extractedTweets.filter((tweet) => {
+        const tweetDate = new Date(tweet.time);
+        return !account.lastTweetUpdatedAt || tweetDate > new Date(account.lastTweetUpdatedAt);
+      });
 
-      if (latestTweetId && latestTweetId !== account.lastTweetId) {
-        this.logger.info("XScraper", `Change detected for ${xId}. New latest tweet ID: ${latestTweetId}`);
-        // Remove Inngest event sending
-        /*
-        try {
-          await this.inngest.send({
-            name: "data/tweet.updated",
-            data: {
-              xId: xId,
-              latestTweetId: latestTweetId,
-            },
-          });
-          this.logger.info("XScraper", `Sent 'data/tweet.updated' event for ${xId} to Inngest.`);
-        } catch (inngestError) {
-          this.logger.error("XScraper", `Failed to send 'data/tweet.updated' event for ${xId} to Inngest`, {
-            error: inngestError instanceof Error ? inngestError.message : String(inngestError),
-          });
-        }
-        */
-        // Return latestTweetId if changed
-        return latestTweetId;
+      if (newTweets.length === 0) {
+        this.logger.info(
+          "XScraper",
+          `No new tweets found for ${xId} since ${account.lastTweetUpdatedAt ? new Date(account.lastTweetUpdatedAt).toISOString() : "the beginning"}.`,
+        );
+        return null;
+      }
+
+      this.logger.info("XScraper", `Found ${newTweets.length} new tweets for ${xId}.`);
+
+      // Save new tweets and get the timestamp of the newest one processed
+      const latestTweetTimestampProcessed = await saveTweets(xId, newTweets);
+
+      if (latestTweetTimestampProcessed) {
+        this.logger.info(
+          "XScraper",
+          `Change detected for ${xId}. New latest tweet timestamp: ${latestTweetTimestampProcessed.toISOString()}`,
+        );
+        // The account's lastTweetUpdatedAt is updated within saveTweets -> repository.
+        return latestTweetTimestampProcessed;
       } else {
-        this.logger.info("XScraper", `No change for ${xId}. Last checked tweet ID: ${account.lastTweetId}`);
+        // This case should ideally not be reached if newTweets.length > 0,
+        // but as a fallback if saveTweets returns null despite having new tweets.
+        this.logger.info(
+          "XScraper",
+          `No change for ${xId} after attempting to save new tweets. Last checked: ${account.lastTweetUpdatedAt ? new Date(account.lastTweetUpdatedAt).toISOString() : "N/A"}`,
+        );
         return null;
       }
     } catch (error) {
       this.logger.error("XScraper", `Error checking account ${xId}:`, error);
+      await this.captureFailureScreenshot(driver, `checkSingleAccount_error_${xId}`);
       return null;
     }
+  }
+
+  /**
+   * Gets the tweet URL by navigation: click the time element, read current URL, then navigate back.
+   */
+  private async getTweetUrlViaNavigation(driver: WebDriver, tweetElement: WebElement): Promise<string> {
+    let url = "";
+    const originalPageUrl = await driver.getCurrentUrl(); // For checking if navigation actually happened
+    this.logger.debug("XScraper", `Attempting to navigate from ${originalPageUrl} to get tweet URL.`);
+    try {
+      const timeElem = await tweetElement.findElement(By.css(TIME_SELECTOR_CSS));
+      // Use JavaScript click for potentially more stable interaction with elements that might be obscured
+      await driver.executeScript("arguments[0].click();", timeElem);
+
+      // Wait until URL changes from original AND contains '/status/', indicating successful navigation to a tweet detail page
+      await driver.wait(async () => {
+        const currentUrl = await driver.getCurrentUrl();
+        return currentUrl !== originalPageUrl && /\/status\//.test(currentUrl);
+      }, ELEMENT_LOCATE_TIMEOUT_MS + 5000); // Increased timeout for page navigation
+
+      url = await driver.getCurrentUrl();
+      this.logger.info("XScraper", `Successfully navigated to tweet detail page: ${url}`);
+    } catch (e) {
+      this.logger.error("XScraper", "Navigation-based URL fetch failed (time element click or subsequent wait)", {
+        error: e instanceof Error ? e.message : String(e),
+        originalUrl: originalPageUrl,
+        currentUrlAttempt: await driver.getCurrentUrl().catch(() => "failed to get current URL"),
+      });
+      await this.captureFailureScreenshot(driver, "getTweetUrlViaNavigation_nav_fail");
+      // URL remains empty if navigation fails
+    } finally {
+      const urlAfterNavigationAttempt = await driver.getCurrentUrl().catch(() => originalPageUrl); // Default to original if error
+      this.logger.debug(
+        "XScraper",
+        `In finally block for getTweetUrlViaNavigation. URL after nav attempt: ${urlAfterNavigationAttempt}`,
+      );
+
+      // Attempt to navigate back only if we actually navigated away to a tweet status page
+      if (urlAfterNavigationAttempt !== originalPageUrl && /\/status\//.test(urlAfterNavigationAttempt)) {
+        this.logger.debug(
+          "XScraper",
+          `Attempting to navigate back from tweet detail page: ${urlAfterNavigationAttempt}`,
+        );
+        try {
+          await driver.navigate().back();
+          this.logger.debug("XScraper", "Waiting for timeline to reload after navigating back...");
+          // Wait for primary column, then for tweet articles to ensure page is ready
+          await driver.wait(until.elementLocated(By.css(PRIMARY_COLUMN_SELECTOR_CSS)), PAGE_LOAD_WAIT_MS);
+          await driver.wait(until.elementLocated(By.css(TWEET_ARTICLE_SELECTOR_CSS)), ELEMENT_LOCATE_TIMEOUT_MS);
+          this.logger.info("XScraper", "Successfully navigated back and timeline reloaded.");
+        } catch (navBackError) {
+          this.logger.warn(
+            "XScraper",
+            "Failed to navigate back or timeline did not reload as expected. Attempting recovery.",
+            {
+              error: navBackError instanceof Error ? navBackError.message : String(navBackError),
+              urlBeforeRecoveryAttempt: await driver.getCurrentUrl().catch(() => "unknown"),
+            },
+          );
+          await this.captureFailureScreenshot(driver, "getTweetUrlViaNavigation_navBack_fail"); // Pass driver
+          // Recovery attempt: Navigate to the home page to stabilize state for next operations
+          try {
+            this.logger.info("XScraper", `Recovery: Navigating to ${X_BASE_URL}/home.`);
+            await driver.get(X_BASE_URL + "/home");
+            await driver.wait(until.elementLocated(By.css(PRIMARY_COLUMN_SELECTOR_CSS)), PAGE_LOAD_WAIT_MS);
+            await driver.wait(until.elementLocated(By.css(TWEET_ARTICLE_SELECTOR_CSS)), ELEMENT_LOCATE_TIMEOUT_MS);
+            this.logger.info("XScraper", "Recovery to /home successful.");
+          } catch (recoveryError) {
+            this.logger.error(
+              "XScraper",
+              "Recovery attempt to /home failed critically. Subsequent operations may be unstable.",
+              {
+                error: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+              },
+            );
+            await this.captureFailureScreenshot(driver, "getTweetUrlViaNavigation_recovery_fail"); // Pass driver
+            // If recovery fails, the scraper might be in an unrecoverable state for the current driver session.
+          }
+        }
+      } else {
+        this.logger.debug(
+          "XScraper",
+          "No back navigation performed: either still on original page or not on a status page.",
+          {
+            originalPageUrl,
+            urlAfterNavigationAttempt,
+          },
+        );
+      }
+    }
+    return url;
   }
 
   /**
@@ -452,53 +581,274 @@ export class XScraper {
    */
   private async extractTweets(driver: WebDriver): Promise<Tweet[]> {
     const tweets: Tweet[] = [];
+    let currentTweetIndexOnPage = 0;
+    const processedTweetIdentifiers = new Set<string>(); // Stores datetime or unique ID of processed/skipped tweets to avoid reprocessing
+    let consecutiveScrollsWithoutNewContent = 0;
+    const MAX_CONSECUTIVE_SCROLLS_WITHOUT_NEW_CONTENT = 3; // Max attempts to scroll if no new tweets are found
+    let articlesOnPageCount = 0; // Keep track of articles seen in the current view before attempting to process/scroll
 
-    return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  }
+    // Main loop: Continue as long as we haven't hit the processing limit AND (there are more articles to process OR we can still attempt to scroll)
+    for (
+      let attempt = 0;
+      tweets.length < MAX_TWEETS_TO_PROCESS_PER_ACCOUNT && attempt < MAX_TWEETS_TO_PROCESS_PER_ACCOUNT * 3;
+      attempt++
+    ) {
+      let articles: WebElement[];
+      try {
+        // Re-fetch tweet articles in each iteration to ensure freshness, especially after navigation or DOM changes
+        await driver.wait(until.elementLocated(By.css(TWEET_ARTICLE_SELECTOR_CSS)), ELEMENT_LOCATE_TIMEOUT_MS);
+        articles = await driver.findElements(By.css(TWEET_ARTICLE_SELECTOR_CSS));
+        articlesOnPageCount = articles.length;
+        this.logger.debug(
+          "XScraper",
+          `Found ${articlesOnPageCount} tweet articles on page. Attempting to process article at index ${currentTweetIndexOnPage}. Total tweets collected: ${tweets.length}`,
+        );
 
-  /**
-   * コンテンツが仮想通貨関連かどうかをチェック
-   */
-  private async isCryptoRelated(content: string): Promise<CryptoAnalysis> {
-    try {
-      this.logger.info("XScraper", "Analyzing content for crypto relevance");
+        // Check if we need to scroll for more tweets
+        if (currentTweetIndexOnPage >= articlesOnPageCount) {
+          if (consecutiveScrollsWithoutNewContent >= MAX_CONSECUTIVE_SCROLLS_WITHOUT_NEW_CONTENT) {
+            this.logger.info(
+              "XScraper",
+              "Max consecutive scrolls without new content reached. Stopping tweet extraction for this page.",
+            );
+            break; // Exit main loop
+          }
+          this.logger.info(
+            "XScraper",
+            `Reached end of ${articlesOnPageCount} visible tweets. Attempting to scroll (attempt ${consecutiveScrollsWithoutNewContent + 1}).`,
+          );
+          await driver.executeScript("window.scrollTo(0, document.body.scrollHeight);");
+          await driver.sleep(randomDelay(MEDIUM_DELAY_MIN + 1000, MEDIUM_DELAY_MAX + 2000)); // Longer wait after scroll
 
-      const prompt = `
-      以下のコンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連しているかどうかを判断してください:
+          const articlesAfterScroll = await driver.findElements(By.css(TWEET_ARTICLE_SELECTOR_CSS));
+          if (articlesAfterScroll.length > articlesOnPageCount) {
+            this.logger.info(
+              "XScraper",
+              `Scrolled and loaded ${articlesAfterScroll.length - articlesOnPageCount} new articles. Total now: ${articlesAfterScroll.length}`,
+            );
+            articles = articlesAfterScroll; // Update articles with the new list
+            articlesOnPageCount = articles.length; // Update count
+            consecutiveScrollsWithoutNewContent = 0; // Reset counter
+            // currentTweetIndexOnPage remains, as new content is typically appended
+          } else {
+            this.logger.info(
+              "XScraper",
+              "Scroll did not load new articles or no articles found. Incrementing no-new-content scroll counter.",
+            );
+            consecutiveScrollsWithoutNewContent++;
+          }
+          // Re-check if current index is valid after scroll and potential new articles
+          if (currentTweetIndexOnPage >= articlesOnPageCount) {
+            this.logger.info(
+              "XScraper",
+              `Still no more articles to process at index ${currentTweetIndexOnPage} after scroll. Total visible: ${articlesOnPageCount}.`,
+            );
+            // If scrolls are exhausted, the outer loop will break. If not, it will try to scroll again.
+            continue; // Try scrolling again or exit if scroll attempts exhausted
+          }
+        }
+      } catch (e) {
+        this.logger.error("XScraper", "Failed to find or list tweet articles during an extraction attempt.", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        await this.captureFailureScreenshot(driver, "extractTweets_articleList_fail"); // Pass driver
+        break; // Critical error finding articles, stop extraction for this account
+      }
 
-      ${content}
+      // If, after attempting to scroll, we still don't have an article at currentTweetIndexOnPage, break.
+      if (currentTweetIndexOnPage >= articlesOnPageCount) {
+        this.logger.info(
+          "XScraper",
+          `No article at index ${currentTweetIndexOnPage} after scroll attempts (total visible ${articlesOnPageCount}). Ending extraction.`,
+        );
+        break;
+      }
 
-      関連していない場合は「関連なし」と回答してください。
-      ただの仮想通貨の情報であれば「関連なし」と回答してください。
-      コンテンツが仮想通貨（暗号資産）の特定のコインと見られる情報に関連している場合は特定のコインの情報を含んでいるかも確認してください、コインの情報を含んでいる場合はそのコインの情報を解説してください。
-      `;
+      const el = articles[currentTweetIndexOnPage];
+      let tweetTime = "";
+      let tweetMomentIdentifier = `no_time_idx_${currentTweetIndexOnPage}_${Date.now()}`;
 
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
+      try {
+        // Attempt to get time first for the identifier
+        try {
+          const timeElem = await el.findElement(By.css(TIME_SELECTOR_CSS));
+          tweetTime = await timeElem.getAttribute("datetime");
+          if (tweetTime) {
+            tweetMomentIdentifier = tweetTime; // Use actual datetime as identifier if available
+          }
+        } catch (timeError) {
+          this.logger.warn(
+            "XScraper",
+            `Could not find time element for article at index ${currentTweetIndexOnPage}. Using fallback identifier.`,
+            { error: timeError instanceof Error ? timeError.message : "Unknown time error" },
+          );
+          // tweetMomentIdentifier remains the fallback
+        }
+
+        if (processedTweetIdentifiers.has(tweetMomentIdentifier)) {
+          this.logger.debug(
+            "XScraper",
+            `Tweet with identifier '${tweetMomentIdentifier}' (index ${currentTweetIndexOnPage}) already processed/skipped, moving to next.`,
+          );
+          currentTweetIndexOnPage++;
+          attempt--; // Decrement attempt because this wasn't a real processing attempt, just a skip
+          continue;
+        }
+
+        let tweetText = "";
+        const textNodes = await el.findElements(By.css(TWEET_TEXT_SELECTOR_CSS));
+        if (textNodes.length > 0) {
+          for (const node of textNodes) {
+            tweetText += `${await node.getText()} `;
+          }
+        } else {
+          const langNodes = await el.findElements(By.css(LANG_SELECTOR_CSS));
+          if (langNodes.length > 0) {
+            for (const node of langNodes) {
+              tweetText += `${await node.getText()} `;
+            }
+          } else {
+            this.logger.warn(
+              "XScraper",
+              `No text found using primary or fallback selectors for tweet at index ${currentTweetIndexOnPage}. Identifier: ${tweetMomentIdentifier}`,
+            );
+            // Tweet might be an image/video only, or unusual format. Text will be empty.
+          }
+        }
+        tweetText = tweetText.trim();
+
+        if (!tweetTime || !tweetText) {
+          this.logger.warn(
+            "XScraper",
+            "Skipping tweet due to missing time or text data (even if only whitespace) before URL fetch.",
+            {
+              time: tweetTime,
+              textPresent: !!tweetText,
+              index: currentTweetIndexOnPage,
+              identifier: tweetMomentIdentifier,
+            },
+          );
+          processedTweetIdentifiers.add(tweetMomentIdentifier); // Mark as processed to avoid re-evaluating
+          currentTweetIndexOnPage++;
+          continue;
+        }
+
+        // Extract engagement metrics BEFORE navigation
+        let replyCount: number | null = null;
+        let retweetCount: number | null = null;
+        let likeCount: number | null = null;
+
+        try {
+          const replyButton = await el.findElement(By.css(REPLY_COUNT_SELECTOR_CSS));
+          const replyText = await replyButton.getText();
+          this.logger.info("XScraper", `Reply text: '${replyText}' for tweet: ${tweetMomentIdentifier}`);
+          replyCount = parseEngagementCount(replyText);
+          this.logger.info("XScraper", `Parsed reply count: ${replyCount} for tweet: ${tweetMomentIdentifier}`);
+        } catch (e) {
+          // Log as WARN if count couldn't be found/parsed, as it might indicate outdated selectors or page structure changes
+          this.logger.warn("XScraper", `Could not find or parse reply count for tweet: ${tweetMomentIdentifier}`, {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        try {
+          const retweetButton = await el.findElement(By.css(RETWEET_COUNT_SELECTOR_CSS));
+          const retweetText = await retweetButton.getText();
+          this.logger.info("XScraper", `Retweet text: '${retweetText}' for tweet: ${tweetMomentIdentifier}`);
+          retweetCount = parseEngagementCount(retweetText);
+          this.logger.info("XScraper", `Parsed retweet count: ${retweetCount} for tweet: ${tweetMomentIdentifier}`);
+        } catch (e) {
+          this.logger.warn("XScraper", `Could not find or parse retweet count for tweet: ${tweetMomentIdentifier}`, {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        try {
+          const likeButton = await el.findElement(By.css(LIKE_COUNT_SELECTOR_CSS));
+          const likeText = await likeButton.getText();
+          this.logger.info("XScraper", `Like text: '${likeText}' for tweet: ${tweetMomentIdentifier}`);
+          likeCount = parseEngagementCount(likeText);
+          this.logger.info("XScraper", `Parsed like count: ${likeCount} for tweet: ${tweetMomentIdentifier}`);
+        } catch (e) {
+          this.logger.warn("XScraper", `Could not find or parse like count for tweet: ${tweetMomentIdentifier}`, {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        this.logger.debug("XScraper", "Fetched counts (before URL navigation)", {
+          replyCount,
+          retweetCount,
+          likeCount,
+          identifier: tweetMomentIdentifier,
+        });
+
+        // Get tweet URL - this involves navigation.
+        // Engagement metrics are now fetched BEFORE this step to avoid StaleElementReferenceError.
+        const tweetUrl = await this.getTweetUrlViaNavigation(driver, el);
+
+        // Engagement metrics were previously extracted here, moved above.
+
+        this.logger.debug("XScraper", "fetched counts", {
+          // This log line might be redundant now or could be removed/adjusted
+          replyCount,
+          retweetCount,
+          likeCount,
+        });
+
+        if (tweetUrl) {
+          // Check if URL was successfully fetched
+          tweets.push({
+            time: tweetTime,
+            data: tweetText,
+            url: tweetUrl,
+            replyCount,
+            retweetCount,
+            likeCount,
+            impressionCount: null, // Placeholder for now
+          });
+          processedTweetIdentifiers.add(tweetMomentIdentifier);
+          this.logger.info(
+            "XScraper",
+            `Successfully extracted tweet (${tweets.length}/${MAX_TWEETS_TO_PROCESS_PER_ACCOUNT}): ${tweetUrl}`,
+          );
+        } else {
+          this.logger.warn("XScraper", "Skipping tweet because URL could not be fetched.", {
+            time: tweetTime,
+            text: tweetText,
+            index: currentTweetIndexOnPage,
+            identifier: tweetMomentIdentifier,
+          });
+          processedTweetIdentifiers.add(tweetMomentIdentifier); // Mark as processed even if URL fetch failed, to avoid retrying this problematic one.
+        }
+        currentTweetIndexOnPage++;
+      } catch (e) {
+        this.logger.error(
+          "XScraper",
+          `Critical error processing single tweet detail for article at index ${currentTweetIndexOnPage}. Identifier: ${tweetMomentIdentifier}`,
           {
-            role: "system",
-            content: "あなたはコンテンツの分析を行う専門家です。",
+            error: e instanceof Error ? e.message : String(e),
+            stack: e instanceof Error ? e.stack : undefined,
           },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 150,
-      });
+        );
+        processedTweetIdentifiers.add(tweetMomentIdentifier); // Ensure problematic tweet is marked
+        await this.captureFailureScreenshot(driver, `extractTweets_single_tweet_fail_idx${currentTweetIndexOnPage}`); // Pass driver
 
-      const result = response.choices[0].message.content || "";
-      this.logger.debug("XScraper", `OpenAI analysis result: ${result}`);
-
-      return {
-        isCryptoRelated: !result.includes("関連なし"),
-        analysisResult: result,
-      };
-    } catch (error) {
-      this.logger.error("XScraper", "Error checking crypto relevance:", error);
-      return {
-        isCryptoRelated: false,
-        analysisResult: "Error analyzing content",
-      };
+        if (e instanceof Error && e.name === "StaleElementReferenceError") {
+          this.logger.warn(
+            "XScraper",
+            `StaleElementReferenceError for tweet at index ${currentTweetIndexOnPage}. List will be re-fetched in next attempt. Identifier: ${tweetMomentIdentifier}`,
+          );
+          // Don't increment currentTweetIndexOnPage if stale, outer loop re-fetches and current index effectively retries on fresh list.
+          // However, the 'attempt' counter for the main loop will increment.
+        } else {
+          // For other errors, assume this specific tweet element is unprocessable, move to the next one.
+          currentTweetIndexOnPage++;
+        }
+      }
     }
+    this.logger.info("XScraper", `Finished extraction attempt. Total tweets collected: ${tweets.length}`);
+    // Sort tweets by newest first before returning
+    return tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }
 
   /**
@@ -508,42 +858,43 @@ export class XScraper {
     try {
       this.logger.info("XScraper", `Adding/updating account ${xId} for user ${userId}`);
 
-      // アカウントリストを取得
       const accounts = await getAllXAccounts();
-      let account = accounts.find((acc) => acc.id === xId);
+      let accountData = accounts.find((acc) => acc.id === xId);
 
-      if (account) {
-        // 既存のアカウントを更新
-        if (!account.userIds) {
-          account.userIds = [];
-        }
-
-        if (!account.userIds.includes(userId)) {
-          account.userIds.push(userId);
+      if (accountData) {
+        const currentUserIdSet = new Set(accountData.userIds || []);
+        if (!currentUserIdSet.has(userId)) {
+          const updatedUserIds = [...currentUserIdSet, userId];
+          await saveXAccount({ ...accountData, userIds: updatedUserIds, updatedAt: new Date() });
           this.logger.info("XScraper", `Added user ${userId} to existing account ${xId}`);
         } else {
           this.logger.info("XScraper", `User ${userId} already following account ${xId}`);
         }
       } else {
-        // 新しいアカウントを作成
-        account = {
+        // New account
+        const newAccountData: XAccountInsert = {
           id: xId,
           displayName: null,
           profileImageUrl: null,
-          lastTweetId: null,
+          lastTweetUpdatedAt: null,
           userIds: [userId],
           createdAt: new Date(),
           updatedAt: new Date(),
         };
+        await saveXAccount(newAccountData);
         this.logger.info("XScraper", `Created new account entry for ${xId}`);
+        accountData = newAccountData as XAccountSelect;
       }
 
-      // アカウントを保存
-      await saveXAccount(account);
-
-      // 初回チェックを実施
-      await this.checkSingleAccount(xId);
-
+      // Perform initial check only if driver is available and accountData is valid
+      if (this.driver && accountData) {
+        const checkResult = await this.checkSingleAccount(xId);
+        if (checkResult) {
+          this.logger.info("XScraper", `Initial check for ${xId} found new tweets up to ${checkResult.toISOString()}`);
+        } else {
+          this.logger.info("XScraper", `Initial check for ${xId} found no new tweets.`);
+        }
+      }
       return true;
     } catch (error) {
       this.logger.error("XScraper", `Error adding account ${xId}:`, error);
@@ -555,94 +906,124 @@ export class XScraper {
    * 登録されたすべてのXアカウントをチェック（並列処理）
    * @returns {Promise<string[]>} 変更が検出されたアカウントIDの配列
    */
-  public async checkXAccounts(concurrency: number = 10): Promise<string[]> {
-    // ログイン専用の一時的なスクレイパーインスタンスを作成
-    const mainScraper = new XScraper(this.credentials ?? undefined);
-    let baseCookies: any[] = [];
-
-    try {
-      this.logger.info("XScraper", "Attempting initial login to retrieve session cookies...");
-      const loggedIn = await mainScraper.login();
-      if (!loggedIn) {
-        this.logger.error("XScraper", "Initial login failed, cannot proceed with checking accounts.");
-        return []; // Return empty array if login fails
-      }
-
-      // ログイン成功後、クッキーを取得
-      baseCookies = mainScraper.sessionCookies ?? [];
-      if (baseCookies.length === 0) {
-        this.logger.warn("XScraper", "Retrieved session cookies are empty, proceeding without them.");
-      }
-      this.logger.info("XScraper", `Initial login successful. Retrieved ${baseCookies.length} cookies.`);
-    } catch (loginError) {
-      this.logger.error("XScraper", "Error during initial login process:", loginError);
-      return []; // Return empty array if login fails
+  public async checkXAccounts(maxConcurrency: number = 10): Promise<string[]> {
+    const isLoggedIn = await this.ensureLoggedIn();
+    if (!isLoggedIn || !this.sessionCookies || this.sessionCookies.length === 0) {
+      this.logger.error(
+        "XScraper",
+        "Could not ensure logged-in state or no session cookies obtained. Aborting checkXAccounts.",
+      );
+      if (this.driver) await this.closeDriver();
+      return [];
     }
 
-    // DBからアカウントリストを取得
+    const masterSessionCookies = [...this.sessionCookies];
+    this.logger.info(
+      "XScraper",
+      `Master session cookies obtained (${masterSessionCookies.length}). Closing main driver if it exists.`,
+    );
+    if (this.driver) {
+      await this.closeDriver();
+    }
+
     const accounts = await getAllXAccounts();
-    this.logger.info("XScraper", `Found ${accounts.length} accounts to check.`);
-
     if (accounts.length === 0) {
-      this.logger.warn("XScraper", "No accounts found in DB to check.");
-      return []; // Return empty array if no accounts
+      this.logger.warn("XScraper", "No X accounts found in the database.");
+      return [];
     }
 
-    this.logger.info("XScraper", `Starting parallel scraping with concurrency=${concurrency}`);
+    this.logger.info(
+      "XScraper",
+      `Starting parallel account checking for ${accounts.length} accounts with max concurrency: ${maxConcurrency}`,
+    );
 
-    const updatedAccountIds: string[] = []; // Array to store updated account IDs
+    const updatedAccountIds: string[] = [];
 
-    // アカウントリストをバッチに分割して並列処理
-    for (let i = 0; i < accounts.length; i += concurrency) {
-      const batch = accounts.slice(i, i + concurrency);
+    type AccountCheckOutcome = {
+      accountId: string;
+      status: "fulfilled" | "failed";
+      value?: string | null; // AccountId if changed
+      error?: string;
+    };
+
+    for (let i = 0; i < accounts.length; i += maxConcurrency) {
+      const batch = accounts.slice(i, i + maxConcurrency);
       this.logger.info(
         "XScraper",
-        `Processing batch ${Math.floor(i / concurrency) + 1}: accounts ${i + 1}-${i + batch.length}`,
+        `Processing batch ${Math.floor(i / maxConcurrency) + 1}/${Math.ceil(accounts.length / maxConcurrency)}: accounts ${accountIdsInBatch(batch)}`,
       );
 
-      const tasks = batch.map((acc) => {
-        // 各アカウントごとに新しいスクレイパーインスタンスを作成し、取得したクッキーを渡す
-        const scraper = new XScraper(undefined, baseCookies);
-        return (async () => {
-          let changedTweetId: string | null = null;
-          try {
-            // initDriver内でクッキーが適用されるため、再度login()を呼ぶ必要はない
-            changedTweetId = await scraper.checkSingleAccount(acc.id);
-            if (changedTweetId) {
-              this.logger.info("XScraper", `Change detected for ${acc.id}`);
-              // DB保存は checkSingleAccount 内で行われる
-              return acc.id; // Return account ID if changed
-            } else {
-              this.logger.info("XScraper", `No new tweets or change detected for ${acc.id}`);
-              return null; // Return null if no change
-            }
-          } catch (err) {
-            this.logger.error("XScraper", `Error scraping ${acc.id}:`, err);
-            return null; // Return null on error
-          } finally {
-            // 各インスタンスのWebDriverを確実に閉じる
-            await scraper.closeDriver();
-            this.logger.debug("XScraper", `Closed driver for account ${acc.id}`);
+      const batchPromises = batch.map(async (account): Promise<AccountCheckOutcome> => {
+        let parallelDriver: WebDriver | null = null;
+        try {
+          this.logger.debug("XScraper", `Initializing new driver for account: ${account.id}`);
+          parallelDriver = await this.initDriver(false, masterSessionCookies as SeleniumCookie[]);
+          if (!parallelDriver) {
+            this.logger.error("XScraper", `Failed to initialize parallel driver for account ${account.id}.`);
+            return { accountId: account.id, status: "failed", error: "Driver initialization failed" };
           }
-        })();
+
+          const tempScraper = new XScraper(undefined, masterSessionCookies);
+          (tempScraper as any).driver = parallelDriver;
+
+          this.logger.info("XScraper", `Driver initialized for ${account.id}. Starting checkSingleAccount.`);
+          const latestUpdateTimestamp = await tempScraper.checkSingleAccount(account.id);
+
+          if (latestUpdateTimestamp) {
+            this.logger.info(
+              "XScraper",
+              `Change detected for ${account.id} (parallel). New latest tweet timestamp: ${latestUpdateTimestamp.toISOString()}`,
+            );
+            return { accountId: account.id, status: "fulfilled", value: account.id };
+          } else {
+            this.logger.info("XScraper", `No new tweets or change detected for ${account.id} (parallel)`);
+            return { accountId: account.id, status: "fulfilled", value: null };
+          }
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.error("XScraper", `Error scraping ${account.id} in parallel:`, {
+            error: errorMessage,
+          });
+          if (parallelDriver) {
+            await this.captureFailureScreenshot(parallelDriver, `checkXAccounts_parallel_error_${account.id}`);
+          }
+          return { accountId: account.id, status: "failed", error: errorMessage };
+        } finally {
+          if (parallelDriver) {
+            this.logger.debug("XScraper", `Closing driver for account: ${account.id}`);
+            await parallelDriver
+              .quit()
+              .catch((e) => this.logger.warn("XScraper", `Error quitting parallel driver for ${account.id}`, e));
+          }
+        }
       });
 
-      // Collect results from the batch
-      const batchResults = await Promise.allSettled(tasks);
-      batchResults.forEach((result) => {
-        if (result.status === "fulfilled" && result.value) {
-          updatedAccountIds.push(result.value); // Add account ID if changed
+      const results: PromiseSettledResult<AccountCheckOutcome>[] = await Promise.allSettled(batchPromises);
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          const outcome = result.value;
+          if (outcome.status === "fulfilled" && outcome.value) {
+            updatedAccountIds.push(outcome.value);
+          } else if (outcome.status === "failed") {
+            this.logger.error("XScraper", `Batch processing failure for account ${outcome.accountId}:`, {
+              error: outcome.error,
+            });
+          }
+        } else {
+          // result.status === 'rejected'
+          // This path means an error occurred outside the try/catch in the map, or the promise was unexpectedly rejected.
+          this.logger.error("XScraper", `Unexpected batch promise rejection:`, { reason: result.reason });
         }
       });
 
       this.logger.info(
         "XScraper",
-        `Finished processing batch ${Math.floor(i / concurrency) + 1}. Updated accounts in batch: ${batchResults.filter((r) => r.status === "fulfilled" && r.value).length}`,
+        `Finished processing batch. Batch results count: ${results.length}. Updated accounts so far: ${updatedAccountIds.length}`,
       );
 
-      // 次のバッチがある場合は、負荷軽減のために少し待機
-      if (i + concurrency < accounts.length) {
-        const waitTime = 2000; // 2秒待機
+      if (i + maxConcurrency < accounts.length) {
+        const waitTime = BATCH_PROCESSING_WAIT_MS;
         this.logger.debug("XScraper", `Waiting ${waitTime}ms before next batch...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
@@ -650,9 +1031,9 @@ export class XScraper {
 
     this.logger.info(
       "XScraper",
-      `Finished checking all X accounts. Total updated accounts: ${updatedAccountIds.length}`,
+      `Finished all parallel batches. Total accounts processed: ${accounts.length}. Total updated accounts: ${updatedAccountIds.length}`,
     );
-    return updatedAccountIds; // Return the array of updated account IDs
+    return updatedAccountIds;
   }
 
   /**
@@ -668,4 +1049,199 @@ export class XScraper {
       this.driver = null;
     }
   }
+
+  /**
+   * Return path to cookies file, ensuring directory exists.
+   */
+  private getCookiesFilePath(): string {
+    const dir = path.resolve(process.cwd(), COOKIES_DIR_RELATIVE);
+    fs.mkdirSync(dir, { recursive: true });
+    return path.join(dir, COOKIES_FILENAME);
+  }
+
+  /** Load cookies from disk or return empty array. */
+  private loadCookies(): any[] {
+    const file = this.getCookiesFilePath();
+    if (!fs.existsSync(file)) return [];
+    try {
+      const data = fs.readFileSync(file, "utf-8");
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  /** Save cookies array to disk. */
+  private saveCookies(cookies: any[]): void {
+    const file = this.getCookiesFilePath();
+    try {
+      fs.writeFileSync(file, JSON.stringify(cookies, null, 2), "utf-8");
+      this.logger.info("XScraper", `Cookies saved to ${file}`);
+    } catch (err) {
+      this.logger.error("XScraper", "Failed to save cookies", err);
+    }
+  }
+
+  /** Check if any cookie is expired based on `expiry` field. */
+  private areCookiesExpired(cookies: any[]): boolean {
+    const now = Date.now();
+    return cookies.some((c) => typeof c.expiry === "number" && c.expiry * 1000 < now);
+  }
+
+  /** Return screenshot path for a given context, ensuring directory exists. */
+  private getScreenshotPath(context: string): string {
+    const dir = path.resolve(process.cwd(), SCREENSHOTS_DIR_RELATIVE);
+    fs.mkdirSync(dir, { recursive: true });
+    const name = `${context}_${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+    return path.join(dir, name);
+  }
+
+  /** Capture a failure screenshot and log its location. */
+  private async captureFailureScreenshot(driver: WebDriver, context: string): Promise<void> {
+    const screenshotPath = this.getScreenshotPath(context);
+    if (!driver) {
+      this.logger.warn("XScraper", "captureFailureScreenshot called with null driver.");
+      return;
+    }
+    try {
+      const img = await driver.takeScreenshot();
+      fs.writeFileSync(screenshotPath, img, "base64");
+      this.logger.info("XScraper", `Screenshot saved to ${screenshotPath}`);
+    } catch (err) {
+      this.logger.error("XScraper", `Failed to capture ${context} screenshot`, err);
+    }
+  }
+
+  /**
+   * Ensures the scraper is logged into X.com.
+   * It checks for existing valid session cookies first. If not found or invalid,
+   * it attempts to perform a full login.
+   * @returns {Promise<boolean>} True if a logged-in session is active, false otherwise.
+   */
+  private async ensureLoggedIn(): Promise<boolean> {
+    this.logger.info("XScraper", "Ensuring logged-in session...");
+
+    // 1. Initialize driver if it doesn't exist.
+    //    If this.sessionCookies is already populated (e.g. from constructor or previous load),
+    //    initDriver will attempt to inject them.
+    if (!this.driver) {
+      this.logger.info("XScraper", "Driver not initialized. Calling initDriver (reuseExisting) in ensureLoggedIn.");
+      try {
+        // For ensureLoggedIn, we always want to manage this.driver
+        this.driver = await this.initDriver(true, this.sessionCookies || undefined);
+        if (!this.driver) {
+          this.logger.error("XScraper", "initDriver (reused) was called but this.driver is still null.");
+          return false;
+        }
+      } catch (initError) {
+        this.logger.error("XScraper", "initDriver failed during ensureLoggedIn.", { error: initError });
+        return false;
+      }
+    }
+
+    // 2. Try to load cookies from file if not already in this.sessionCookies
+    if (!this.sessionCookies || this.sessionCookies.length === 0) {
+      const loadedCookies = this.loadCookies();
+      if (loadedCookies.length > 0) {
+        this.logger.info("XScraper", `Loaded ${loadedCookies.length} cookies from file in ensureLoggedIn.`);
+        this.sessionCookies = loadedCookies;
+        // Need to re-initialize driver or at least set cookies on current driver
+        // For simplicity, if driver exists, we'll try to add cookies.
+        // A more robust way might be to close and re-init driver here if cookies were just loaded.
+        // However, initDriver is designed to inject this.sessionCookies if they are present.
+        // If driver was already initialized without cookies, and now we loaded them, we need to apply them.
+        // This part might be redundant if initDriver is always called when this.sessionCookies changes state from empty to filled.
+        // Let's assume initDriver handles this, or we explicitly re-init/apply.
+        // For now, if driver exists, and we just loaded cookies, let's try navigating to X_BASE_URL to help apply them.
+        try {
+          this.logger.info("XScraper", "Re-evaluating session with newly loaded cookies from file.");
+          // To ensure cookies are applied, it's often best to re-navigate or ensure on right domain
+          await this.driver.get(X_BASE_URL); // Go to base domain
+          for (const cookie of this.sessionCookies) {
+            if (cookie.name && cookie.value && cookie.domain) {
+              try {
+                await this.driver.manage().addCookie(cookie as SeleniumCookie);
+              } catch (e) {
+                /* ignore if already present or minor issue */
+              }
+            }
+          }
+          await this.driver.get(X_BASE_URL + "/home"); // Then verify
+        } catch (reNavError) {
+          this.logger.warn(
+            "XScraper",
+            "Error while trying to apply newly loaded cookies by re-navigating.",
+            reNavError,
+          );
+          // If this fails, the session check below will likely fail, leading to login.
+        }
+      }
+    }
+
+    // 3. Check session validity (are cookies loaded, not expired, and do they work?)
+    if (this.sessionCookies && this.sessionCookies.length > 0) {
+      if (!this.areCookiesExpired(this.sessionCookies)) {
+        this.logger.info("XScraper", "Session cookies found and are not expired. Verifying session activity...");
+        try {
+          // Ensure driver is on the home page to check for primary column
+          const currentUrl = await this.driver.getCurrentUrl();
+          if (!currentUrl.includes(X_BASE_URL + "/home")) {
+            this.logger.info("XScraper", `Not on home page (${currentUrl}), navigating to verify session.`);
+            await this.driver.get(X_BASE_URL + "/home");
+          }
+          // Wait for a known element that indicates logged-in state
+          await this.driver.wait(until.elementLocated(By.css(PRIMARY_COLUMN_SELECTOR_CSS)), PAGE_LOAD_WAIT_MS);
+          this.logger.info("XScraper", "Session is active and verified via /home page.");
+          return true; // Session is active
+        } catch (e) {
+          this.logger.warn(
+            "XScraper",
+            "Cookies are present and not expired, but session verification failed (e.g., /home not loading correctly).",
+            { error: e instanceof Error ? e.message : String(e) },
+          );
+          this.sessionCookies = []; // Clear invalid cookies
+          if (this.driver) {
+            // Check before capture
+            await this.captureFailureScreenshot(this.driver, "session_verification_fail");
+          }
+        }
+      } else {
+        this.logger.info("XScraper", "Session cookies found but are expired.");
+        this.sessionCookies = []; // Clear expired cookies
+      }
+    } else {
+      this.logger.info("XScraper", "No session cookies found or they were cleared.");
+    }
+
+    // 4. If session is not active/verified, attempt login
+    this.logger.info("XScraper", "Session not active or cookies invalid/expired. Attempting full login.");
+    // Ensure any problematic driver state from cookie verification is cleared.
+    // Closing and re-initializing the driver before a fresh login attempt can be more robust.
+    if (this.driver) {
+      await this.closeDriver(); // This sets this.driver to null
+    }
+    // Re-initialize driver for a clean login attempt, this should set this.driver
+    this.driver = await this.initDriver(true);
+    if (!this.driver) {
+      this.logger.error("XScraper", "Failed to re-init this.driver before login attempt in ensureLoggedIn.");
+      return false;
+    }
+
+    const loggedIn = await this.login(); // login() will use the newly initialized this.driver
+    if (loggedIn) {
+      this.logger.info("XScraper", "Login successful via ensureLoggedIn.");
+      return true;
+    } else {
+      this.logger.error("XScraper", "Login failed via ensureLoggedIn.");
+      if (this.driver) {
+        // Check before capture
+        await this.captureFailureScreenshot(this.driver, "ensureLoggedIn_login_fail");
+      }
+      return false;
+    }
+  }
+}
+
+function accountIdsInBatch(batch: { id: string }[]): string {
+  return batch.map((a) => a.id).join(", ");
 }

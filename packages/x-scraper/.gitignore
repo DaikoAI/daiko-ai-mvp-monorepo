@@ -2,4 +2,7 @@
 credentials.json
 dist
 node_modules
-chrome-profiles
+chrome-user-profile
+chrome-user-profiles
+cookies
+screenshots

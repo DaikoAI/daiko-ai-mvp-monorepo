@@ -43,7 +43,7 @@ export class PostgresTweetRepository implements TweetRepository {
     let query = db
       .select()
       .from(tweetTable)
-      .where(eq(tweetTable.xAccountId, accountId))
+      .where(eq(tweetTable.authorId, accountId))
       .orderBy(sql`${tweetTable.tweetTime} DESC`)
       .limit(limit ?? 0);
 
@@ -54,7 +54,7 @@ export class PostgresTweetRepository implements TweetRepository {
     const [tweet] = await db
       .select()
       .from(tweetTable)
-      .where(eq(tweetTable.xAccountId, accountId))
+      .where(eq(tweetTable.authorId, accountId))
       .orderBy(sql`${tweetTable.tweetTime} DESC`)
       .limit(1);
 
