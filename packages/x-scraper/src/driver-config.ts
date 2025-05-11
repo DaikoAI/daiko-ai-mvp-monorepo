@@ -2,10 +2,9 @@ import chrome from "selenium-webdriver/chrome";
 
 /**
  * Creates Chrome options for the Selenium WebDriver.
- * @param profilePath The path to the Chrome user profile directory.
  * @returns Configured chrome.Options object.
  */
-export const createChromeOptions = (profilePath: string): chrome.Options => {
+export const createChromeOptions = (): chrome.Options => {
   const options = new chrome.Options();
 
   options.addArguments("--headless"); // Keep headless commented out for debugging, enable for production if needed
@@ -14,9 +13,6 @@ export const createChromeOptions = (profilePath: string): chrome.Options => {
   options.addArguments("--no-sandbox");
   options.addArguments("--disable-dev-shm-usage");
   options.addArguments("--disable-gpu");
-
-  // Persistent Profile Setup
-  options.addArguments(`--user-data-dir=${profilePath}`);
 
   // Fixed User-Agent
   options.addArguments(
