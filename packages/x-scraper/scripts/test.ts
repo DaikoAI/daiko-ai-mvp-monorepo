@@ -10,7 +10,7 @@ const scraper = new XScraper(credentials);
 
 async function main() {
   const start = performance.now();
-  await scraper.checkXAccounts(1);
+  await scraper.checkXAccounts();
   const end = performance.now();
   console.log(`Time taken: ${(end - start) / 1000}s`);
 }
