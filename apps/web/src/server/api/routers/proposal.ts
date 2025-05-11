@@ -1,6 +1,6 @@
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { proposalTable } from "@daiko-ai/shared";
-import { asc, gt } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 
 export const proposalRouter = createTRPCRouter({
@@ -26,7 +26,7 @@ export const proposalRouter = createTRPCRouter({
   getProposals: protectedProcedure.query(async ({ ctx }) => {
     const proposals = await ctx.db.query.proposalTable.findMany({
       orderBy: [asc(proposalTable.expiresAt)],
-      where: gt(proposalTable.expiresAt, new Date()),
+      where: and(gt(proposalTable.expiresAt, new Date()), eq(proposalTable.userId, ctx.session.user.id)),
     });
     return proposals;
   }),

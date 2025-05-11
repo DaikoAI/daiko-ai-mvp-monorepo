@@ -490,6 +490,8 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
   try {
     console.log("提案データを挿入中...");
 
+    const SIX_MONTHS_SECONDS = 1000 * 60 * 60 * 24 * 30 * 6;
+
     const staticProposals: Omit<ProposalInsert, "userId">[] = [
       {
         title: "Take Profit SOL 5x Long Position on Drift Protocol",
@@ -506,7 +508,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         ],
         type: "trade",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + 1000 * 40),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
         financialImpact: {
           currentValue: 5000,
           projectedValue: 5615,
@@ -546,7 +548,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         ],
         type: "risk",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
         financialImpact: {
           currentValue: 1200, // Assuming 100M MELANIA = $1200
           projectedValue: 720, // Assuming 40% potential decline
@@ -588,7 +590,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         ],
         type: "stake",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 72),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
         financialImpact: {
           currentValue: 595.92, // Updated value (4 * 148.98)
           projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)

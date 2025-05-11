@@ -2,7 +2,7 @@ import { sendWebPush } from "@/lib/notify";
 import { db, inngest, Logger, LogLevel, proposalTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
 
-const logger = new Logger({ level: LogLevel.INFO });
+const logger = new Logger({ level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG });
 
 export const notifyUser = inngest.createFunction(
   { id: "notification-proposal", name: "Notification Workflow" },

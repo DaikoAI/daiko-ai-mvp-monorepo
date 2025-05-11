@@ -1,7 +1,7 @@
 import { db, inngest, Logger, LogLevel, signalsTable, userBalancesTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
 
-const logger = new Logger({ level: LogLevel.INFO });
+const logger = new Logger({ level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG });
 
 export const proposalDispatcher = inngest.createFunction(
   {

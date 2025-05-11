@@ -8,7 +8,7 @@ import { and, desc, inArray } from "drizzle-orm";
 import { filterRelevantTweets, formatTweetsForLlm, type FormattedTweetForLlm } from "@daiko-ai/shared"; // Path to your tweet processor
 import { detectSignalWithLlm, type KnownTokenType, type LlmSignalResponseType } from "../../ai/signal-detector"; // Path to your signal detector, added KnownTokenType
 
-const logger = new Logger({ level: LogLevel.INFO });
+const logger = new Logger({ level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG });
 
 /**
  * Inngest function to process batch tweet updates and detect market signals.
