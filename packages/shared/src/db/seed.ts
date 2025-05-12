@@ -320,7 +320,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         ],
         type: "risk",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24 * 3),
         financialImpact: {
           currentValue: 1000,
           projectedValue: 948,
@@ -354,7 +354,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         ],
         type: "risk",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24 * 2),
         financialImpact: {
           currentValue: 1200,
           projectedValue: 876,
@@ -408,6 +408,47 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
             fromToken: { symbol: "Fartcoin", address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump" },
             toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
             fromAmount: 0.6,
+          },
+        },
+      },
+      {
+        title: "Stake 4 SOL in Jito's jitoSOL for Enhanced Yields",
+        summary:
+          "Earn 8.24% APY by converting your idle 4 SOL ($595.92) to jitoSOL, Jito's high-yield liquid staking token",
+        reason: [
+          "You have 4 SOL ($595.92) sitting idle in your wallet", // Updated value
+          "jitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+          "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
+        ],
+        sources: [
+          { name: "Jito jitoSOL Documentation", url: "#" },
+          { name: "Solana LST Comparison Analysis", url: "#" },
+          { name: "jitoSOL Performance Metrics", url: "#" },
+        ],
+        type: "stake",
+        proposedBy: "Daiko AI",
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
+        financialImpact: {
+          currentValue: 595.92, // Updated value (4 * 148.98)
+          projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)
+          percentChange: 8.24,
+          timeFrame: "1 year",
+          riskLevel: "low",
+        },
+        status: "active",
+        contractCall: {
+          type: "stake",
+          description: "Stake SOL to jitoSOL for higher yields",
+          params: {
+            fromToken: {
+              symbol: "SOL",
+              address: "So11111111111111111111111111111111111111112",
+            },
+            toToken: {
+              symbol: "jitoSOL",
+              address: "jitoSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
+            },
+            fromAmount: 4, // Corrected amount
           },
         },
       },
