@@ -12,6 +12,7 @@ PACKAGES=(
     "packages/news-scraper"
     "packages/farcaster-scraper"
     "packages/token-price-fetcher"
+    "packages/signal-detector"
     "packages/x-scraper"
 )
 
