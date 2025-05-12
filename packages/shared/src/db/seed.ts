@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db } from ".";
+import { initialTokens } from "../constants";
 import { setupInitialPortfolio } from "../utils/portfolio";
 import { InterestRateInsert, interestRatesTable } from "./schema/interest_rates";
 import { NewsSiteInsert, newsSiteTable } from "./schema/news_sites";
 import { ProposalInsert, proposalTable } from "./schema/proposals";
-import { TokenInsert, tokensTable } from "./schema/tokens";
+import { tokensTable } from "./schema/tokens";
 import { UserInsert, UserSelect, usersTable } from "./schema/users";
 import { XAccountInsert, xAccountTable } from "./schema/x_accounts";
 
@@ -71,220 +72,10 @@ const seedUsers = async () => {
 const seedTokens = async () => {
   try {
     // トークンデータ
-    const tokens: TokenInsert[] = [
-      {
-        address: "So11111111111111111111111111111111111111112",
-        symbol: "SOL",
-        name: "Wrapped SOL",
-        decimals: 9,
-        type: "normal",
-        iconUrl: "/tokens/SOL.png",
-      },
-      {
-        address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        symbol: "USDC",
-        name: "USD Coin",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/USDC.png",
-      },
-      {
-        address: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
-        symbol: "TRUMP",
-        name: "OFFICIAL TRUMP",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/TRUMP.png",
-      },
-      {
-        address: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
-        symbol: "JUP",
-        name: "Jupiter",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/JUP.png",
-      },
-      {
-        address: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
-        symbol: "WIF",
-        name: "dogwifhat",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/WIF.png",
-      },
-      {
-        address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-        symbol: "BONK",
-        name: "Bonk",
-        decimals: 5,
-        type: "normal",
-        iconUrl: "/tokens/BONK.png",
-      },
-      {
-        address: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
-        symbol: "JTO",
-        name: "Jito",
-        decimals: 9,
-        type: "normal",
-        iconUrl: "/tokens/JTO.png",
-      },
-      {
-        address: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
-        symbol: "RAY",
-        name: "Raydium",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/RAY.png",
-      },
-      {
-        address: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
-        symbol: "PYTH",
-        name: "Pyth Network",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/PYTH.png",
-      },
-      {
-        address: "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux",
-        symbol: "HNT",
-        name: "Helium Network Token",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/HNT.png",
-      },
-      {
-        address: "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
-        symbol: "W",
-        name: "Wormhole",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/W.png",
-      },
-      {
-        address: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
-        symbol: "MEW",
-        name: "cat in a dogs world",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/MEW.png",
-      },
-      {
-        address: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
-        symbol: "POPCAT",
-        name: "Popcat (SOL)",
-        decimals: 9,
-        type: "normal",
-        iconUrl: "/tokens/POPCAT.png",
-      },
-      {
-        address: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
-        symbol: "ORCA",
-        name: "Orca",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/ORCA.png",
-      },
-      {
-        address: "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq",
-        symbol: "ZEUS",
-        name: "Zeus Network",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/ZEUS.png",
-      },
-      {
-        address: "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
-        symbol: "KMNO",
-        name: "Kamino",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/KMNO.svg",
-      },
-      {
-        address: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-        symbol: "WBTC",
-        name: "Wrapped Bitcoin (Portal)",
-        decimals: 8,
-        type: "normal",
-        iconUrl: "/tokens/WBTC.png",
-      },
-      {
-        address: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
-        symbol: "jupSOL",
-        name: "Jupiter Staked SOL",
-        decimals: 9,
-        type: "liquid_staking",
-        iconUrl: "/tokens/jupSOL.png",
-      },
-      {
-        address: "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
-        symbol: "jitoSOL",
-        name: "Jito Staked SOL",
-        decimals: 9,
-        type: "liquid_staking",
-        iconUrl: "/tokens/jitoSOL.png",
-      },
-      {
-        address: "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm",
-        symbol: "INF",
-        name: "Infinity",
-        decimals: 9,
-        type: "liquid_staking",
-        iconUrl: "/tokens/INF.png",
-      },
-      {
-        address: "bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ",
-        symbol: "BIO",
-        name: "BIO",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/BIO.png",
-      },
-      {
-        address: "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc",
-        symbol: "LAYER",
-        name: "Solayer",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/LAYER.png",
-      },
-      {
-        address: "14zP2ToQ79XWvc7FQpm4bRnp9d6Mp1rFfsUW3gpLcRX",
-        symbol: "AIXBT",
-        name: "aixbt by Virtuals (Wormhole)",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/AIXBT.png",
-      },
-      {
-        address: "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
-        symbol: "ACT",
-        name: "Act I : The AI Prophecy",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/ACT.png",
-      },
-      {
-        address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
-        symbol: "Fartcoin",
-        name: "Fartcoin",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/Fartcoin.png",
-      },
-      {
-        address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
-        symbol: "MELANIA",
-        name: "MELANIA",
-        decimals: 6,
-        type: "normal",
-        iconUrl: "/tokens/MELANIA.webp",
-      },
-    ];
 
     const existingTokens = await db.select().from(tokensTable);
 
-    for (const token of tokens) {
+    for (const token of initialTokens) {
       const existingToken = existingTokens.find((t) => t.address === token.address);
 
       if (!existingToken) {
@@ -295,7 +86,7 @@ const seedTokens = async () => {
       }
     }
 
-    return tokens;
+    return initialTokens;
   } catch (error) {}
 };
 
@@ -364,6 +155,13 @@ const seedXAccounts = async (generatedUsers: UserSelect[]) => {
       id: "SOU_BTC",
       displayName: "SOU⚡️仮想通貨 / ビットコイン",
       profileImageUrl: "https://pbs.twimg.com/profile_images/1765218233324597248/LRgSXGTP_400x400.png",
+      lastTweetUpdatedAt: null,
+      userIds: generatedUsers.map((user) => user.id),
+    },
+    {
+      id: "SolanaFloor",
+      displayName: "SolanaFloor",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1836427519836217344/kQxl-LQo_400x400.png",
       lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
@@ -515,83 +313,108 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
 
     const staticProposals: Omit<ProposalInsert, "userId">[] = [
       {
-        title: "Take Profit SOL 5x Long Position on Drift Protocol",
-        summary: "Close 50% of your 5x leveraged SOL long position on Drift Protocol to secure profits",
+        title: "Sell Alert: Reduce 70% $RAY Exposure Due to Liquidity Shift to Pump Swap",
+        summary: "Reduce 70% of your $RAY holdings due to liquidity shift to PumpSwap on March 20, 2025",
         reason: [
-          "Your position is currently up 12.3% ($615) with potential for reversal",
-          "On-chain data from Drift Protocol shows 23% decrease in SOL perpetual open interest over past 12 hours",
-          "Whale wallets reduced leveraged long positions by 18% in last 6 hours",
+          "Top 12 wallets reduced $RAY holdings by 10% in the past 72 hours",
+          "Pump.fun's switch to PumpSwap on March 20, 2025, reduced Raydium's token migration volume by an estimated 30%",
+          "$RAY price has declined 5.2% since the PumpSwap announcement due to lower trading activity",
         ],
         sources: [
-          { name: "Drift Protocol On-Chain Data", url: "https://docs.drift.trade/" },
-          { name: "Solana Whale Wallet Tracker", url: "#" },
-          { name: "Perpetual Market Open Interest Analysis", url: "#" },
-        ],
-        type: "trade",
-        proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
-        financialImpact: {
-          currentValue: 5000,
-          projectedValue: 5615,
-          percentChange: 12.3,
-          timeFrame: "immediate",
-          riskLevel: "medium",
-        },
-        status: "active",
-        contractCall: {
-          type: "swap",
-          description: "Close 50% of leveraged SOL position",
-          params: {
-            fromToken: {
-              symbol: "SOL",
-              address: "So11111111111111111111111111111111111111112",
-            },
-            toToken: {
-              symbol: "USDC",
-              address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-            },
-            fromAmount: 2.5,
-          },
-        },
-      },
-      {
-        title: "Reduce 80% $MELANIA Exposure Due to Roadmap Uncertainty",
-        summary: "Sell 75% of your 100M MELANIA tokens ($1,200) to mitigate risk after recent project announcements",
-        reason: [
-          "Top 15 wallets reduced holdings by 15% in the past 48 hours",
-          "$MELANIA team announced no significant roadmap updates planned for the near future",
-          "$MELANIA price has declined 3.5% since the announcement",
-        ],
-        sources: [
-          { name: "$MELANIA Wallet Movement Tracker", url: "#" },
-          { name: "$MELANIA Project Announcement", url: "#" },
-          { name: "DEX Price Action Analysis", url: "#" },
+          { name: "Raydium Wallet Movement Tracker", url: "#" },
+          { name: "Pump.fun Announcement", url: "#" },
+          { name: "DEX Price Analysis", url: "#" },
         ],
         type: "risk",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24 * 3),
         financialImpact: {
-          currentValue: 1200, // Assuming 100M MELANIA = $1200
-          projectedValue: 720, // Assuming 40% potential decline
-          percentChange: -40,
-          timeFrame: "7 days",
+          currentValue: 1000,
+          projectedValue: 948,
+          percentChange: -5.2,
+          timeFrame: "immediate",
           riskLevel: "high",
         },
         status: "active",
         contractCall: {
           type: "swap",
-          description: "Sell 75% of MELANIA holdings for USDC",
+          description: "Sell 70% of RAY for USDC",
           params: {
-            fromToken: {
-              symbol: "MELANIA",
-              // NOTE: Using a placeholder address as MELANIA is not in seedTokens
-              address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
-            },
-            toToken: {
-              symbol: "USDC",
-              address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-            },
-            fromAmount: 75000000, // 75% of 100M
+            fromToken: { symbol: "RAY", address: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R" },
+            toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+            fromAmount: 0.7,
+          },
+        },
+      },
+      {
+        title: "Risk Alert: Reduce 70% $MELANIA Exposure Due to Major Exchange Inflow",
+        summary: "Reduce 70% of your $MELANIA tokens to mitigate risk following major exchange inflow",
+        reason: [
+          "Known whale wallet 3Yz6aU...H8iWjJ transferred 2M $MELANIA to Binance",
+          "Historically, similar movements from this wallet for this token preceded price drops of 25-30%",
+          "Exchange order books show increasing sell-side pressure",
+        ],
+        sources: [
+          { name: "Melania On-Chain Whale Tracker", url: "#" },
+          { name: "Whale's Solscan Token Account", url: "#" },
+          { name: "Nansen Wallet Profiler", url: "#" },
+        ],
+        type: "risk",
+        proposedBy: "Daiko AI",
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24 * 2),
+        financialImpact: {
+          currentValue: 1200,
+          projectedValue: 876,
+          percentChange: -27,
+          timeFrame: "short-term",
+          riskLevel: "high",
+        },
+        status: "active",
+        contractCall: {
+          type: "swap",
+          description: "Sell 70% of MELANIA for USDC",
+          params: {
+            fromToken: { symbol: "MELANIA", address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P" },
+            toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+            fromAmount: 0.7,
+          },
+        },
+      },
+      {
+        title:
+          "De-Risk Alert: Reduce 60% $FARTCOIN Exposure: Critical Support at Risk with Weakening Buy-Side Liquidity",
+        summary:
+          "Reduce 60% of your $FARTCOIN exposure due to weakening buy-side liquidity and critical support at risk",
+        reason: [
+          "$FARTCOIN repeatedly testing major support at $1.21; multiple failed bounces observed",
+          "On-chain liquidity analysis shows thinning buy orders below the current price",
+          "Significant cluster of liquidation levels for long positions identified just below $1.21; a break could trigger cascading sell-offs",
+          "Rapid increase in exchange deposits observed, indicating widespread panic selling is beginning",
+        ],
+        sources: [
+          { name: "DEX Screener (Price & Volume Analysis)", url: "#" },
+          { name: "Daiko On-Chain Liquidity Monitor", url: "#" },
+          { name: "Project's Official Communication Channels", url: "#" },
+          { name: "Exchange Deposit Tracker", url: "#" },
+        ],
+        type: "risk",
+        proposedBy: "Daiko AI",
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
+        financialImpact: {
+          currentValue: 1.21,
+          projectedValue: 0.484,
+          percentChange: -60,
+          timeFrame: "immediate",
+          riskLevel: "high",
+        },
+        status: "active",
+        contractCall: {
+          type: "swap",
+          description: "Sell 60% of FARTCOIN for USDC",
+          params: {
+            fromToken: { symbol: "Fartcoin", address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump" },
+            toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+            fromAmount: 0.6,
           },
         },
       },
@@ -611,7 +434,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         ],
         type: "stake",
         proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
+        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
         financialImpact: {
           currentValue: 595.92, // Updated value (4 * 148.98)
           projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)

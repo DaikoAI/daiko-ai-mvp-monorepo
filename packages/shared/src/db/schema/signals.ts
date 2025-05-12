@@ -4,6 +4,8 @@ import { createSelectSchema } from "drizzle-zod";
 export const sentimentTypeEnum = pgEnum("sentiment_type", ["positive", "negative", "neutral"]);
 export const suggestionTypeEnum = pgEnum("suggestion_type", ["buy", "sell", "hold", "stake", "close_position"]);
 
+export type SignalSource = { label: string; url: string };
+
 export const signalsTable = pgTable("signals", {
   id: varchar("id", { length: 255 })
     .notNull()
@@ -11,7 +13,7 @@ export const signalsTable = pgTable("signals", {
     .$defaultFn(() => crypto.randomUUID()),
   tokenAddress: varchar("token_address", { length: 255 }).notNull(),
   detectedAt: timestamp("detected_at").notNull().defaultNow(),
-  sources: jsonb("sources").notNull(),
+  sources: jsonb("sources").$type<SignalSource[]>().notNull(),
   sentimentType: sentimentTypeEnum("sentiment_type").notNull(),
   suggestionType: suggestionTypeEnum("suggestion_type").notNull(),
   confidence: real("confidence").notNull(),

@@ -19,7 +19,7 @@ export interface LlmSignalResponse {
   sources: Source[];
   sentimentScore: number;
   suggestionType: SuggestionType;
-  strength: number;
+  strength: number | null;
   confidence: number | null;
   reasoning: string;
   relatedTweetIds: string[];
