@@ -6,7 +6,7 @@ import { db, inngest, Logger, LogLevel, signalsTable, tokensTable, tweetTable } 
 import { and, desc, inArray } from "drizzle-orm";
 
 import { filterRelevantTweets, formatTweetsForLlm, type FormattedTweetForLlm } from "@daiko-ai/shared"; // Path to your tweet processor
-import { detectSignalWithLlm, type KnownTokenType, type LlmSignalResponseType } from "../../ai/signal-detector"; // Path to your signal detector, added KnownTokenType
+import { detectSignalWithLlm, type KnownTokenType, type LlmSignalResponseType } from "@daiko-ai/signal-detector"; // Path to your signal detector, added KnownTokenType
 
 const logger = new Logger({ level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG });
 
@@ -75,7 +75,7 @@ export const processSignalDetection = inngest.createFunction(
     }
 
     // 5. Detect signal using the new service
-    const llmResult = await detectSignalWithLlm(formattedTweets, knownTokens);
+    const llmResult = await detectSignalWithLlm({ formattedTweets, knownTokens });
 
     if (!llmResult) {
       logger.error("processSignalDetection", "LLM processing failed or returned null");

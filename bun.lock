@@ -73,6 +73,7 @@
         "@auth/drizzle-adapter": "^1.8.0",
         "@daiko-ai/proposal-generator": "workspace:*",
         "@daiko-ai/shared": "workspace:*",
+        "@daiko-ai/signal-detector": "workspace:*",
         "@daiko-ai/token-price-fetcher": "workspace:*",
         "@daiko-ai/x-scraper": "workspace:*",
         "@radix-ui/react-avatar": "^1.1.4",

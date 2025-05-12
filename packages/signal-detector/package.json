@@ -1,9 +1,12 @@
 {
   "name": "@daiko-ai/signal-detector",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Agent for generating investment proposals",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
   "scripts": {
     "build": "tsc",
     "format": "prettier --write .",
@@ -11,8 +14,11 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@daiko-ai/shared": "workspace:*",
-    "@langchain/core": "^0.3.55",
-    "langchain": "^0.3.24"
+    "@langchain/openai": "^1.0.0",
+    "@langchain/core": "^1.0.0",
+    "zod": "^3.0.0"
+  },
+  "peerDependencies": {
+    "@daiko-ai/shared": "*"
   }
 }
