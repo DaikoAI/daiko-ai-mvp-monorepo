@@ -11,6 +11,7 @@ import {
   WebDriver,
   WebElement,
 } from "selenium-webdriver";
+import { ServiceBuilder } from "selenium-webdriver/chrome"; // ServiceBuilderをインポート
 import {
   BATCH_PROCESSING_WAIT_MS,
   COOKIES_DIR_RELATIVE,
@@ -115,7 +116,48 @@ export class XScraper {
 
     try {
       const options = createChromeOptions();
-      newDriver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build();
+
+      // --- Added: Set up ServiceBuilder for Raspberry Pi ---
+      let serviceBuilder: ServiceBuilder | null = null;
+      // Check if running on ARM Linux (typical for Raspberry Pi)
+      if (process.platform === "linux" && (process.arch === "arm" || process.arch === "arm64")) {
+        // Common paths for chromedriver when installed via apt
+        const possiblePaths = ["/usr/bin/chromedriver", "/usr/lib/chromium-browser/chromedriver"];
+        let chromeDriverPath: string | undefined = undefined;
+        for (const p of possiblePaths) {
+          if (fs.existsSync(p)) {
+            chromeDriverPath = p;
+            break;
+          }
+        }
+
+        if (chromeDriverPath) {
+          this.logger.info("XScraper", `ARM Linux detected. Using system ChromeDriver at ${chromeDriverPath}`);
+          serviceBuilder = new ServiceBuilder(chromeDriverPath);
+        } else {
+          this.logger.error(
+            "XScraper",
+            `ARM Linux detected, but system ChromeDriver not found at expected paths: ${possiblePaths.join(", ")}. Selenium will likely fail.`,
+          );
+          // Throw an error immediately as driver initialization will fail
+          throw new Error(
+            `System ChromeDriver not found. Please install 'chromium-driver' (e.g., 'sudo apt install chromium-driver') and ensure it's in one of the expected paths: ${possiblePaths.join(", ")}`,
+          );
+        }
+      }
+      // --- End Added ---
+
+      const builder = new Builder().forBrowser(Browser.CHROME).setChromeOptions(options);
+
+      // --- Added: Attach service if created ---
+      if (serviceBuilder) {
+        builder.setChromeService(serviceBuilder);
+      }
+      // --- End Added ---
+
+      // newDriver = await new Builder().forBrowser(Browser.CHROME).setChromeOptions(options).build(); // Original line replaced by builder logic above
+      newDriver = await builder.build(); // Build with potentially attached service
+
       await newDriver.manage().setTimeouts({ script: DEFAULT_SELENIUM_SCRIPT_TIMEOUT });
 
       await newDriver.executeScript(`
@@ -1097,10 +1139,13 @@ export class XScraper {
   }
 
   /** Capture a failure screenshot and log its location. */
-  private async captureFailureScreenshot(driver: WebDriver, context: string): Promise<void> {
+  private async captureFailureScreenshot(driver: WebDriver | null, context: string): Promise<void> {
     const screenshotPath = this.getScreenshotPath(context);
     if (!driver) {
-      this.logger.warn("XScraper", "captureFailureScreenshot called with null driver.");
+      this.logger.warn(
+        "XScraper",
+        `captureFailureScreenshot called with null driver for context: ${context}. Cannot take screenshot.`,
+      );
       return;
     }
     try {
@@ -1236,6 +1281,10 @@ export class XScraper {
       if (this.driver) {
         // Check before capture
         await this.captureFailureScreenshot(this.driver, "ensureLoggedIn_login_fail");
+      }
+      // If login failed, the driver might be in a bad state or closed, ensure it's null
+      if (this.driver) {
+        await this.closeDriver();
       }
       return false;
     }
