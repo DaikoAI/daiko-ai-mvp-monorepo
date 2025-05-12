@@ -19,16 +19,14 @@ const now = new Date();
 
 export const mockSignal: SignalSelect = {
   id: "signal-test",
-  tokenAddress: "So11111111111111111111111111111111111111112",
+  tokenAddress: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   detectedAt: now,
-  sources: [
-    { label: "Source Test", url: "https://example.com" },
-    { label: "Source Test 2", url: "https://example.com/2" },
-  ],
-  sentimentType: "positive",
-  suggestionType: "buy",
-  confidence: 0.9,
-  rationaleSummary: "This is a test rationale summary.",
+  sources: [{ url: "https://x.com/OnchainLens/status/1921886124303380660", label: "Tweet by @OnchainLens" }],
+  sentimentType: "negative",
+  suggestionType: "sell",
+  confidence: 0.8,
+  rationaleSummary:
+    "The tweet indicates a whale has deposited a significant amount of USDC ($40.5M) to increase short positions on BTC, ETH, and SOL, suggesting bearish sentiment towards these tokens, including SOL.",
   expiresAt: new Date(now.getTime() + 1000 * 60 * 60), // 1 hour from now
   createdAt: now,
   updatedAt: now,
@@ -214,30 +212,35 @@ export const mockTokenPrices: TokenPriceSelect[] = [
 
 export const mockTweets: TweetSelect[] = [
   {
-    id: "tweet1",
-    authorId: "author1",
-    url: "https://twitter.com/test/status/1",
-    content: "Test tweet content 1",
-    retweetCount: 10,
-    replyCount: 5,
-    likeCount: 20,
-    tweetTime: new Date("2023-01-01T04:00:00Z"),
+    id: "1921898660314448170",
+    authorId: "WatcherGuru",
+    url: "https://x.com/WatcherGuru/status/1921898660314448170",
+    content: `JUST IN: Michael Saylor's 'Strategy' buys 13,390 Bitcoin worth $1.34 billion.`,
+    replyCount: 576,
+    retweetCount: 1000,
+    likeCount: 9300,
+    tweetTime: new Date("2025-05-12T18:50:02.570Z"),
     metadata: {} as any,
-    createdAt: new Date("2023-01-01T04:00:00Z"),
-    updatedAt: new Date("2023-01-01T04:00:00Z"),
+    createdAt: new Date("2025-05-12T18:50:02.570Z"),
+    updatedAt: new Date("2025-05-12T18:50:02.570Z"),
   },
   {
-    id: "tweet2",
-    authorId: "author2",
-    url: "https://twitter.com/test/status/2",
-    content: "Test tweet content 2",
-    retweetCount: 2,
-    replyCount: 1,
-    likeCount: 5,
-    tweetTime: new Date("2023-01-01T05:00:00Z"),
+    id: "1921886124303380660",
+    authorId: "OnchainLens",
+    url: "https://x.com/OnchainLens/status/1921886124303380660",
+    content: `In the past 2 days, a whale has deposited $40.5M $USDC into #HypeLiquid to increase the short position on $BTC, $ETH, and $SOL with 5x leverage.
+
+Address: 0x5b5d51203a0f9079f8aeb098a6523a13f298c060
+
+Data
+@nansen_ai`,
+    replyCount: 5,
+    retweetCount: 13,
+    likeCount: 42,
+    tweetTime: new Date("2025-05-12T18:50:02.570Z"),
     metadata: {} as any,
-    createdAt: new Date("2023-01-01T05:00:00Z"),
-    updatedAt: new Date("2023-01-01T05:00:00Z"),
+    createdAt: new Date("2025-05-12T18:50:02.570Z"),
+    updatedAt: new Date("2025-05-12T18:50:02.570Z"),
   },
 ];
 

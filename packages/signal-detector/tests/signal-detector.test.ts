@@ -10,8 +10,22 @@ describe("Signal Detector Tests", () => {
       knownTokens: mockKnownTokens,
     });
 
+    console.log("%o", result);
+
     expect(result).toBeDefined();
-    // expect(result.signalDetected).toBe(true);
+    expect(result.signalDetected).toBe(true);
     expect(result.sources).toBeDefined();
+  }, 60000);
+
+  it("should not detect any signals from empty tweets", async () => {
+    const result = await detectSignalWithLlm({
+      formattedTweets: [],
+      knownTokens: mockKnownTokens,
+    });
+
+    console.log("%o", result);
+
+    expect(result).toBeDefined();
+    expect(result.signalDetected).toBe(false);
   }, 60000);
 });

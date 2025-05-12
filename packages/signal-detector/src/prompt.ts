@@ -68,7 +68,7 @@ Adhere strictly to the following JSON schema:
   "sources": [{{ "url": "string (URL of the source tweet or article)", "label": "string (e.g., \'Tweet by @VitalikButerin\', \'Cointelegraph Article\')" }}],
   "sentimentScore": "number (from -1.0 negative to 1.0 positive, reflecting the signal\'s sentiment towards the token price)",
   "suggestionType": "enum (\'buy\' | \'sell\' | \'hold\' | \'close_position\' | \'stake\' - suggested action based on the signal)",
-  "strength": "number (1-100, how strong the signal\'s potential impact is)",
+  "strength": "number (1-100 if signal detected, 0 or null if signal not detected)",
   "confidence": "number (0.0-1.0, your confidence in the signal\'s validity and interpretation, null if not applicable)",
   "reasoning": "string (brief explanation of why this is a signal and how it was derived from the tweets)",
   "relatedTweetIds": ["string (IDs of the tweets directly supporting this signal)"],

@@ -1,7 +1,6 @@
-import { db, signalsTable } from "@daiko-ai/shared";
-import { eq } from "drizzle-orm";
-import { proposalGeneratorState } from "../utils/state";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
+import { fetchSignal } from "../utils/db";
+import { proposalGeneratorState } from "../utils/state";
 
 export const signalValidationNode = async (
   state: typeof proposalGeneratorState.State,
@@ -15,9 +14,7 @@ export const signalValidationNode = async (
   console.log(`[Signal Validation] Validating signal: ${signalId}`);
 
   // データベースからシグナルデータを取得
-  const signal = await db.query.signalsTable.findFirst({
-    where: eq(signalsTable.id, signalId),
-  });
+  const signal = await fetchSignal(signalId);
 
   if (!signal) {
     console.error(`[Signal Validation] Signal not found: ${signalId}`);

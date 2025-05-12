@@ -158,6 +158,13 @@ const seedXAccounts = async (generatedUsers: UserSelect[]) => {
       lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
+    {
+      id: "SolanaFloor",
+      displayName: "SolanaFloor",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1836427519836217344/kQxl-LQo_400x400.png",
+      lastTweetUpdatedAt: null,
+      userIds: generatedUsers.map((user) => user.id),
+    },
   ];
 
   for (const account of xAccounts) {
