@@ -8,6 +8,7 @@ import { contractCallToInstruction } from "@/features/alphaWallet/types";
 import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
+import { sendGAEvent } from "@next/third-parties/google";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -191,17 +192,29 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
         description: error instanceof Error ? error.message : "An error occurred while processing your request.",
       });
     } finally {
+      sendGAEvent("proposal_accepted", {
+        proposal_id: proposal.id,
+        proposal_title: proposal.title,
+        proposal_type: proposal.type,
+        user_id: proposal.userId,
+      });
       setIsAccepting(false);
     }
   };
 
   const handleDecline = () => {
-    toast.error("Proposal declined", {
+    toast.info("Proposal declined", {
       description: `The ${proposal.title} proposal has been declined.`,
     });
     if (onRemove) {
       onRemove(proposal.id);
     }
+    sendGAEvent("proposal_declined", {
+      proposal_id: proposal.id,
+      proposal_title: proposal.title,
+      proposal_type: proposal.type,
+      user_id: proposal.userId,
+    });
   };
 
   const currentTypeStyle = typeStyles[(proposal.type as keyof typeof typeStyles) || "opportunity"];
