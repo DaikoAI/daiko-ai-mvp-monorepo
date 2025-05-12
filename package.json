@@ -47,7 +47,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "bun@1.2.12",
+  "packageManager": "bun@1.2.13",
   "engines": {
     "node": ">=18"
   },
