@@ -12,10 +12,10 @@
     "build:news-scraper": "turbo run build --filter=@daiko-ai/news-scraper",
     "build:web": "turbo run build --filter=@daiko-ai/web",
     "build:shared": "turbo run build --filter=@daiko-ai/shared",
-    "build:proposal-agent": "turbo run build --filter=@daiko-ai/proposal-agent",
-    "build:selenium-worker": "turbo run build --filter=@daiko-ai/selenium-worker",
+    "build:proposal-generator": "turbo run build --filter=@daiko-ai/proposal-generator",
+    "build:signal-detector": "turbo run build --filter=@daiko-ai/signal-detector",
+    "test:signal-detector": "dotenvx run -- turbo run test --filter=@daiko-ai/signal-detector",
     "start:selenium-worker": "turbo run start --filter=@daiko-ai/selenium-worker",
-    "clean": "sh scripts/clean-packages.sh",
     "job:token-price": "turbo run dev --filter=@daiko-ai/token-price-job",
     "job:token-price:cron": "turbo run dev:cron --filter=@daiko-ai/token-price-job",
     "job:news-scraper": "turbo run dev --filter=@daiko-ai/news-scraper-job",
@@ -23,7 +23,8 @@
     "job:x-scraper": "turbo run dev --filter=@daiko-ai/x-scraper-job",
     "job:x-scraper:cron": "turbo run dev:cron --filter=@daiko-ai/x-scraper-job",
     "jobs:cron": "turbo run dev:cron --filter=\"@daiko-ai/*-job\"",
-    "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\""
+    "jobs:all": "turbo run dev --filter=\"@daiko-ai/*-job\"",
+    "clean": "sh scripts/clean-packages.sh"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
