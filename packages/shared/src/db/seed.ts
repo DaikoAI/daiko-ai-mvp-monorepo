@@ -346,6 +346,13 @@ const seedXAccounts = async (generatedUsers: UserSelect[]) => {
       lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
+    {
+      id: "OnchainLens",
+      displayName: "Onchain Lens",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1838018997025165313/MzbZggaZ_400x400.jpg",
+      lastTweetUpdatedAt: null,
+      userIds: generatedUsers.map((user) => user.id),
+    },
   ];
 
   for (const account of xAccounts) {

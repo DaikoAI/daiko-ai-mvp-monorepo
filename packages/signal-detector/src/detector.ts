@@ -2,6 +2,7 @@ import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { defaultSignalChatModel } from "./model";
 import { buildKnownTokensBlock, signalPromptTemplate } from "./prompt";
+// import { getProjectContext, buildProjectContextBlock } from "./rag"; // RAG temporarily disabled
 import { LlmSignalResponseSchema } from "./schema";
 import type { DetectorParams, LlmSignalResponse } from "./types";
 
@@ -18,6 +19,15 @@ export async function detectSignalWithLlm(params: DetectorParams): Promise<LlmSi
   const tweetsJson = JSON.stringify(formattedTweets, null, 2);
   const knownTokensBlock = buildKnownTokensBlock(knownTokens);
 
+  /*
+  // Retrieve project context for RAG (disabled)
+  const contextsArray = await Promise.all(
+    knownTokens.map((t) => getProjectContext(t.symbol))
+  );
+  const allContexts = contextsArray.flat();
+  const projectContextBlock = buildProjectContextBlock(allContexts);
+  */
+
   // Build and run the chain: prompt -> LLM -> parser
   const chain = RunnableSequence.from([signalPromptTemplate, defaultSignalChatModel, parser]);
 
@@ -25,6 +35,7 @@ export async function detectSignalWithLlm(params: DetectorParams): Promise<LlmSi
   const response = await chain.invoke({
     formattedTweets: tweetsJson,
     knownTokensBlock,
+    // projectContextBlock, // RAG disabled
   });
 
   return response;
