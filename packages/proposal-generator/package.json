@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc",
     "format": "prettier --write .",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest"
   },
   "license": "MIT",
   "dependencies": {
@@ -17,8 +18,9 @@
     "@langchain/community": "^0.3.42",
     "@langchain/core": "^0.3.50",
     "@langchain/langgraph": "^0.2.67",
-    "@langchain/openai": "^0.3.17",
-    "dotenv": "^16.5.0",
-    "zod": "^3.24.3"
+    "@langchain/openai": "^0.3.17"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.3"
   }
 }

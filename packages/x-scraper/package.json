@@ -16,8 +16,6 @@
   },
   "dependencies": {
     "@daiko-ai/shared": "workspace:*",
-    "@types/jsdom": "^21.1.7",
-    "dotenv": "^16.5.0",
     "inngest": "^3.35.1",
     "jsdom": "^26.1.0",
     "openai": "^4.96.0",
@@ -26,6 +24,7 @@
   "devDependencies": {
     "@types/chromedriver": "^81.0.5",
     "@types/selenium-webdriver": "^4.1.28",
+    "@types/jsdom": "^21.1.7",
     "uuid": "^9.0.1"
   }
 }
