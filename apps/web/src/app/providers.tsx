@@ -1,6 +1,7 @@
 "use client";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import { GoogleAnalytics } from "@next/third-parties/google";
 // import { unstable_ViewTransition as ViewTransition } from "react";
 // import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 // import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
@@ -41,6 +42,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
             </ConnectionProvider> */}
         </TRPCReactProvider>
       </SessionProvider>
+      <GoogleAnalytics gaId="G-XF5DJBF1ZG" />
     </ThemeProvider>
   );
 };
