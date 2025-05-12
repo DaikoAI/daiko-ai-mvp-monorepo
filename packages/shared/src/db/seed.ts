@@ -353,6 +353,20 @@ const seedXAccounts = async (generatedUsers: UserSelect[]) => {
       lastTweetUpdatedAt: null,
       userIds: generatedUsers.map((user) => user.id),
     },
+    {
+      id: "Chyan",
+      displayName: "Chyan | chyan.base.eth",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1741032931446198272/5DTzmIBX_400x400.jpg",
+      lastTweetUpdatedAt: null,
+      userIds: generatedUsers.map((user) => user.id),
+    },
+    {
+      id: "SOU_BTC",
+      displayName: "SOU⚡️仮想通貨 / ビットコイン",
+      profileImageUrl: "https://pbs.twimg.com/profile_images/1765218233324597248/LRgSXGTP_400x400.png",
+      lastTweetUpdatedAt: null,
+      userIds: generatedUsers.map((user) => user.id),
+    },
   ];
 
   for (const account of xAccounts) {
