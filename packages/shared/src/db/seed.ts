@@ -313,7 +313,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
 
     const staticProposals: Omit<ProposalInsert, "userId">[] = [
       {
-        title: "Sell Alert: Reduce 70% $RAY Exposure Due to Liquidity Shift to Pump Swap",
+        title: "Reduce 70% $RAY Exposure Due to Liquidity Shift to Pump Swap",
         summary: "Reduce 70% of your $RAY holdings due to liquidity shift to PumpSwap on March 20, 2025",
         reason: [
           "Top 12 wallets reduced $RAY holdings by 10% in the past 72 hours",
@@ -347,7 +347,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         },
       },
       {
-        title: "Risk Alert: Reduce 70% $MELANIA Exposure Due to Major Exchange Inflow",
+        title: "Reduce 70% $MELANIA Exposure Due to Major Exchange Inflow",
         summary: "Reduce 70% of your $MELANIA tokens to mitigate risk following major exchange inflow",
         reason: [
           "Known whale wallet 3Yz6aU...H8iWjJ transferred 2M $MELANIA to Binance",
@@ -381,8 +381,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
         },
       },
       {
-        title:
-          "De-Risk Alert: Reduce 60% $FARTCOIN Exposure: Critical Support at Risk with Weakening Buy-Side Liquidity",
+        title: "Reduce 60% $FARTCOIN Exposure: Critical Support at Risk with Weakening Buy-Side Liquidity",
         summary:
           "Reduce 60% of your $FARTCOIN exposure due to weakening buy-side liquidity and critical support at risk",
         reason: [
