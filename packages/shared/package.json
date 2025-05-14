@@ -28,7 +28,9 @@
     "@types/web-push": "^3.6.4",
     "drizzle-dbml-generator": "^0.10.0",
     "drizzle-zod": "^0.7.1",
+    "pg": "^8.16.0",
+    "uuid": "^9.0.1",
     "web-push": "^3.6.7",
-    "uuid": "^9.0.1"
+    "ws": "^8.18.2"
   }
 }

@@ -6,7 +6,7 @@ export { TweetRepository } from "./repositories/interface/TweetRepository";
 export { XAccountRepository } from "./repositories/interface/XAccountRepository";
 
 // PostgreSQL実装のexport
-export { db, type NeonHttpDatabase } from "./db/connection";
+export { db, type NodePostgresDatabase } from "./db/connection";
 
 export * from "./db/schema";
 
