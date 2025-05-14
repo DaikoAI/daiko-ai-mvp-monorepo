@@ -47,8 +47,9 @@ export function useExecuteInstruction() {
         });
 
         return {
-          success: true,
+          success: result.success,
           txHash: result.txHash,
+          error: result.success ? undefined : result.message,
         };
       } else if (instruction.type === "stake") {
         const result = await stake.mutateAsync({

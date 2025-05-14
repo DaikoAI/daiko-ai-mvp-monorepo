@@ -1,5 +1,7 @@
 "use client";
 
+import { StakingIcon } from "@/components/icon/StakingIcon";
+import { TradeIcon } from "@/components/icon/TradeIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAlphaWallet } from "@/features/alphaWallet/AlphaWalletProvider";
@@ -9,36 +11,36 @@ import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
 import { sendGAEvent } from "@next/third-parties/google";
-import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, ExternalLink, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Bot, Check, Loader2, X } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AskAIButton } from "./ask-ai-button";
-
 // Type styles - Adjusted for Glassmorphism & Figma
 const typeStyles = {
   trade: {
-    icon: <Bot size={16} className="text-blue-300" />,
+    icon: <TradeIcon size={16} className="text-blue-400" />,
     label: "Trade",
-    bgColor: "bg-gradient-to-r from-blue-500/50 to-white/20",
-    textColor: "text-blue-300",
+    bgColor: "bg-gradient-to-r from-blue-400/30 to-white/20",
+    textColor: "text-blue-400",
   },
   stake: {
-    icon: <Plus size={16} className="text-purple-300" />,
+    icon: <StakingIcon size={16} className="text-purple-400" />,
     label: "Staking",
-    bgColor: "bg-gradient-to-r from-purple-500/50 to-white/20",
-    textColor: "text-purple-300",
+    bgColor: "bg-gradient-to-r from-purple-400/30 to-white/20",
+    textColor: "text-purple-400",
   },
   risk: {
-    icon: <AlertCircle size={16} className="text-red-400" />,
+    icon: <AlertCircle size={16} className="text-red-500" />,
     label: "Risk Alert",
-    bgColor: "bg-gradient-to-r from-red-600/50 to-white/20",
-    textColor: "text-red-400",
+    bgColor: "bg-gradient-to-r from-red-500/30 to-white/20",
+    textColor: "text-red-500",
   },
   opportunity: {
-    icon: <Bot size={16} className="text-green-400" />,
+    icon: <Bot size={16} className="text-green-500" />,
     label: "Opportunity",
-    bgColor: "bg-gradient-to-r from-green-500/50 to-white/20",
-    textColor: "text-green-400",
+    bgColor: "bg-gradient-to-r from-green-500/30 to-white/20",
+    textColor: "text-green-500",
   },
 };
 
@@ -50,46 +52,103 @@ const ProposalPnLVisualization: React.FC<{
     percentChange: number;
   };
   proposalType?: string | null;
-}> = ({ financialImpact, proposalType }) => {
+  tokenIconUrl?: string;
+  tokenSymbol?: string;
+}> = ({ financialImpact, proposalType, tokenIconUrl, tokenSymbol }) => {
   if (!financialImpact) return null;
 
   const isPositive = financialImpact.percentChange > 0;
   const isStaking = proposalType === "stake";
 
-  const currentValue = isStaking ? 0 : financialImpact.currentValue;
-  const projectedValue = isStaking
-    ? Math.round(financialImpact.currentValue * (financialImpact.percentChange / 100))
-    : financialImpact.projectedValue;
-
   return (
-    // Slightly darker background for contrast
-    <div className="mt-4 p-3 rounded-lg bg-black/50">
-      <div className="text-xs font-semibold text-gray-400 mb-2">Price Prediction</div>
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-4">
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-400">Current</span>
-            {/* Slightly larger font for values */}
-            <span className="font-semibold text-sm text-white">${currentValue.toLocaleString()}</span>
-            {isStaking && <span className="text-xs text-gray-500">(No earnings)</span>}
+    <div className="mt-4 p-3 rounded-lg bg-black/50 text-xs">
+      {isStaking ? (
+        // Staking Layout
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1 items-center">
+          {/* Top Left: Token Icon & Symbol */}
+          <div className="flex items-center col-span-1">
+            {tokenIconUrl ? (
+              <Image
+                src={tokenIconUrl}
+                alt={tokenSymbol || "Token"}
+                className="w-7 h-7 mr-2 rounded-full"
+                width={28}
+                height={28}
+              />
+            ) : (
+              <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
+            )}
+            {tokenSymbol && <span className="font-semibold text-sm text-gray-400">{tokenSymbol}</span>}
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-400">
-              Expected{isStaking ? ` (APY ${financialImpact.percentChange}%)` : ""}
+
+          {/* Top Right: Expected Yield */}
+          <div className="text-right col-span-1">
+            <div className="text-gray-400">Expected Yield</div>
+            <div className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
+              {isPositive ? "+" : ""}
+              {financialImpact.percentChange.toFixed(1)}%
+            </div>
+          </div>
+
+          {/* Bottom: Current APY (Full Width, Left Aligned) */}
+          <div className="col-span-2 mt-1 pt-1 flex justify-start">
+            <div className="text-gray-400 mr-1">Current APY:</div>
+            <div className="text-sm font-semibold text-white">{financialImpact.percentChange.toFixed(1)}%</div>
+          </div>
+        </div>
+      ) : (
+        // Default (Trade/Risk/Opportunity) Layout
+        <div className="grid grid-cols-2 grid-rows-2 gap-x-2 gap-y-1">
+          {/* Top Left: Token Icon & Symbol */}
+          <div className="flex items-center row-span-1 col-span-1">
+            {tokenIconUrl ? (
+              <Image
+                src={tokenIconUrl}
+                alt={tokenSymbol || "Token"}
+                className="w-7 h-7 mr-2 rounded-full"
+                width={28}
+                height={28}
+              />
+            ) : (
+              <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
+            )}
+            {tokenSymbol && <span className="font-semibold text-sm text-gray-400">{tokenSymbol}</span>}
+          </div>
+
+          {/* Top Right: PNL (Label and value on same line, right aligned block)*/}
+          <div className="flex justify-end items-center row-span-1 col-span-1 text-right">
+            <span className="text-gray-400 mr-1">PNL:</span>
+            <span className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
+              {isPositive ? "+" : ""}
+              {financialImpact.percentChange.toFixed(1)}%
             </span>
-            <span className="font-semibold text-sm text-white">${projectedValue.toLocaleString()}</span>
+          </div>
+
+          {/* Bottom Left: Entry Price (Label and value close together) */}
+          <div className="flex justify-start items-center row-span-1 col-span-1 pt-1 mt-1">
+            <span className="text-gray-400 mr-1.5">Entry Price:</span>
+            <span className="font-semibold text-sm text-white">
+              $
+              {financialImpact.currentValue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          {/* Bottom Right: Current Price (Label and value close together) */}
+          <div className="flex justify-start items-center row-span-1 col-span-1 pt-1 mt-1 text-right">
+            <span className="text-gray-400 mr-1.5">Current Price:</span>
+            <span className="font-semibold text-sm text-white">
+              $
+              {financialImpact.projectedValue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           </div>
         </div>
-        <div
-          className={cn(
-            "px-1.5 py-0.5 rounded text-xs font-medium flex items-center",
-            isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400",
-          )}
-        >
-          {isPositive ? "+" : ""}
-          {financialImpact.percentChange}%
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -118,10 +177,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
   proposal,
   onRemove,
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
-  const [detailHeight, setDetailHeight] = useState<number | undefined>(undefined);
-  const detailRef = useRef<HTMLDivElement>(null);
 
   const { requestTransaction } = useAlphaWallet();
 
@@ -142,14 +198,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
       setUserPreferences(JSON.parse(savedPrefs));
     }
   }, [proposal.id]);
-
-  useEffect(() => {
-    if (expanded && detailRef.current) {
-      setDetailHeight(detailRef.current.scrollHeight);
-    } else {
-      setDetailHeight(0);
-    }
-  }, [expanded]);
 
   const handleAccept = async () => {
     setIsAccepting(true);
@@ -236,53 +284,50 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
         </div>
         <CardTitle className="text-base font-bold text-white">{proposal.title}</CardTitle>
         {proposal.financialImpact && (
-          <ProposalPnLVisualization financialImpact={proposal.financialImpact} proposalType={proposal.type} />
+          <ProposalPnLVisualization
+            financialImpact={proposal.financialImpact}
+            proposalType={proposal.type}
+            tokenIconUrl={
+              proposal.contractCall?.params.fromToken.symbol
+                ? `/tokens/${proposal.contractCall.params.fromToken.symbol.toUpperCase()}.png`
+                : undefined
+            }
+            tokenSymbol={proposal.contractCall?.params.fromToken.symbol?.toUpperCase()}
+          />
         )}
       </CardHeader>
 
-      <div
-        className="overflow-hidden transition-all duration-300 ease-in-out"
-        style={{ height: detailHeight === undefined ? undefined : `${detailHeight}px` }}
-      >
-        <div ref={detailRef} className="pb-4">
-          <CardContent className="p-0 pt-2">
-            <p className="text-sm text-gray-200 mb-3">{proposal.summary}</p>
-            <h4 className="text-sm font-semibold text-gray-100 mb-1">Reasons:</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 mb-3">
-              {proposal.reason.map((r, index) => (
-                <li key={index}>{r}</li>
-              ))}
-            </ul>
-            <h4 className="text-sm font-semibold text-gray-100 mb-1">Sources:</h4>
-            <div className="space-y-1 mb-4">
-              {proposal.sources.map((source, index) => (
-                <a
-                  key={index}
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-xs text-blue-300 hover:underline"
-                >
-                  {source.name}
-                  <ExternalLink className="ml-1 h-3 w-3" />
-                </a>
-              ))}
-            </div>
-            <AskAIButton proposal={proposal} />
-          </CardContent>
-        </div>
-      </div>
+      <CardContent className="p-0 pt-2">
+        <h4 className="text-sm font-semibold text-gray-100 mb-2">Reasons:</h4>
+        <ul className="list-none space-y-2 text-sm text-gray-300 mb-4">
+          {proposal.reason.map((reasonText, reasonIndex) => (
+            <li key={reasonIndex} className="flex items-start">
+              <span className="mr-2">&#8226;</span> {/* Bullet point */}
+              <div className="text-gray-400">
+                {" "}
+                {/* Changed reasonText color */}
+                {reasonText}
+                {proposal.sources[reasonIndex] && ( // Check if source exists for this reason
+                  <a
+                    href={proposal.sources[reasonIndex].url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-300 hover:underline ml-1.5"
+                  >
+                    <span className="text-xs">
+                      {" "}
+                      {/* Smaller text for citation */}[{reasonIndex + 1}]
+                    </span>
+                  </a>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+        <AskAIButton proposal={proposal} />
+      </CardContent>
 
-      <CardFooter className="p-0 flex flex-col items-stretch space-y-3 mt-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center justify-start text-sm font-medium text-white hover:bg-transparent hover:text-gray-300 px-0"
-        >
-          {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
-          {expanded ? "Hide Details" : "Show Details"}
-        </Button>
+      <CardFooter className="p-0 flex flex-col items-stretch space-y-2 mt-4">
         <div className="flex gap-2">
           <Button
             variant="default"

@@ -16,6 +16,7 @@ export * from "./proposals";
 export * from "./push_subscriptions";
 export * from "./sessions";
 export * from "./signals";
+export * from "./token_price_24h_ago_view";
 export * from "./token_price_history";
 export * from "./token_prices";
 export * from "./tokens";

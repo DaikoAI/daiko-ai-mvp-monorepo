@@ -11,10 +11,12 @@ const SwapCardComponent: React.FC = async () => {
     return <div>Please Login</div>;
   }
 
-  const tokens = await api.token.getAllTokens();
-  const portfolio = await api.portfolio.getUserPortfolio({
-    walletAddress: session.user.walletAddress,
-  });
+  const [tokens, portfolio] = await Promise.all([
+    api.token.getAllTokens(),
+    api.portfolio.getUserPortfolio({
+      walletAddress: session.user.walletAddress,
+    }),
+  ]);
 
   return (
     <Card className="w-full max-w-md">

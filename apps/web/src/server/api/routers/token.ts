@@ -1,14 +1,16 @@
+// "use server"; // This directive is likely causing the error and should be removed for TRPC router files.
+
 import {
-  db,
+  investmentsTable,
   tokenPricesTable,
   tokensTable,
-  usersTable,
-  userBalancesTable,
   transactionsTable,
-  investmentsTable,
+  userBalancesTable,
+  usersTable,
 } from "@daiko-ai/shared";
+import { TRPCError } from "@trpc/server";
 import BigNumber from "bignumber.js";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 
@@ -91,17 +93,14 @@ export const tokenRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       // If tokenAddresses is provided, get prices for specific tokens
       if (input.tokenAddresses && input.tokenAddresses.length > 0) {
-        const prices = [];
-        // We need to fetch prices one by one since "in" operator might not be directly supported
-        for (const address of input.tokenAddresses) {
-          const price = await ctx.db.query.tokenPricesTable.findFirst({
-            where: eq(tokenPricesTable.tokenAddress, address),
-            with: {
-              token: true,
-            },
-          });
-          if (price) prices.push(price);
-        }
+        const prices = await ctx.db.query.tokenPricesTable.findMany({
+          where: inArray(tokenPricesTable.tokenAddress, input.tokenAddresses),
+          with: {
+            token: true,
+          },
+          // Optional: Add orderBy if you need the latest price for each token
+          // orderBy: [desc(tokenPricesTable.lastUpdated)],
+        });
         return prices;
       }
 
@@ -165,154 +164,121 @@ export const tokenRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { fromToken, toToken, fromAmount, toAmount, walletAddress } = input;
 
-      try {
-        const user = await db.query.usersTable.findFirst({
-          where: eq(usersTable.walletAddress, walletAddress),
-        });
+      return ctx.db
+        .transaction(async (tx) => {
+          const user = await tx.query.usersTable.findFirst({
+            where: eq(usersTable.walletAddress, walletAddress),
+          });
 
-        if (!user) {
-          throw new TokenError("User not found", ErrorCodes.USER_NOT_FOUND);
-        }
+          if (!user) {
+            throw new TokenError("User not found", ErrorCodes.USER_NOT_FOUND);
+          }
 
-        const fromTokenInfo = await db.query.tokensTable.findFirst({
-          where: eq(tokensTable.symbol, fromToken),
-        });
-        const toTokenInfo = await db.query.tokensTable.findFirst({
-          where: eq(tokensTable.symbol, toToken),
-        });
+          const [fromTokenInfo, toTokenInfo] = await Promise.all([
+            tx.query.tokensTable.findFirst({ where: eq(tokensTable.symbol, fromToken) }),
+            tx.query.tokensTable.findFirst({ where: eq(tokensTable.symbol, toToken) }),
+          ]);
 
-        if (!fromTokenInfo || !toTokenInfo) {
-          throw new TokenError(`Token not found: ${!fromTokenInfo ? fromToken : toToken}`, ErrorCodes.TOKEN_NOT_FOUND);
-        }
+          if (!fromTokenInfo) {
+            throw new TokenError(`From token not found: ${fromToken}`, ErrorCodes.TOKEN_NOT_FOUND);
+          }
+          if (!toTokenInfo) {
+            throw new TokenError(`To token not found: ${toToken}`, ErrorCodes.TOKEN_NOT_FOUND);
+          }
 
-        // 数値の検証
-        const fromAmountBN = new BigNumber(fromAmount || "0");
-        const toAmountBN = new BigNumber(toAmount || "0");
+          const fromAmountBN = new BigNumber(fromAmount || "0");
+          const toAmountBN = new BigNumber(toAmount || "0");
 
-        if (fromAmountBN.isNaN() || toAmountBN.isNaN()) {
-          throw new TokenError("Invalid amount format", ErrorCodes.INVALID_AMOUNT);
-        }
+          if (
+            fromAmountBN.isNaN() ||
+            toAmountBN.isNaN() ||
+            fromAmountBN.isLessThanOrEqualTo(0) ||
+            toAmountBN.isLessThanOrEqualTo(0)
+          ) {
+            throw new TokenError("Invalid amount", ErrorCodes.INVALID_AMOUNT);
+          }
 
-        if (fromAmountBN.isLessThanOrEqualTo(0) || toAmountBN.isLessThanOrEqualTo(0)) {
-          throw new TokenError("Amount must be greater than 0", ErrorCodes.INVALID_AMOUNT);
-        }
+          const fromBalance = await tx.query.userBalancesTable.findFirst({
+            where: and(
+              eq(userBalancesTable.userId, user.id),
+              eq(userBalancesTable.tokenAddress, fromTokenInfo.address),
+            ),
+          });
 
-        // 1. Get current balance for the fromToken
-        const fromBalanceRecord = await db.query.userBalancesTable.findFirst({
-          where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, fromTokenInfo.address)),
-        });
+          if (!fromBalance || new BigNumber(fromBalance.balance).isLessThan(fromAmountBN)) {
+            throw new TokenError("Insufficient balance for fromToken", ErrorCodes.INSUFFICIENT_BALANCE);
+          }
 
-        if (!fromBalanceRecord) {
-          throw new TokenError(`No balance record found for ${fromToken}`, ErrorCodes.BALANCE_NOT_FOUND);
-        }
+          // Record the transaction
+          await tx.insert(transactionsTable).values({
+            userId: user.id,
+            fromTokenAddress: fromTokenInfo.address,
+            toTokenAddress: toTokenInfo.address,
+            amountFrom: fromAmountBN.toString(),
+            amountTo: toAmountBN.toString(),
+            transactionType: "swap",
+          });
 
-        const currentFromBalance = new BigNumber(fromBalanceRecord.balance || "0");
+          // Update fromToken balance
+          const newFromBalance = new BigNumber(fromBalance.balance).minus(fromAmountBN);
+          await tx
+            .update(userBalancesTable)
+            .set({ balance: newFromBalance.toString() })
+            .where(eq(userBalancesTable.id, fromBalance.id));
 
-        // 2. Validate balance
-        if (currentFromBalance.isLessThan(fromAmountBN)) {
-          throw new TokenError(
-            `Insufficient balance for ${fromToken}. Required: ${fromAmount}, Available: ${currentFromBalance.toString()}`,
-            ErrorCodes.INSUFFICIENT_BALANCE,
-          );
-        }
-
-        // 3. Decrement fromToken balance
-        const newFromBalance = currentFromBalance.minus(fromAmountBN).toString();
-        await db
-          .update(userBalancesTable)
-          .set({ balance: newFromBalance, updatedAt: new Date() })
-          .where(eq(userBalancesTable.id, fromBalanceRecord.id));
-
-        // 4. Record transaction
-        const transaction = (
-          await db
-            .insert(transactionsTable)
-            .values({
-              userId: user.id,
-              transactionType: "swap",
-              fromTokenAddress: fromTokenInfo.address,
-              toTokenAddress: toTokenInfo.address,
-              amountFrom: fromAmountBN.toString(),
-              amountTo: toAmountBN.toString(),
-              details: {
-                ...input,
-                status: "pending",
-              },
-              createdAt: new Date(),
-            })
-            .returning()
-        )[0];
-
-        if (!transaction) {
-          throw new TokenError("Failed to create transaction record", ErrorCodes.TRANSACTION_FAILED);
-        }
-
-        try {
-          // 5. Increment toToken balance (Upsert)
-          const toBalanceRecord = await db.query.userBalancesTable.findFirst({
+          // Update toToken balance
+          let toBalance = await tx.query.userBalancesTable.findFirst({
             where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, toTokenInfo.address)),
           });
 
-          if (toBalanceRecord) {
-            const currentToBalance = new BigNumber(toBalanceRecord.balance || "0");
-            const newToBalance = currentToBalance.plus(toAmountBN).toString();
-            await db
+          let finalToTokenBalance;
+          if (toBalance) {
+            const newToBalance = new BigNumber(toBalance.balance).plus(toAmountBN);
+            await tx
               .update(userBalancesTable)
-              .set({ balance: newToBalance, updatedAt: new Date() })
-              .where(eq(userBalancesTable.id, toBalanceRecord.id));
+              .set({ balance: newToBalance.toString() })
+              .where(eq(userBalancesTable.id, toBalance.id));
+            finalToTokenBalance = newToBalance.toString();
           } else {
-            await db.insert(userBalancesTable).values({
+            await tx.insert(userBalancesTable).values({
               userId: user.id,
               tokenAddress: toTokenInfo.address,
               balance: toAmountBN.toString(),
-              updatedAt: new Date(),
             });
+            finalToTokenBalance = toAmountBN.toString();
           }
-
-          // 6. Update transaction status
-          await db
-            .update(transactionsTable)
-            .set({
-              details: {
-                ...input,
-                status: "completed",
-              },
-            })
-            .where(eq(transactionsTable.id, transaction.id));
 
           return {
             success: true,
+            message: "Transfer successful",
             txHash: `sim-tx-${Date.now()}`,
+            transaction: {
+              fromToken: fromTokenInfo.symbol,
+              toToken: toTokenInfo.symbol,
+              fromAmount: fromAmountBN.toString(),
+              toAmount: toAmountBN.toString(),
+            },
+            balances: {
+              fromTokenBalance: newFromBalance.toString(),
+              toTokenBalance: finalToTokenBalance,
+            },
           };
-        } catch (error) {
-          // Compensating transaction: Revert fromToken balance
-          await db
-            .update(userBalancesTable)
-            .set({ balance: currentFromBalance.toString(), updatedAt: new Date() })
-            .where(eq(userBalancesTable.id, fromBalanceRecord.id));
-
-          // Update transaction status
-          await db
-            .update(transactionsTable)
-            .set({
-              details: {
-                ...input,
-                status: "failed",
-                error: error instanceof Error ? error.message : "Unknown error",
-                errorCode: error instanceof TokenError ? error.code : ErrorCodes.TRANSACTION_FAILED,
-              },
-            })
-            .where(eq(transactionsTable.id, transaction.id));
-
-          throw error;
-        }
-      } catch (error) {
-        console.error("Transfer failed:", error);
-        if (error instanceof TokenError) {
-          throw error;
-        }
-        throw new TokenError(error instanceof Error ? error.message : "Transfer failed", ErrorCodes.TRANSACTION_FAILED);
-      }
+        })
+        .catch((error) => {
+          // Catch block for the transaction
+          console.error("Transfer failed within transaction:", error);
+          if (error instanceof TokenError) {
+            throw new TRPCError({
+              code: "BAD_REQUEST", // Or appropriate TRPC error code based on TokenError.code
+              message: error.message,
+              cause: error,
+            });
+          }
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "An unexpected error occurred during the transfer.",
+          });
+        });
     }),
 
   stake: publicProcedure
@@ -327,16 +293,17 @@ export const tokenRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { fromToken: baseTokenSymbol, toToken: lstTokenSymbol, amount, walletAddress } = input;
 
-      const user = await db.query.usersTable.findFirst({
+      const user = await ctx.db.query.usersTable.findFirst({
         where: eq(usersTable.walletAddress, walletAddress),
       });
 
+      // Add user existence check here
       if (!user) {
-        throw new Error("User not found");
+        throw new TokenError("User not found for staking", ErrorCodes.USER_NOT_FOUND);
       }
 
       // ベーストークン（例：SOL）の情報を取得
-      const baseToken = await db.query.tokensTable.findFirst({
+      const baseToken = await ctx.db.query.tokensTable.findFirst({
         where: eq(tokensTable.symbol, baseTokenSymbol),
       });
 
@@ -345,7 +312,7 @@ export const tokenRouter = createTRPCRouter({
       }
 
       // LSTトークン（例：jupSOL）の情報を取得
-      const lstToken = await db.query.tokensTable.findFirst({
+      const lstToken = await ctx.db.query.tokensTable.findFirst({
         where: and(eq(tokensTable.symbol, lstTokenSymbol), eq(tokensTable.type, "liquid_staking")),
       });
 
@@ -366,7 +333,7 @@ export const tokenRouter = createTRPCRouter({
 
       try {
         // 1. ベーストークンの残高を確認
-        const baseBalanceRecord = await db.query.userBalancesTable.findFirst({
+        const baseBalanceRecord = await ctx.db.query.userBalancesTable.findFirst({
           where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, baseToken.address)),
         });
 
@@ -383,7 +350,7 @@ export const tokenRouter = createTRPCRouter({
 
         // 3. トランザクションを記録
         const transaction = (
-          await db
+          await ctx.db
             .insert(transactionsTable)
             .values({
               userId: user.id,
@@ -408,13 +375,13 @@ export const tokenRouter = createTRPCRouter({
         try {
           // 4. ベーストークンの残高を減少
           const newBaseBalance = currentBaseBalance.minus(amountBN).toString();
-          await db
+          await ctx.db
             .update(userBalancesTable)
             .set({ balance: newBaseBalance, updatedAt: new Date() })
             .where(eq(userBalancesTable.id, baseBalanceRecord.id));
 
           // 5. LSTの残高を取得または作成
-          let lstBalanceRecord = await db.query.userBalancesTable.findFirst({
+          let lstBalanceRecord = await ctx.db.query.userBalancesTable.findFirst({
             where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, lstToken.address)),
           });
 
@@ -422,13 +389,13 @@ export const tokenRouter = createTRPCRouter({
             // 既存のLST残高を更新
             const currentLstBalance = new BigNumber(lstBalanceRecord.balance || "0");
             const newLstBalance = currentLstBalance.plus(amountBN).toString();
-            await db
+            await ctx.db
               .update(userBalancesTable)
               .set({ balance: newLstBalance, updatedAt: new Date() })
               .where(eq(userBalancesTable.id, lstBalanceRecord.id));
           } else {
             // 新しいLST残高レコードを作成
-            await db.insert(userBalancesTable).values({
+            await ctx.db.insert(userBalancesTable).values({
               userId: user.id,
               tokenAddress: lstToken.address,
               balance: amountBN.toString(),
@@ -437,7 +404,7 @@ export const tokenRouter = createTRPCRouter({
           }
 
           // 6. 投資記録を作成
-          await db.insert(investmentsTable).values({
+          await ctx.db.insert(investmentsTable).values({
             userId: user.id,
             tokenAddress: baseToken.address,
             actionType: "staking",
@@ -450,7 +417,7 @@ export const tokenRouter = createTRPCRouter({
           });
 
           // 7. トランザクションステータスを更新
-          await db
+          await ctx.db
             .update(transactionsTable)
             .set({
               details: {
@@ -466,7 +433,7 @@ export const tokenRouter = createTRPCRouter({
           };
         } catch (error) {
           // トランザクションステータスを更新
-          await db
+          await ctx.db
             .update(transactionsTable)
             .set({
               details: {

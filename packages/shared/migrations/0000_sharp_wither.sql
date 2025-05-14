@@ -1,4 +1,6 @@
 CREATE TYPE "public"."role" AS ENUM('user', 'assistant', 'system');--> statement-breakpoint
+CREATE TYPE "public"."sentiment_type" AS ENUM('positive', 'negative', 'neutral');--> statement-breakpoint
+CREATE TYPE "public"."suggestion_type" AS ENUM('buy', 'sell', 'hold', 'stake', 'close_position');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"user_id" varchar(255) NOT NULL,
 	"type" varchar(255) NOT NULL,
@@ -25,6 +27,12 @@ CREATE TABLE "authenticators" (
 	"transports" varchar(255),
 	CONSTRAINT "authenticators_user_id_credential_id_pk" PRIMARY KEY("user_id","credential_id"),
 	CONSTRAINT "authenticators_credential_id_unique" UNIQUE("credential_id")
+);
+--> statement-breakpoint
+CREATE TABLE "cast_keywords" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"cast_id" integer NOT NULL,
+	"keyword_id" integer NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "chat_messages" (
@@ -157,7 +165,7 @@ CREATE TABLE "portfolio_snapshots" (
 CREATE TABLE "proposals" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"trigger_event_id" varchar,
-	"user_id" varchar,
+	"user_id" varchar NOT NULL,
 	"title" text NOT NULL,
 	"summary" text NOT NULL,
 	"reason" json NOT NULL,
@@ -189,6 +197,20 @@ CREATE TABLE "sessions" (
 	"session_token" varchar(255) PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,
 	"expires" timestamp with time zone NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "signals" (
+	"id" varchar(255) PRIMARY KEY NOT NULL,
+	"token_address" varchar(255) NOT NULL,
+	"detected_at" timestamp DEFAULT now() NOT NULL,
+	"sources" jsonb NOT NULL,
+	"sentiment_type" "sentiment_type" NOT NULL,
+	"suggestion_type" "suggestion_type" NOT NULL,
+	"confidence" real NOT NULL,
+	"rationale_summary" text NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "token_price_history" (
@@ -231,8 +253,12 @@ CREATE TABLE "transactions" (
 --> statement-breakpoint
 CREATE TABLE "tweets" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"x_account_id" varchar NOT NULL,
+	"author_id" varchar NOT NULL,
+	"url" text NOT NULL,
 	"content" text NOT NULL,
+	"retweet_count" integer DEFAULT 0 NOT NULL,
+	"reply_count" integer DEFAULT 0 NOT NULL,
+	"like_count" integer DEFAULT 0 NOT NULL,
 	"tweet_time" timestamp NOT NULL,
 	"metadata" json,
 	"created_at" timestamp DEFAULT NOW() NOT NULL,
@@ -273,7 +299,7 @@ CREATE TABLE "x_accounts" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"display_name" text,
 	"profile_image_url" text,
-	"last_tweet_id" varchar,
+	"last_tweet_updated_at" timestamp DEFAULT now(),
 	"user_ids" json,
 	"created_at" timestamp DEFAULT NOW() NOT NULL,
 	"updated_at" timestamp DEFAULT NOW() NOT NULL
@@ -281,6 +307,8 @@ CREATE TABLE "x_accounts" (
 --> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "authenticators" ADD CONSTRAINT "authenticators_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cast_keywords" ADD CONSTRAINT "cast_keywords_cast_id_farcaster_casts_id_fk" FOREIGN KEY ("cast_id") REFERENCES "public"."farcaster_casts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cast_keywords" ADD CONSTRAINT "cast_keywords_keyword_id_farcaster_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."farcaster_keywords"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_thread_id_chat_threads_id_fk" FOREIGN KEY ("thread_id") REFERENCES "public"."chat_threads"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_threads" ADD CONSTRAINT "chat_threads_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "funding_rates" ADD CONSTRAINT "funding_rates_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -290,6 +318,7 @@ ALTER TABLE "investments" ADD CONSTRAINT "investments_token_address_tokens_addre
 ALTER TABLE "perp_positions" ADD CONSTRAINT "perp_positions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "perp_positions" ADD CONSTRAINT "perp_positions_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "portfolio_snapshots" ADD CONSTRAINT "portfolio_snapshots_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "proposals" ADD CONSTRAINT "proposals_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "push_subscriptions" ADD CONSTRAINT "push_subscriptions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "token_price_history" ADD CONSTRAINT "token_price_history_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -297,7 +326,7 @@ ALTER TABLE "token_prices" ADD CONSTRAINT "token_prices_token_address_tokens_add
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_from_token_address_tokens_address_fk" FOREIGN KEY ("from_token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_to_token_address_tokens_address_fk" FOREIGN KEY ("to_token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "tweets" ADD CONSTRAINT "tweets_x_account_id_x_accounts_id_fk" FOREIGN KEY ("x_account_id") REFERENCES "public"."x_accounts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tweets" ADD CONSTRAINT "tweets_author_id_x_accounts_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."x_accounts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_balances" ADD CONSTRAINT "user_balances_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_balances" ADD CONSTRAINT "user_balances_token_address_tokens_address_fk" FOREIGN KEY ("token_address") REFERENCES "public"."tokens"("address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_user_id_idx" ON "accounts" USING btree ("user_id");--> statement-breakpoint
@@ -306,7 +335,6 @@ CREATE INDEX "idx_chat_messages_thread" ON "chat_messages" USING btree ("thread_
 CREATE INDEX "idx_chat_threads_user" ON "chat_threads" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_chat_threads_created" ON "chat_threads" USING btree ("created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "farcaster_casts_hash_idx" ON "farcaster_casts" USING btree ("hash");--> statement-breakpoint
-CREATE UNIQUE INDEX "farcaster_casts_author_idx" ON "farcaster_casts" USING btree ("author");--> statement-breakpoint
 CREATE UNIQUE INDEX "farcaster_users_fid_idx" ON "farcaster_users" USING btree ("fid");--> statement-breakpoint
 CREATE UNIQUE INDEX "farcaster_users_username_idx" ON "farcaster_users" USING btree ("username");--> statement-breakpoint
 CREATE INDEX "idx_funding_rates_token" ON "funding_rates" USING btree ("token_address");--> statement-breakpoint
@@ -337,4 +365,29 @@ CREATE INDEX "idx_transactions_to_token" ON "transactions" USING btree ("to_toke
 CREATE UNIQUE INDEX "idx_user_balances_user_token" ON "user_balances" USING btree ("user_id","token_address");--> statement-breakpoint
 CREATE INDEX "idx_user_balances_token_address" ON "user_balances" USING btree ("token_address");--> statement-breakpoint
 CREATE INDEX "idx_users_email" ON "users" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "idx_users_wallet_address" ON "users" USING btree ("wallet_address");
+CREATE INDEX "idx_users_wallet_address" ON "users" USING btree ("wallet_address");--> statement-breakpoint
+CREATE MATERIALIZED VIEW "public"."token_price_24h_ago_view" AS (
+  WITH ranked_prices AS (
+    SELECT
+      h.token_address,
+      h.price_usd,
+      h.timestamp,
+      ROW_NUMBER() OVER (
+        PARTITION BY h.token_address
+        ORDER BY ABS(EXTRACT(EPOCH FROM (NOW() - INTERVAL '24 hours')) - EXTRACT(EPOCH FROM h.timestamp)) ASC
+      ) AS rn
+    FROM
+      "token_price_history" h
+    WHERE
+      h.timestamp <= NOW() - INTERVAL '23 hours'
+      AND h.timestamp >= NOW() - INTERVAL '25 hours'
+  )
+  SELECT
+    rp.token_address,
+    rp.price_usd,
+    rp.timestamp
+  FROM
+    ranked_prices rp
+  WHERE
+    rp.rn = 1
+);

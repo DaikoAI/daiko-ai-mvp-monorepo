@@ -2,13 +2,13 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import {
   perpPositionsTable,
   portfolioSnapshots,
-  tokenPricesTable,
+  tokenPrice24hAgoView,
   userBalancesTable,
   usersTable,
+  type NeonHttpDatabase,
 } from "@daiko-ai/shared";
-import { tokenPriceHistory, type NeonHttpDatabase } from "@daiko-ai/shared";
 import BigNumber from "bignumber.js";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
 import { z } from "zod";
 
@@ -22,36 +22,23 @@ type TokenPrice = {
 
 // 24時間前の価格を取得する関数
 async function get24hPriceHistory(db: NeonHttpDatabase, tokenAddresses: string[]): Promise<Map<string, string>> {
-  const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-  // サブクエリで各トークンの24時間前に最も近い価格を取得
-  const priceHistory = await db
-    .select({
-      token_address: tokenPriceHistory.token_address,
-      price_usd: tokenPriceHistory.price_usd,
-      timestamp: tokenPriceHistory.timestamp,
-    })
-    .from(tokenPriceHistory)
-    .where(
-      and(
-        inArray(tokenPriceHistory.token_address, tokenAddresses),
-        lte(tokenPriceHistory.timestamp, twentyFourHoursAgo),
-      ),
-    )
-    .orderBy((fields) => [desc(fields.timestamp)]);
-
-  // 各トークンの最初の（24時間前に最も近い）価格のみを使用
-  const priceMap = new Map<string, string>();
-  const seenTokens = new Set<string>();
-
-  for (const record of priceHistory) {
-    if (!seenTokens.has(record.token_address)) {
-      priceMap.set(record.token_address, record.price_usd);
-      seenTokens.add(record.token_address);
-    }
+  if (tokenAddresses.length === 0) {
+    return new Map();
   }
 
+  // Query the materialized view
+  const priceHistoryEntries = await db
+    .select({
+      tokenAddress: tokenPrice24hAgoView.tokenAddress,
+      priceUsd: tokenPrice24hAgoView.priceUsd,
+    })
+    .from(tokenPrice24hAgoView)
+    .where(inArray(tokenPrice24hAgoView.tokenAddress, tokenAddresses));
+
+  const priceMap = new Map<string, string>();
+  for (const entry of priceHistoryEntries) {
+    priceMap.set(entry.tokenAddress, entry.priceUsd);
+  }
   return priceMap;
 }
 
@@ -103,60 +90,55 @@ export const portfolioRouter = createTRPCRouter({
 
       // TODO: If forceRefresh is true, update token prices from external API
 
-      let prices: TokenPrice[] = [];
+      // Fetch current and 24h-ago prices in parallel
+      let priceMap: Record<string, string> = {};
+      let oldPrices: Map<string, string> = new Map();
       if (tokenAddresses.length > 0) {
-        // Fetch prices for all relevant token addresses in a single query
-        prices = await ctx.db.query.tokenPricesTable.findMany({
-          where: inArray(tokenPricesTable.tokenAddress, tokenAddresses),
-          // Optional: Add orderBy if you need the latest price for each token
-          // orderBy: (table, { desc }) => [desc(table.timestamp)],
-        });
+        const [currentResult, priceHistoryMap] = await Promise.all([
+          ctx.db.execute(sql`
+            SELECT DISTINCT ON (token_address) token_address, price_usd
+            FROM token_prices
+            WHERE token_address IN (${sql.join(tokenAddresses, sql`,`)})
+            ORDER BY token_address, last_updated DESC
+          `),
+          get24hPriceHistory(ctx.db, tokenAddresses),
+        ]);
+        const currentRows = (currentResult.rows ?? []) as Array<{ token_address: string; price_usd: string }>;
+        for (const row of currentRows) {
+          priceMap[row.token_address] = row.price_usd;
+        }
+        oldPrices = priceHistoryMap;
       }
-
-      // Create a price map for easy lookup
-      const priceMap = prices.reduce(
-        (map, price) => {
-          map[price.tokenAddress] = price.priceUsd;
-          return map;
-        },
-        {} as Record<string, string>,
-      );
 
       // Calculate total value and build portfolio
       let totalValue = new BigNumber(0);
-      const portfolio = await Promise.all(
-        balances.map(async (balance) => {
-          const tokenPrice = priceMap[balance.tokenAddress] || "0";
-          const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
+      const portfolio = balances.map((balance) => {
+        const tokenPrice = priceMap[balance.tokenAddress] || "0";
+        const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
 
-          // Add to total
-          totalValue = totalValue.plus(valueUsd);
+        // Add to total
+        totalValue = totalValue.plus(valueUsd);
 
-          return {
-            symbol: balance.token.symbol,
-            tokenAddress: balance.tokenAddress,
-            balance: balance.balance,
-            priceUsd: tokenPrice,
-            valueUsd: valueUsd,
-            priceChange24h: "0",
-            iconUrl: balance.token.iconUrl,
-          };
-        }),
-      );
+        return {
+          symbol: balance.token.symbol,
+          tokenAddress: balance.tokenAddress,
+          balance: balance.balance,
+          priceUsd: tokenPrice,
+          valueUsd: valueUsd,
+          priceChange24h: "0", // Will be calculated next
+          iconUrl: balance.token.iconUrl,
+        };
+      });
 
       // 24時間の価格変動を計算
-      const oldPrices = await get24hPriceHistory(ctx.db, tokenAddresses);
-
-      const tokensWithPriceChange = await Promise.all(
-        portfolio.map(async (token) => {
-          const oldPrice = oldPrices.get(token.tokenAddress);
-          const priceChange = oldPrice ? calculatePriceChange(token.priceUsd, oldPrice) : "0";
-          return {
-            ...token,
-            priceChange24h: priceChange,
-          };
-        }),
-      );
+      const tokensWithPriceChange = portfolio.map((token) => {
+        const oldPrice = oldPrices.get(token.tokenAddress);
+        const priceChange = oldPrice ? calculatePriceChange(token.priceUsd, oldPrice) : "0";
+        return {
+          ...token,
+          priceChange24h: priceChange,
+        };
+      });
 
       // Get open perp positions
       const perpPositions = await ctx.db.query.perpPositionsTable.findMany({
