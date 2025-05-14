@@ -1,5 +1,7 @@
 "use client";
 
+import { StakingIcon } from "@/components/icon/StakingIcon";
+import { TradeIcon } from "@/components/icon/TradeIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAlphaWallet } from "@/features/alphaWallet/AlphaWalletProvider";
@@ -9,36 +11,35 @@ import { cn } from "@/utils";
 import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
 import { sendGAEvent } from "@next/third-parties/google";
-import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, ExternalLink, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Bot, Check, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AskAIButton } from "./ask-ai-button";
-
 // Type styles - Adjusted for Glassmorphism & Figma
 const typeStyles = {
   trade: {
-    icon: <Bot size={16} className="text-blue-300" />,
+    icon: <TradeIcon size={16} className="text-blue-400" />,
     label: "Trade",
-    bgColor: "bg-gradient-to-r from-blue-500/50 to-white/20",
-    textColor: "text-blue-300",
+    bgColor: "bg-gradient-to-r from-blue-400/30 to-white/20",
+    textColor: "text-blue-400",
   },
   stake: {
-    icon: <Plus size={16} className="text-purple-300" />,
+    icon: <StakingIcon size={16} className="text-purple-400" />,
     label: "Staking",
-    bgColor: "bg-gradient-to-r from-purple-500/50 to-white/20",
-    textColor: "text-purple-300",
+    bgColor: "bg-gradient-to-r from-purple-400/30 to-white/20",
+    textColor: "text-purple-400",
   },
   risk: {
-    icon: <AlertCircle size={16} className="text-red-400" />,
+    icon: <AlertCircle size={16} className="text-red-500" />,
     label: "Risk Alert",
-    bgColor: "bg-gradient-to-r from-red-600/50 to-white/20",
-    textColor: "text-red-400",
+    bgColor: "bg-gradient-to-r from-red-500/30 to-white/20",
+    textColor: "text-red-500",
   },
   opportunity: {
-    icon: <Bot size={16} className="text-green-400" />,
+    icon: <Bot size={16} className="text-green-500" />,
     label: "Opportunity",
-    bgColor: "bg-gradient-to-r from-green-500/50 to-white/20",
-    textColor: "text-green-400",
+    bgColor: "bg-gradient-to-r from-green-500/30 to-white/20",
+    textColor: "text-green-500",
   },
 };
 
@@ -118,10 +119,7 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
   proposal,
   onRemove,
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
-  const [detailHeight, setDetailHeight] = useState<number | undefined>(undefined);
-  const detailRef = useRef<HTMLDivElement>(null);
 
   const { requestTransaction } = useAlphaWallet();
 
@@ -142,14 +140,6 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
       setUserPreferences(JSON.parse(savedPrefs));
     }
   }, [proposal.id]);
-
-  useEffect(() => {
-    if (expanded && detailRef.current) {
-      setDetailHeight(detailRef.current.scrollHeight);
-    } else {
-      setDetailHeight(0);
-    }
-  }, [expanded]);
 
   const handleAccept = async () => {
     setIsAccepting(true);
@@ -240,49 +230,33 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
         )}
       </CardHeader>
 
-      <div
-        className="overflow-hidden transition-all duration-300 ease-in-out"
-        style={{ height: detailHeight === undefined ? undefined : `${detailHeight}px` }}
-      >
-        <div ref={detailRef} className="pb-4">
-          <CardContent className="p-0 pt-2">
-            <p className="text-sm text-gray-200 mb-3">{proposal.summary}</p>
-            <h4 className="text-sm font-semibold text-gray-100 mb-1">Reasons:</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 mb-3">
-              {proposal.reason.map((r, index) => (
-                <li key={index}>{r}</li>
-              ))}
-            </ul>
-            <h4 className="text-sm font-semibold text-gray-100 mb-1">Sources:</h4>
-            <div className="space-y-1 mb-4">
-              {proposal.sources.map((source, index) => (
-                <a
-                  key={index}
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-xs text-blue-300 hover:underline"
-                >
-                  {source.name}
-                  <ExternalLink className="ml-1 h-3 w-3" />
-                </a>
-              ))}
-            </div>
-            <AskAIButton proposal={proposal} />
-          </CardContent>
-        </div>
-      </div>
+      <CardContent className="p-0 pt-2">
+        <h4 className="text-sm font-semibold text-gray-100 mb-2">Reasons:</h4>
+        <ul className="list-none space-y-2 text-sm text-gray-300 mb-4">
+          {proposal.reason.map((reasonText, reasonIndex) => (
+            <li key={reasonIndex} className="flex items-start">
+              <span className="mr-2">&#8226;</span> {/* Bullet point */}
+              <div>
+                {reasonText}
+                {proposal.sources.map((source, sourceIndex) => (
+                  <a
+                    key={sourceIndex}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-300 hover:underline ml-1.5"
+                  >
+                    [{sourceIndex + 1}]
+                  </a>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+        <AskAIButton proposal={proposal} />
+      </CardContent>
 
-      <CardFooter className="p-0 flex flex-col items-stretch space-y-3 mt-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center justify-start text-sm font-medium text-white hover:bg-transparent hover:text-gray-300 px-0"
-        >
-          {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
-          {expanded ? "Hide Details" : "Show Details"}
-        </Button>
+      <CardFooter className="p-0 flex flex-col items-stretch space-y-2 mt-4">
         <div className="flex gap-2">
           <Button
             variant="default"

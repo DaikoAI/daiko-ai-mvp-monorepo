@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { api, type RouterOutputs } from "@/trpc/react";
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import bg from "/public/rainbow-bg.jpg";
 
 export const AskAIButton = ({ proposal }: { proposal: RouterOutputs["proposal"]["getProposals"][number] }) => {
   const router = useRouter();
@@ -23,12 +24,14 @@ export const AskAIButton = ({ proposal }: { proposal: RouterOutputs["proposal"][
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={handleAskAI}
-      className="w-full justify-center items-center bg-white text-black font-bold rounded-full h-9 text-base hover:bg-gray-200 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)]"
+      className="relative flex w-full items-center justify-center rounded-full py-2 px-4 text-base font-bold text-gray-800 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)] overflow-hidden h-10 hover:opacity-90 transition-opacity"
+      style={{
+        background: `url(${bg.src}) center/cover no-repeat`,
+      }}
     >
-      Ask AI for More Details
-      <ChevronRight className="ml-1 h-4 w-4" />
+      <span className="relative z-10">Ask AI</span>
+      <ChevronRight className="ml-2" size={20} strokeWidth={2.4} />
     </Button>
   );
 };
