@@ -12,6 +12,7 @@ import { getTimeRemaining } from "@/utils/date";
 import type { ProposalSelect } from "@daiko-ai/shared";
 import { sendGAEvent } from "@next/third-parties/google";
 import { AlertCircle, Bot, Check, Loader2, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AskAIButton } from "./ask-ai-button";
@@ -67,7 +68,13 @@ const ProposalPnLVisualization: React.FC<{
           {/* Top Left: Token Icon & Symbol */}
           <div className="flex items-center col-span-1">
             {tokenIconUrl ? (
-              <img src={tokenIconUrl} alt={tokenSymbol || "Token"} className="w-7 h-7 mr-2 rounded-full" />
+              <Image
+                src={tokenIconUrl}
+                alt={tokenSymbol || "Token"}
+                className="w-7 h-7 mr-2 rounded-full"
+                width={28}
+                height={28}
+              />
             ) : (
               <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
             )}
@@ -84,7 +91,7 @@ const ProposalPnLVisualization: React.FC<{
           </div>
 
           {/* Bottom: Current APY (Full Width) */}
-          <div className="col-span-2 mt-1 pt-1 border-t border-white/10 flex justify-center">
+          <div className="col-span-2 mt-1 pt-1 flex justify-center">
             <div className="text-gray-400 mr-1">Current APY:</div>
             <div className="text-sm font-semibold text-white">{financialImpact.percentChange.toFixed(1)}%</div>
           </div>
@@ -95,7 +102,13 @@ const ProposalPnLVisualization: React.FC<{
           {/* Top Left: Token Icon & Symbol */}
           <div className="flex items-center row-span-1 col-span-1">
             {tokenIconUrl ? (
-              <img src={tokenIconUrl} alt={tokenSymbol || "Token"} className="w-7 h-7 mr-2 rounded-full" />
+              <Image
+                src={tokenIconUrl}
+                alt={tokenSymbol || "Token"}
+                className="w-7 h-7 mr-2 rounded-full"
+                width={28}
+                height={28}
+              />
             ) : (
               <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
             )}
@@ -112,7 +125,7 @@ const ProposalPnLVisualization: React.FC<{
           </div>
 
           {/* Bottom Left: Entry Price */}
-          <div className="flex justify-between items-center row-span-1 col-span-1 pt-1 border-t border-white/10 mt-1">
+          <div className="flex justify-between items-center row-span-1 col-span-1 pt-1 mt-1">
             <span className="text-gray-400">Entry Price</span>
             <span className="font-semibold text-sm text-white">
               $

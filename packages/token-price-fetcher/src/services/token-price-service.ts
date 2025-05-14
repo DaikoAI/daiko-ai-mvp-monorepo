@@ -1,4 +1,4 @@
-import { TokenSelect, db, tokenPriceHistory, tokenPricesTable } from "@daiko-ai/shared";
+import { TokenSelect, db, tokenPrice24hAgoView, tokenPriceHistory, tokenPricesTable } from "@daiko-ai/shared";
 import { sql } from "drizzle-orm";
 
 // Jupiterの価格レスポンスの型定義
@@ -29,6 +29,7 @@ interface TokenPriceHistoryInsert {
 
 export class TokenPriceService {
   private jupiterApiUrl: string;
+  private lastRefreshDate: Date | null = null; // Store the date of the last refresh
 
   constructor() {
     this.jupiterApiUrl = process.env.JUPITER_API_URL || "https://api.jup.ag/price/v2";
@@ -168,6 +169,63 @@ export class TokenPriceService {
     } catch (error) {
       console.error(`トークン ${tokenAddress} の価格取得中にエラーが発生しました:`, error);
       return null;
+    }
+  }
+
+  private shouldRefreshTokenPriceView(): boolean {
+    // Made synchronous
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Check if current time is between 00:00 and 00:05
+    const isRefreshWindow = currentHour === 0 && currentMinute >= 0 && currentMinute <= 5;
+
+    if (!isRefreshWindow) {
+      // console.log(`[TokenPriceService] Not in refresh window (00:00-00:05). Current time: ${now.toLocaleTimeString()}`);
+      return false;
+    }
+
+    // If in the refresh window, check if already refreshed today
+    if (this.lastRefreshDate) {
+      const lastRefreshDay =
+        this.lastRefreshDate.getFullYear() * 10000 +
+        (this.lastRefreshDate.getMonth() + 1) * 100 +
+        this.lastRefreshDate.getDate();
+      const currentDay = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
+      if (lastRefreshDay === currentDay) {
+        console.log(`[TokenPriceService] Materialized view already refreshed today (${now.toLocaleDateString()}).`);
+        return false;
+      }
+    }
+    // console.log(`[TokenPriceService] Eligible for refresh. Time: ${now.toLocaleTimeString()}, Last refresh: ${this.lastRefreshDate}`);
+    return true; // Eligible for refresh
+  }
+
+  public async refreshMaterializedViewsIfNeeded(): Promise<void> {
+    if (this.shouldRefreshTokenPriceView()) {
+      // No await needed if shouldRefreshTokenPriceView is sync
+      console.log(
+        `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' のリフレッシュを開始します。`,
+      );
+      try {
+        await db.refreshMaterializedView(tokenPrice24hAgoView).concurrently();
+        console.log(
+          `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' のリフレッシュに成功しました。`,
+        );
+        this.lastRefreshDate = new Date(); // Record the time of this refresh
+      } catch (refreshError) {
+        console.error(
+          `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' のリフレッシュ中にエラーが発生しました:`,
+          refreshError,
+        );
+      }
+    } else {
+      // Optional: Log why refresh was skipped, e.g., not in window or already refreshed today
+      // console.log(
+      //   `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' refresh skipped.`
+      // );
     }
   }
 }

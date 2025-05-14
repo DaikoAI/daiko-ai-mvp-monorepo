@@ -1,5 +1,5 @@
 {
-  "id": "dfb8c1b8-1bf4-463d-be3e-b134cb880808",
+  "id": "6f216906-4b67-421b-92f9-344f4c269768",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -224,6 +224,64 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cast_keywords": {
+      "name": "cast_keywords",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cast_id": {
+          "name": "cast_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keyword_id": {
+          "name": "keyword_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cast_keywords_cast_id_farcaster_casts_id_fk": {
+          "name": "cast_keywords_cast_id_farcaster_casts_id_fk",
+          "tableFrom": "cast_keywords",
+          "tableTo": "farcaster_casts",
+          "columnsFrom": [
+            "cast_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cast_keywords_keyword_id_farcaster_keywords_id_fk": {
+          "name": "cast_keywords_keyword_id_farcaster_keywords_id_fk",
+          "tableFrom": "cast_keywords",
+          "tableTo": "farcaster_keywords",
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -479,21 +537,6 @@
           "columns": [
             {
               "expression": "hash",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "farcaster_casts_author_idx": {
-          "name": "farcaster_casts_author_idx",
-          "columns": [
-            {
-              "expression": "author",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1447,7 +1490,7 @@
           "name": "user_id",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "title": {
           "name": "title",
@@ -1526,7 +1569,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "proposals_user_id_users_id_fk": {
+          "name": "proposals_user_id_users_id_fk",
+          "tableFrom": "proposals",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1722,6 +1779,90 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.signals": {
+      "name": "signals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detected_at": {
+          "name": "detected_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sentiment_type": {
+          "name": "sentiment_type",
+          "type": "sentiment_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "suggestion_type": {
+          "name": "suggestion_type",
+          "type": "suggestion_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rationale_summary": {
+          "name": "rationale_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2162,9 +2303,15 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "x_account_id": {
-          "name": "x_account_id",
+        "author_id": {
+          "name": "author_id",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -2173,6 +2320,27 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "retweet_count": {
+          "name": "retweet_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "reply_count": {
+          "name": "reply_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "like_count": {
+          "name": "like_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "tweet_time": {
           "name": "tweet_time",
@@ -2203,12 +2371,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "tweets_x_account_id_x_accounts_id_fk": {
-          "name": "tweets_x_account_id_x_accounts_id_fk",
+        "tweets_author_id_x_accounts_id_fk": {
+          "name": "tweets_author_id_x_accounts_id_fk",
           "tableFrom": "tweets",
           "tableTo": "x_accounts",
           "columnsFrom": [
-            "x_account_id"
+            "author_id"
           ],
           "columnsTo": [
             "id"
@@ -2512,11 +2680,12 @@
           "primaryKey": false,
           "notNull": false
         },
-        "last_tweet_id": {
-          "name": "last_tweet_id",
-          "type": "varchar",
+        "last_tweet_updated_at": {
+          "name": "last_tweet_updated_at",
+          "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "now()"
         },
         "user_ids": {
           "name": "user_ids",
@@ -2557,13 +2726,61 @@
         "assistant",
         "system"
       ]
+    },
+    "public.sentiment_type": {
+      "name": "sentiment_type",
+      "schema": "public",
+      "values": [
+        "positive",
+        "negative",
+        "neutral"
+      ]
+    },
+    "public.suggestion_type": {
+      "name": "suggestion_type",
+      "schema": "public",
+      "values": [
+        "buy",
+        "sell",
+        "hold",
+        "stake",
+        "close_position"
+      ]
     }
   },
   "schemas": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
+  "views": {
+    "public.token_price_24h_ago_view": {
+      "columns": {
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "price_usd": {
+          "name": "price_usd",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "definition": "\n  WITH ranked_prices AS (\n    SELECT\n      h.token_address,\n      h.price_usd,\n      h.timestamp,\n      ROW_NUMBER() OVER (\n        PARTITION BY h.token_address\n        ORDER BY ABS(EXTRACT(EPOCH FROM (NOW() - INTERVAL '24 hours')) - EXTRACT(EPOCH FROM h.timestamp)) ASC\n      ) AS rn\n    FROM\n      \"token_price_history\" h\n    WHERE\n      h.timestamp <= NOW() - INTERVAL '23 hours'\n      AND h.timestamp >= NOW() - INTERVAL '25 hours'\n  )\n  SELECT\n    rp.token_address,\n    rp.price_usd,\n    rp.timestamp\n  FROM\n    ranked_prices rp\n  WHERE\n    rp.rn = 1\n",
+      "name": "token_price_24h_ago_view",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": true
+    }
+  },
   "_meta": {
     "columns": {},
     "schemas": {},
