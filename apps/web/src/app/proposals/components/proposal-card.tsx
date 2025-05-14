@@ -51,46 +51,91 @@ const ProposalPnLVisualization: React.FC<{
     percentChange: number;
   };
   proposalType?: string | null;
-}> = ({ financialImpact, proposalType }) => {
+  tokenIconUrl?: string;
+  tokenSymbol?: string;
+}> = ({ financialImpact, proposalType, tokenIconUrl, tokenSymbol }) => {
   if (!financialImpact) return null;
 
   const isPositive = financialImpact.percentChange > 0;
   const isStaking = proposalType === "stake";
 
-  const currentValue = isStaking ? 0 : financialImpact.currentValue;
-  const projectedValue = isStaking
-    ? Math.round(financialImpact.currentValue * (financialImpact.percentChange / 100))
-    : financialImpact.projectedValue;
-
   return (
-    // Slightly darker background for contrast
-    <div className="mt-4 p-3 rounded-lg bg-black/50">
-      <div className="text-xs font-semibold text-gray-400 mb-2">Price Prediction</div>
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-4">
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-400">Current</span>
-            {/* Slightly larger font for values */}
-            <span className="font-semibold text-sm text-white">${currentValue.toLocaleString()}</span>
-            {isStaking && <span className="text-xs text-gray-500">(No earnings)</span>}
+    <div className="mt-4 p-3 rounded-lg bg-black/50 text-xs">
+      {isStaking ? (
+        // Staking Layout
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1 items-center">
+          {/* Top Left: Token Icon & Symbol */}
+          <div className="flex items-center col-span-1">
+            {tokenIconUrl ? (
+              <img src={tokenIconUrl} alt={tokenSymbol || "Token"} className="w-7 h-7 mr-2 rounded-full" />
+            ) : (
+              <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
+            )}
+            {tokenSymbol && <span className="font-semibold text-sm text-white">{tokenSymbol}</span>}
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-400">
-              Expected{isStaking ? ` (APY ${financialImpact.percentChange}%)` : ""}
+
+          {/* Top Right: Expected Yield */}
+          <div className="text-right col-span-1">
+            <div className="text-gray-400">Expected Yield</div>
+            <div className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
+              {isPositive ? "+" : ""}
+              {financialImpact.percentChange.toFixed(1)}%
+            </div>
+          </div>
+
+          {/* Bottom: Current APY (Full Width) */}
+          <div className="col-span-2 mt-1 pt-1 border-t border-white/10 flex justify-center">
+            <div className="text-gray-400 mr-1">Current APY:</div>
+            <div className="text-sm font-semibold text-white">{financialImpact.percentChange.toFixed(1)}%</div>
+          </div>
+        </div>
+      ) : (
+        // Default (Trade/Risk/Opportunity) Layout
+        <div className="grid grid-cols-2 grid-rows-2 gap-x-2 gap-y-1">
+          {/* Top Left: Token Icon & Symbol */}
+          <div className="flex items-center row-span-1 col-span-1">
+            {tokenIconUrl ? (
+              <img src={tokenIconUrl} alt={tokenSymbol || "Token"} className="w-7 h-7 mr-2 rounded-full" />
+            ) : (
+              <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
+            )}
+            {tokenSymbol && <span className="font-semibold text-sm text-white">{tokenSymbol}</span>}
+          </div>
+
+          {/* Top Right: PNL */}
+          <div className="text-right row-span-1 col-span-1">
+            <div className="text-gray-400">PNL</div>
+            <div className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
+              {isPositive ? "+" : ""}
+              {financialImpact.percentChange.toFixed(1)}%
+            </div>
+          </div>
+
+          {/* Bottom Left: Entry Price */}
+          <div className="flex justify-between items-center row-span-1 col-span-1 pt-1 border-t border-white/10 mt-1">
+            <span className="text-gray-400">Entry Price</span>
+            <span className="font-semibold text-sm text-white">
+              $
+              {financialImpact.currentValue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
-            <span className="font-semibold text-sm text-white">${projectedValue.toLocaleString()}</span>
+          </div>
+
+          {/* Bottom Right: Current Price */}
+          <div className="text-right flex justify-between items-center row-span-1 col-span-1 pt-1 border-t border-white/10 mt-1">
+            <span className="text-gray-400">Current Price</span>
+            <span className="font-semibold text-sm text-white">
+              $
+              {financialImpact.projectedValue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           </div>
         </div>
-        <div
-          className={cn(
-            "px-1.5 py-0.5 rounded text-xs font-medium flex items-center",
-            isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400",
-          )}
-        >
-          {isPositive ? "+" : ""}
-          {financialImpact.percentChange}%
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -226,7 +271,16 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
         </div>
         <CardTitle className="text-base font-bold text-white">{proposal.title}</CardTitle>
         {proposal.financialImpact && (
-          <ProposalPnLVisualization financialImpact={proposal.financialImpact} proposalType={proposal.type} />
+          <ProposalPnLVisualization
+            financialImpact={proposal.financialImpact}
+            proposalType={proposal.type}
+            tokenIconUrl={
+              proposal.contractCall?.params.fromToken.symbol
+                ? `/tokens/${proposal.contractCall.params.fromToken.symbol.toUpperCase()}.png`
+                : undefined
+            }
+            tokenSymbol={proposal.contractCall?.params.fromToken.symbol?.toUpperCase()}
+          />
         )}
       </CardHeader>
 
