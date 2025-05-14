@@ -251,6 +251,7 @@ export const tokenRouter = createTRPCRouter({
           return {
             success: true,
             message: "Transfer successful",
+            txHash: `sim-tx-${Date.now()}`,
             transaction: {
               fromToken: fromTokenInfo.symbol,
               toToken: toTokenInfo.symbol,
