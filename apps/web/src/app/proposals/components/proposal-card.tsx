@@ -290,14 +290,14 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
             tokenIconUrl={
               proposal.contractCall?.params.fromToken.symbol
                 ? proposal.type === "stake"
-                  ? `/tokens/${proposal.contractCall.params.toToken.symbol.toUpperCase()}.png`
-                  : `/tokens/${proposal.contractCall.params.fromToken.symbol.toUpperCase()}.png`
+                  ? `/tokens/${proposal.contractCall.params.toToken.symbol}.png`
+                  : `/tokens/${proposal.contractCall.params.fromToken.symbol}.png`
                 : undefined
             }
             tokenSymbol={
               proposal.type === "stake"
-                ? proposal.contractCall?.params.toToken.symbol?.toUpperCase()
-                : proposal.contractCall?.params.fromToken.symbol?.toUpperCase()
+                ? proposal.contractCall?.params.toToken.symbol
+                : proposal.contractCall?.params.fromToken.symbol
             }
           />
         )}
