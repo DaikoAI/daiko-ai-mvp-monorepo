@@ -112,25 +112,23 @@ export const portfolioRouter = createTRPCRouter({
 
       // Calculate total value and build portfolio
       let totalValue = new BigNumber(0);
-      const portfolio = await Promise.all(
-        balances.map(async (balance) => {
-          const tokenPrice = priceMap[balance.tokenAddress] || "0";
-          const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
+      const portfolio = balances.map((balance) => {
+        const tokenPrice = priceMap[balance.tokenAddress] || "0";
+        const valueUsd = new BigNumber(balance.balance).multipliedBy(tokenPrice).toString();
 
-          // Add to total
-          totalValue = totalValue.plus(valueUsd);
+        // Add to total
+        totalValue = totalValue.plus(valueUsd);
 
-          return {
-            symbol: balance.token.symbol,
-            tokenAddress: balance.tokenAddress,
-            balance: balance.balance,
-            priceUsd: tokenPrice,
-            valueUsd: valueUsd,
-            priceChange24h: "0",
-            iconUrl: balance.token.iconUrl,
-          };
-        }),
-      );
+        return {
+          symbol: balance.token.symbol,
+          tokenAddress: balance.tokenAddress,
+          balance: balance.balance,
+          priceUsd: tokenPrice,
+          valueUsd: valueUsd,
+          priceChange24h: "0", // Will be calculated next
+          iconUrl: balance.token.iconUrl,
+        };
+      });
 
       // 24時間の価格変動を計算
       const tokensWithPriceChange = portfolio.map((token) => {
