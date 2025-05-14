@@ -1,5 +1,6 @@
 import { inArray } from "drizzle-orm";
 import { db, tokenPricesTable, tokensTable, userBalancesTable } from "../db";
+import { logger } from "./logger";
 
 /**
  * ユーザーの初期ポートフォリオをセットアップする共通関数
@@ -29,7 +30,7 @@ export async function setupInitialPortfolio(
     }
 
     if (!tokens.length) {
-      console.log("初期ポートフォリオのセットアップに必要なトークンが見つかりませんでした");
+      logger.error("setupInitialPortfolio", "初期ポートフォリオのセットアップに必要なトークンが見つかりませんでした");
       return;
     }
 
@@ -71,6 +72,8 @@ export async function setupInitialPortfolio(
       LAYER: 1000, // $1,000 worth of LAYER
       AIXBT: 1000, // $1,000 worth of AIXBT
       ACT: 1000, // $1,000 worth of ACT
+      FARTCOIN: 1000, // $1,000 worth of FARTCOIN
+      MELANIA: 1000, // $1,000 worth of MELANIA
     };
 
     // 各トークンに対して残高を作成
@@ -99,9 +102,9 @@ export async function setupInitialPortfolio(
       await db.insert(userBalancesTable).values(balancesToInsert);
     }
 
-    console.log(`ユーザー ${userId} の初期ポートフォリオを設定しました`);
+    logger.info("setupInitialPortfolio", `Completed initial portfolio setup for user ${userId}`);
   } catch (error) {
-    console.error("初期ポートフォリオのセットアップ中にエラーが発生しました:", error);
+    logger.error("setupInitialPortfolio", "Failed to setup initial portfolio", error);
     throw error;
   }
 }

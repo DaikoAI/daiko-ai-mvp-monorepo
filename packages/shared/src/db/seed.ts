@@ -229,7 +229,6 @@ const seedUserTokenBalances = async (generatedUsers: UserSelect[]): Promise<void
     // ユーザーごとに setupInitialPortfolio を呼び出す
     for (const user of generatedUsers) {
       await setupInitialPortfolio(user.id);
-      // setupInitialPortfolio内でログが出力されるため、ここでの個別ログは不要
     }
 
     console.log(`全ユーザー (${generatedUsers.length}人) の初期トークン残高設定が完了しました。`);
@@ -352,7 +351,7 @@ async function seed() {
 
   // // ユーザートークン残高挿入
   // console.log("ユーザートークン残高データを挿入中...");
-  // await seedUserTokenBalances(generatedUsers);
+  await seedUserTokenBalances(users);
 
   // // staking tokenの金利データ挿入
   // console.log("staking tokenの金利データを挿入中...");
@@ -370,8 +369,6 @@ async function seed() {
   // 提案データ挿入 (New)
   logger.debug("seed", "Inserting static proposals...");
   await seedProposals(users); // usersを引数として渡す
-
-  logger.debug("seed", "Seeding completed!");
 }
 
 // シード実行

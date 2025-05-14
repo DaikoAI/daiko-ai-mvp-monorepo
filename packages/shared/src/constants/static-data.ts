@@ -264,7 +264,7 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
     ],
     type: "risk",
     proposedBy: "Daiko AI",
-    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE - 1000 * 60 * 60 * 24 * 2),
+    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE - 1000 * 60 * 60 * 3),
     financialImpact: {
       currentValue: 1200,
       projectedValue: 876,
@@ -300,7 +300,7 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
     ],
     type: "risk",
     proposedBy: "Daiko AI",
-    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE - 1000 * 60 * 60 * 24),
+    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE - 1000 * 60 * 60 * 2),
     financialImpact: {
       currentValue: 1.21,
       projectedValue: 0.484,
@@ -315,16 +315,16 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
       params: {
         fromToken: { symbol: "Fartcoin", address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump" },
         toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-        fromAmount: 0.6,
+        fromAmount: 72,
       },
     },
   },
   {
-    title: "Stake 4 SOL in Jito's jitoSOL for Enhanced Yields",
+    title: "Stake 0.8 SOL in Jito's jitoSOL for Enhanced Yields",
     summary:
-      "Earn 8.24% APY by converting your idle 4 SOL ($595.92) to jitoSOL, Jito's high-yield liquid staking token",
+      "Earn 8.24% APY by converting your idle 0.8 SOL ($119.18) to jitoSOL, Jito's high-yield liquid staking token",
     reason: [
-      "You have 4 SOL ($595.92) sitting idle in your wallet", // Updated value
+      "You have 0.8 SOL ($119.18) sitting idle in your wallet", // Updated value
       "jitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
       "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
     ],
@@ -337,8 +337,8 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
     proposedBy: "Daiko AI",
     expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE),
     financialImpact: {
-      currentValue: 595.92, // Updated value (4 * 148.98)
-      projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)
+      currentValue: 119.18, // Updated value (0.8 * 148.98)
+      projectedValue: 129.03, // Updated projected value (119.18 * 1.0824)
       percentChange: 8.24,
       timeFrame: "1 year",
       riskLevel: "low",
@@ -356,7 +356,7 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
           symbol: "jitoSOL",
           address: "jitoSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
         },
-        fromAmount: 4, // Corrected amount
+        fromAmount: 0.8,
       },
     },
   },
