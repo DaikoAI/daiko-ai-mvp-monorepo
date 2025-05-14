@@ -10,8 +10,8 @@ export const viewport = VIEWPORT;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} overscroll-y-none`}>
+    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
+      <body className={`${inter.className} overscroll-y-none`} cz-shortcut-listen="true">
         <Providers>{children}</Providers>
       </body>
     </html>
