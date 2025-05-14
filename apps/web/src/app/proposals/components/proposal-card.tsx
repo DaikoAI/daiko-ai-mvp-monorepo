@@ -78,7 +78,7 @@ const ProposalPnLVisualization: React.FC<{
             ) : (
               <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
             )}
-            {tokenSymbol && <span className="font-semibold text-sm text-white">{tokenSymbol}</span>}
+            {tokenSymbol && <span className="font-semibold text-sm text-gray-400">{tokenSymbol}</span>}
           </div>
 
           {/* Top Right: Expected Yield */}
@@ -90,8 +90,8 @@ const ProposalPnLVisualization: React.FC<{
             </div>
           </div>
 
-          {/* Bottom: Current APY (Full Width) */}
-          <div className="col-span-2 mt-1 pt-1 flex justify-center">
+          {/* Bottom: Current APY (Full Width, Left Aligned) */}
+          <div className="col-span-2 mt-1 pt-1 flex justify-start">
             <div className="text-gray-400 mr-1">Current APY:</div>
             <div className="text-sm font-semibold text-white">{financialImpact.percentChange.toFixed(1)}%</div>
           </div>
@@ -112,21 +112,21 @@ const ProposalPnLVisualization: React.FC<{
             ) : (
               <div className="w-7 h-7 mr-2 rounded-full bg-gray-700" />
             )}
-            {tokenSymbol && <span className="font-semibold text-sm text-white">{tokenSymbol}</span>}
+            {tokenSymbol && <span className="font-semibold text-sm text-gray-400">{tokenSymbol}</span>}
           </div>
 
-          {/* Top Right: PNL */}
-          <div className="text-right row-span-1 col-span-1">
-            <div className="text-gray-400">PNL</div>
-            <div className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
+          {/* Top Right: PNL (Label and value on same line, right aligned block)*/}
+          <div className="flex justify-end items-center row-span-1 col-span-1 text-right">
+            <span className="text-gray-400 mr-1">PNL:</span>
+            <span className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
               {isPositive ? "+" : ""}
               {financialImpact.percentChange.toFixed(1)}%
-            </div>
+            </span>
           </div>
 
-          {/* Bottom Left: Entry Price */}
-          <div className="flex justify-between items-center row-span-1 col-span-1 pt-1 mt-1">
-            <span className="text-gray-400">Entry Price</span>
+          {/* Bottom Left: Entry Price (Label and value close together) */}
+          <div className="flex justify-start items-center row-span-1 col-span-1 pt-1 mt-1">
+            <span className="text-gray-400 mr-1.5">Entry Price:</span>
             <span className="font-semibold text-sm text-white">
               $
               {financialImpact.currentValue.toLocaleString(undefined, {
@@ -136,9 +136,9 @@ const ProposalPnLVisualization: React.FC<{
             </span>
           </div>
 
-          {/* Bottom Right: Current Price */}
-          <div className="text-right flex justify-between items-center row-span-1 col-span-1 pt-1 border-t border-white/10 mt-1">
-            <span className="text-gray-400">Current Price</span>
+          {/* Bottom Right: Current Price (Label and value close together) */}
+          <div className="flex justify-start items-center row-span-1 col-span-1 pt-1 mt-1 text-right">
+            <span className="text-gray-400 mr-1.5">Current Price:</span>
             <span className="font-semibold text-sm text-white">
               $
               {financialImpact.projectedValue.toLocaleString(undefined, {
@@ -303,19 +303,23 @@ export const ProposalCard: React.FC<{ proposal: ProposalSelect; onRemove?: (id: 
           {proposal.reason.map((reasonText, reasonIndex) => (
             <li key={reasonIndex} className="flex items-start">
               <span className="mr-2">&#8226;</span> {/* Bullet point */}
-              <div>
+              <div className="text-gray-400">
+                {" "}
+                {/* Changed reasonText color */}
                 {reasonText}
-                {proposal.sources.map((source, sourceIndex) => (
+                {proposal.sources[reasonIndex] && ( // Check if source exists for this reason
                   <a
-                    key={sourceIndex}
-                    href={source.url}
+                    href={proposal.sources[reasonIndex].url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-300 hover:underline ml-1.5"
                   >
-                    [{sourceIndex + 1}]
+                    <span className="text-xs">
+                      {" "}
+                      {/* Smaller text for citation */}[{reasonIndex + 1}]
+                    </span>
                   </a>
-                ))}
+                )}
               </div>
             </li>
           ))}
