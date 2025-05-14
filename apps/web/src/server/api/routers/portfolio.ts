@@ -5,7 +5,7 @@ import {
   tokenPrice24hAgoView,
   userBalancesTable,
   usersTable,
-  type NeonHttpDatabase,
+  type NodePostgresDatabase,
 } from "@daiko-ai/shared";
 import BigNumber from "bignumber.js";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
@@ -21,7 +21,7 @@ type TokenPrice = {
 };
 
 // 24時間前の価格を取得する関数
-async function get24hPriceHistory(db: NeonHttpDatabase, tokenAddresses: string[]): Promise<Map<string, string>> {
+async function get24hPriceHistory(db: NodePostgresDatabase, tokenAddresses: string[]): Promise<Map<string, string>> {
   if (tokenAddresses.length === 0) {
     return new Map();
   }
