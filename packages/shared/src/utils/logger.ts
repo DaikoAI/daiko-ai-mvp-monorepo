@@ -121,3 +121,7 @@ export class Logger {
     this.logWriter.write(logLine);
   }
 }
+
+export const logger = new Logger({
+  level: process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG,
+});

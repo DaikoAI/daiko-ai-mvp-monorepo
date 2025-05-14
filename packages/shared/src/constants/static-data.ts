@@ -1,4 +1,4 @@
-import type { TokenInsert } from "../db/schema";
+import type { ProposalInsert, TokenInsert } from "../db/schema";
 
 export const initialTokens: TokenInsert[] = [
   {
@@ -127,7 +127,7 @@ export const initialTokens: TokenInsert[] = [
     name: "Kamino",
     decimals: 6,
     type: "normal",
-    iconUrl: "/tokens/KMNO.svg",
+    iconUrl: "/tokens/KMNO.png",
   },
   {
     address: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
@@ -207,6 +207,157 @@ export const initialTokens: TokenInsert[] = [
     name: "MELANIA",
     decimals: 6,
     type: "normal",
-    iconUrl: "/tokens/MELANIA.webp",
+    iconUrl: "/tokens/MELANIA.png",
+  },
+];
+
+// const SIX_MONTHS_SECONDS = 1000 * 60 * 60 * 24 * 30 * 6;
+const STATIC_EXPIRATION_DATE = 1000 * 60 * 60 * 24 * 1;
+
+export const staticProposals: Omit<ProposalInsert, "userId">[] = [
+  {
+    title: "Reduce 70% $RAY Exposure Due to Liquidity Shift to Pump Swap",
+    summary: "Reduce 70% of your $RAY holdings due to liquidity shift to PumpSwap on March 20, 2025",
+    reason: [
+      "Top 12 wallets reduced $RAY holdings by 10% in the past 72 hours",
+      "Pump.fun's switch to PumpSwap on March 20, 2025, reduced Raydium's token migration volume by an estimated 30%",
+      "$RAY price has declined 5.2% since the PumpSwap announcement due to lower trading activity",
+    ],
+    sources: [
+      { name: "Raydium Wallet Movement Tracker", url: "#" },
+      { name: "Pump.fun Announcement", url: "#" },
+      { name: "DEX Price Analysis", url: "#" },
+    ],
+    type: "risk",
+    proposedBy: "Daiko AI",
+    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE),
+    financialImpact: {
+      currentValue: 1000,
+      projectedValue: 948,
+      percentChange: -5.2,
+      timeFrame: "immediate",
+      riskLevel: "high",
+    },
+    status: "active",
+    contractCall: {
+      type: "swap",
+      description: "Sell 70% of RAY for USDC",
+      params: {
+        fromToken: { symbol: "RAY", address: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R" },
+        toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+        fromAmount: 0.7,
+      },
+    },
+  },
+  {
+    title: "Reduce 70% $MELANIA Exposure Due to Major Exchange Inflow",
+    summary: "Reduce 70% of your $MELANIA tokens to mitigate risk following major exchange inflow",
+    reason: [
+      "Known whale wallet 3Yz6aU...H8iWjJ transferred 2M $MELANIA to Binance",
+      "Historically, similar movements from this wallet for this token preceded price drops of 25-30%",
+      "Exchange order books show increasing sell-side pressure",
+    ],
+    sources: [
+      { name: "Melania On-Chain Whale Tracker", url: "#" },
+      { name: "Whale's Solscan Token Account", url: "#" },
+      { name: "Nansen Wallet Profiler", url: "#" },
+    ],
+    type: "risk",
+    proposedBy: "Daiko AI",
+    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE - 1000 * 60 * 60 * 24 * 2),
+    financialImpact: {
+      currentValue: 1200,
+      projectedValue: 876,
+      percentChange: -27,
+      timeFrame: "short-term",
+      riskLevel: "high",
+    },
+    status: "active",
+    contractCall: {
+      type: "swap",
+      description: "Sell 70% of MELANIA for USDC",
+      params: {
+        fromToken: { symbol: "MELANIA", address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P" },
+        toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+        fromAmount: 0.7,
+      },
+    },
+  },
+  {
+    title: "Reduce 60% $FARTCOIN Exposure: Critical Support at Risk with Weakening Buy-Side Liquidity",
+    summary: "Reduce 60% of your $FARTCOIN exposure due to weakening buy-side liquidity and critical support at risk",
+    reason: [
+      "$FARTCOIN repeatedly testing major support at $1.21; multiple failed bounces observed",
+      "On-chain liquidity analysis shows thinning buy orders below the current price",
+      "Significant cluster of liquidation levels for long positions identified just below $1.21; a break could trigger cascading sell-offs",
+      "Rapid increase in exchange deposits observed, indicating widespread panic selling is beginning",
+    ],
+    sources: [
+      { name: "DEX Screener (Price & Volume Analysis)", url: "#" },
+      { name: "Daiko On-Chain Liquidity Monitor", url: "#" },
+      { name: "Project's Official Communication Channels", url: "#" },
+      { name: "Exchange Deposit Tracker", url: "#" },
+    ],
+    type: "risk",
+    proposedBy: "Daiko AI",
+    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE - 1000 * 60 * 60 * 24),
+    financialImpact: {
+      currentValue: 1.21,
+      projectedValue: 0.484,
+      percentChange: -60,
+      timeFrame: "immediate",
+      riskLevel: "high",
+    },
+    status: "active",
+    contractCall: {
+      type: "swap",
+      description: "Sell 60% of FARTCOIN for USDC",
+      params: {
+        fromToken: { symbol: "Fartcoin", address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump" },
+        toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+        fromAmount: 0.6,
+      },
+    },
+  },
+  {
+    title: "Stake 4 SOL in Jito's jitoSOL for Enhanced Yields",
+    summary:
+      "Earn 8.24% APY by converting your idle 4 SOL ($595.92) to jitoSOL, Jito's high-yield liquid staking token",
+    reason: [
+      "You have 4 SOL ($595.92) sitting idle in your wallet", // Updated value
+      "jitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+      "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
+    ],
+    sources: [
+      { name: "Jito jitoSOL Documentation", url: "#" },
+      { name: "Solana LST Comparison Analysis", url: "#" },
+      { name: "jitoSOL Performance Metrics", url: "#" },
+    ],
+    type: "stake",
+    proposedBy: "Daiko AI",
+    expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE),
+    financialImpact: {
+      currentValue: 595.92, // Updated value (4 * 148.98)
+      projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)
+      percentChange: 8.24,
+      timeFrame: "1 year",
+      riskLevel: "low",
+    },
+    status: "active",
+    contractCall: {
+      type: "stake",
+      description: "Stake SOL to jitoSOL for higher yields",
+      params: {
+        fromToken: {
+          symbol: "SOL",
+          address: "So11111111111111111111111111111111111111112",
+        },
+        toToken: {
+          symbol: "jitoSOL",
+          address: "jitoSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
+        },
+        fromAmount: 4, // Corrected amount
+      },
+    },
   },
 ];

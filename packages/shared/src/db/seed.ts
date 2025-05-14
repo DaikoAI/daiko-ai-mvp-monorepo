@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from ".";
-import { initialTokens } from "../constants";
+import { initialTokens, staticProposals } from "../constants";
+import { logger } from "../utils";
 import { setupInitialPortfolio } from "../utils/portfolio";
 import { InterestRateInsert, interestRatesTable } from "./schema/interest_rates";
 import { NewsSiteInsert, newsSiteTable } from "./schema/news_sites";
@@ -307,158 +308,7 @@ const seedStakingTokenInterestRates = async () => {
  */
 const seedProposals = async (generatedUsers: UserSelect[]) => {
   try {
-    console.log("提案データを挿入中...");
-
-    const SIX_MONTHS_SECONDS = 1000 * 60 * 60 * 24 * 30 * 6;
-
-    const staticProposals: Omit<ProposalInsert, "userId">[] = [
-      {
-        title: "Reduce 70% $RAY Exposure Due to Liquidity Shift to Pump Swap",
-        summary: "Reduce 70% of your $RAY holdings due to liquidity shift to PumpSwap on March 20, 2025",
-        reason: [
-          "Top 12 wallets reduced $RAY holdings by 10% in the past 72 hours",
-          "Pump.fun's switch to PumpSwap on March 20, 2025, reduced Raydium's token migration volume by an estimated 30%",
-          "$RAY price has declined 5.2% since the PumpSwap announcement due to lower trading activity",
-        ],
-        sources: [
-          { name: "Raydium Wallet Movement Tracker", url: "#" },
-          { name: "Pump.fun Announcement", url: "#" },
-          { name: "DEX Price Analysis", url: "#" },
-        ],
-        type: "risk",
-        proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24 * 3),
-        financialImpact: {
-          currentValue: 1000,
-          projectedValue: 948,
-          percentChange: -5.2,
-          timeFrame: "immediate",
-          riskLevel: "high",
-        },
-        status: "active",
-        contractCall: {
-          type: "swap",
-          description: "Sell 70% of RAY for USDC",
-          params: {
-            fromToken: { symbol: "RAY", address: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R" },
-            toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-            fromAmount: 0.7,
-          },
-        },
-      },
-      {
-        title: "Reduce 70% $MELANIA Exposure Due to Major Exchange Inflow",
-        summary: "Reduce 70% of your $MELANIA tokens to mitigate risk following major exchange inflow",
-        reason: [
-          "Known whale wallet 3Yz6aU...H8iWjJ transferred 2M $MELANIA to Binance",
-          "Historically, similar movements from this wallet for this token preceded price drops of 25-30%",
-          "Exchange order books show increasing sell-side pressure",
-        ],
-        sources: [
-          { name: "Melania On-Chain Whale Tracker", url: "#" },
-          { name: "Whale's Solscan Token Account", url: "#" },
-          { name: "Nansen Wallet Profiler", url: "#" },
-        ],
-        type: "risk",
-        proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24 * 2),
-        financialImpact: {
-          currentValue: 1200,
-          projectedValue: 876,
-          percentChange: -27,
-          timeFrame: "short-term",
-          riskLevel: "high",
-        },
-        status: "active",
-        contractCall: {
-          type: "swap",
-          description: "Sell 70% of MELANIA for USDC",
-          params: {
-            fromToken: { symbol: "MELANIA", address: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P" },
-            toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-            fromAmount: 0.7,
-          },
-        },
-      },
-      {
-        title: "Reduce 60% $FARTCOIN Exposure: Critical Support at Risk with Weakening Buy-Side Liquidity",
-        summary:
-          "Reduce 60% of your $FARTCOIN exposure due to weakening buy-side liquidity and critical support at risk",
-        reason: [
-          "$FARTCOIN repeatedly testing major support at $1.21; multiple failed bounces observed",
-          "On-chain liquidity analysis shows thinning buy orders below the current price",
-          "Significant cluster of liquidation levels for long positions identified just below $1.21; a break could trigger cascading sell-offs",
-          "Rapid increase in exchange deposits observed, indicating widespread panic selling is beginning",
-        ],
-        sources: [
-          { name: "DEX Screener (Price & Volume Analysis)", url: "#" },
-          { name: "Daiko On-Chain Liquidity Monitor", url: "#" },
-          { name: "Project's Official Communication Channels", url: "#" },
-          { name: "Exchange Deposit Tracker", url: "#" },
-        ],
-        type: "risk",
-        proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS - 1000 * 60 * 60 * 24),
-        financialImpact: {
-          currentValue: 1.21,
-          projectedValue: 0.484,
-          percentChange: -60,
-          timeFrame: "immediate",
-          riskLevel: "high",
-        },
-        status: "active",
-        contractCall: {
-          type: "swap",
-          description: "Sell 60% of FARTCOIN for USDC",
-          params: {
-            fromToken: { symbol: "Fartcoin", address: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump" },
-            toToken: { symbol: "USDC", address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-            fromAmount: 0.6,
-          },
-        },
-      },
-      {
-        title: "Stake 4 SOL in Jito's jitoSOL for Enhanced Yields",
-        summary:
-          "Earn 8.24% APY by converting your idle 4 SOL ($595.92) to jitoSOL, Jito's high-yield liquid staking token",
-        reason: [
-          "You have 4 SOL ($595.92) sitting idle in your wallet", // Updated value
-          "jitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
-          "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
-        ],
-        sources: [
-          { name: "Jito jitoSOL Documentation", url: "#" },
-          { name: "Solana LST Comparison Analysis", url: "#" },
-          { name: "jitoSOL Performance Metrics", url: "#" },
-        ],
-        type: "stake",
-        proposedBy: "Daiko AI",
-        expiresAt: new Date(Date.now() + SIX_MONTHS_SECONDS),
-        financialImpact: {
-          currentValue: 595.92, // Updated value (4 * 148.98)
-          projectedValue: 645.03, // Updated projected value (595.92 * 1.0824)
-          percentChange: 8.24,
-          timeFrame: "1 year",
-          riskLevel: "low",
-        },
-        status: "active",
-        contractCall: {
-          type: "stake",
-          description: "Stake SOL to jitoSOL for higher yields",
-          params: {
-            fromToken: {
-              symbol: "SOL",
-              address: "So11111111111111111111111111111111111111112",
-            },
-            toToken: {
-              symbol: "jitoSOL",
-              address: "jitoSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
-            },
-            fromAmount: 4, // Corrected amount
-          },
-        },
-      },
-    ];
+    logger.debug("seedProposals", "Inserting static proposals...");
 
     // すでに存在する提案を確認
     const existingProposals = await db.select().from(proposalTable);
@@ -475,14 +325,14 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
 
         if (!existingProposal) {
           await db.insert(proposalTable).values(proposal);
-          console.log(`ユーザー "${user.name}" の提案 "${proposal.title}" を挿入しました`);
+          logger.info("seedProposals", `User "${user.name}" proposal "${proposal.title}" inserted`);
         } else {
-          console.log(`ユーザー "${user.name}" の提案 "${proposal.title}" は既に存在します。スキップします。`);
+          logger.info("seedProposals", `User "${user.name}" proposal "${proposal.title}" already exists`);
         }
       }
     }
   } catch (error) {
-    console.error("提案データの挿入中にエラーが発生しました:", error);
+    logger.error("seedProposals", "Error inserting static proposals:", error);
     throw error;
   }
 };
@@ -491,7 +341,7 @@ const seedProposals = async (generatedUsers: UserSelect[]) => {
  * データベースにシードデータを挿入
  */
 async function seed() {
-  console.log("シードデータ挿入を開始します...");
+  logger.debug("seed", "Starting seeding...");
 
   // const generatedUsers = await seedUsers();
   const users = await db.select().from(usersTable); // usersをここで取得
@@ -518,20 +368,20 @@ async function seed() {
   // await seedNewsSites(generatedUsers);
 
   // 提案データ挿入 (New)
-  console.log("提案データを挿入中...");
+  logger.debug("seed", "Inserting static proposals...");
   await seedProposals(users); // usersを引数として渡す
 
-  console.log("シードデータの挿入が完了しました！");
+  logger.debug("seed", "Seeding completed!");
 }
 
 // シード実行
 seed()
   .catch((error) => {
-    console.error("シード処理が失敗しました:", error);
+    logger.error("seed", "Seeding failed:", error);
     process.exit(1);
   })
   .finally(async () => {
     // データベース接続のクリーンアップはここで行う場合
-    console.log("シード処理を終了します");
+    logger.debug("seed", "Seeding completed!");
     process.exit(0);
   });
