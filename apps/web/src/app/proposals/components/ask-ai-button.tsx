@@ -25,7 +25,7 @@ export const AskAIButton = ({ proposal }: { proposal: RouterOutputs["proposal"][
     <Button
       variant="outline"
       onClick={handleAskAI}
-      className="relative flex w-full items-center justify-center rounded-full py-2 px-4 text-base font-bold text-gray-800 shadow-[0px_0px_6px_0px_rgba(255,255,255,0.24)] overflow-hidden h-10 hover:opacity-90 transition-opacity"
+      className="relative flex w-full items-center justify-center rounded-full py-2 px-4 text-base font-bold text-gray-800 overflow-hidden h-10 hover:opacity-90 transition-opacity border border-white/30"
       style={{
         background: `url(${bg.src}) center/cover no-repeat`,
       }}

@@ -4,11 +4,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
+    scrollRestoration: true,
     // typedRoutes: true,
     viewTransition: true,
     ppr: true,
     reactCompiler: true,
-    // useCache: true,
+    useCache: true,
     inlineCss: true,
     staleTimes: {
       dynamic: 60 * 10, // 5 minutes = batch update interval
