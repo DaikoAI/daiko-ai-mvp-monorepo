@@ -216,12 +216,12 @@ const STATIC_EXPIRATION_DATE = 1000 * 60 * 60 * 24 * 1;
 
 export const staticProposals: Omit<ProposalInsert, "userId">[] = [
   {
-    title: "Reduce 70% $RAY Exposure Due to Liquidity Shift to Pump Swap",
-    summary: "Reduce 70% of your $RAY holdings due to liquidity shift to PumpSwap on March 20, 2025",
+    title: "Reduce 70% $RAY Exposure Due to Announcement of PumpSwap",
+    summary: "Reduce 70% of your $RAY holdings due to announcement of PumpSwap",
     reason: [
       "Top 12 wallets reduced $RAY holdings by 10% in the past 72 hours",
-      "Pump.fun's switch to PumpSwap on March 20, 2025, reduced Raydium's token migration volume by an estimated 30%",
-      "$RAY price has declined 5.2% since the PumpSwap announcement due to lower trading activity",
+      "Pump.fun's switch to PumpSwap reduced Raydium's token migration volume by an estimated 30%",
+      "$RAY price has declined 5.2% since the PumpSwap announcement",
     ],
     sources: [
       { name: "Raydium Wallet Movement Tracker", url: "#" },
