@@ -72,7 +72,7 @@ export async function setupInitialPortfolio(
       LAYER: 1000, // $1,000 worth of LAYER
       AIXBT: 1000, // $1,000 worth of AIXBT
       ACT: 1000, // $1,000 worth of ACT
-      FARTCOIN: 1000, // $1,000 worth of FARTCOIN
+      Fartcoin: 1000, // $1,000 worth of Fartcoin
       MELANIA: 1000, // $1,000 worth of MELANIA
     };
 

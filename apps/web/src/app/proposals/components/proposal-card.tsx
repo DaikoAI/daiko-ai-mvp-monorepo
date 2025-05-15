@@ -93,7 +93,7 @@ const ProposalPnLVisualization: React.FC<{
           {/* Bottom: Current APY (Full Width, Left Aligned) */}
           <div className="col-span-2 mt-1 pt-1 flex justify-start items-center">
             <div className="text-gray-400 mr-1">Current APY:</div>
-            <div className="text-sm font-semibold text-white">{financialImpact.percentChange.toFixed(1)}%</div>
+            <div className="text-sm font-semibold text-white">0%</div>
           </div>
         </div>
       ) : (

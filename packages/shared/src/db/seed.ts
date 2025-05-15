@@ -224,14 +224,17 @@ const seedNewsSites = async (generatedUsers: UserSelect[]) => {
 
 const seedUserTokenBalances = async (generatedUsers: UserSelect[]): Promise<void> => {
   try {
-    console.log("ユーザートークン残高データを挿入中...");
+    logger.debug("seedUserTokenBalances", "Inserting user token balances...");
 
     // ユーザーごとに setupInitialPortfolio を呼び出す
     for (const user of generatedUsers) {
       await setupInitialPortfolio(user.id);
     }
 
-    console.log(`全ユーザー (${generatedUsers.length}人) の初期トークン残高設定が完了しました。`);
+    logger.debug(
+      "seedUserTokenBalances",
+      `All users (${generatedUsers.length} users) initial token balance setup completed.`,
+    );
   } catch (error) {
     console.error("ユーザートークン残高データの挿入中にエラーが発生しました:", error);
     throw error;
@@ -374,7 +377,7 @@ async function seed() {
   // await seedTokens();
 
   // // ユーザートークン残高挿入
-  // console.log("ユーザートークン残高データを挿入中...");
+  // logger.debug("seed", "Inserting user token balances...");
   // await seedUserTokenBalances(users);
 
   // // staking tokenの金利データ挿入
