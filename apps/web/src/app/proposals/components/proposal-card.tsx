@@ -82,16 +82,16 @@ const ProposalPnLVisualization: React.FC<{
           </div>
 
           {/* Top Right: Expected Yield */}
-          <div className="text-right col-span-1">
-            <div className="text-gray-400">Expected Yield</div>
-            <div className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
+          <div className="flex justify-end items-center col-span-1 text-right">
+            <span className="text-gray-400 mr-1">Expected Yield:</span>
+            <span className={cn("text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
               {isPositive ? "+" : ""}
               {financialImpact.percentChange.toFixed(1)}%
-            </div>
+            </span>
           </div>
 
           {/* Bottom: Current APY (Full Width, Left Aligned) */}
-          <div className="col-span-2 mt-1 pt-1 flex justify-start">
+          <div className="col-span-2 mt-1 pt-1 flex justify-start items-center">
             <div className="text-gray-400 mr-1">Current APY:</div>
             <div className="text-sm font-semibold text-white">{financialImpact.percentChange.toFixed(1)}%</div>
           </div>
