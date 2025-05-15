@@ -147,11 +147,11 @@ export const initialTokens: TokenInsert[] = [
   },
   {
     address: "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
-    symbol: "jitoSOL",
+    symbol: "JitoSOL",
     name: "Jito Staked SOL",
     decimals: 9,
     type: "liquid_staking",
-    iconUrl: "/tokens/jitoSOL.png",
+    iconUrl: "/tokens/JitoSOL.png",
   },
   {
     address: "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm",
@@ -232,9 +232,9 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
     proposedBy: "Daiko AI",
     expiresAt: new Date(Date.now() + STATIC_EXPIRATION_DATE),
     financialImpact: {
-      currentValue: 1000,
-      projectedValue: 948,
-      percentChange: -5.2,
+      currentValue: 2.4,
+      projectedValue: 1.9,
+      percentChange: -21,
       timeFrame: "immediate",
       riskLevel: "high",
     },
@@ -320,18 +320,18 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
     },
   },
   {
-    title: "Stake 0.8 SOL in Jito's jitoSOL for Enhanced Yields",
+    title: "Stake 0.8 SOL in JitoSOL for Enhanced Yields",
     summary:
-      "Earn 8.24% APY by converting your idle 0.8 SOL ($119.18) to jitoSOL, Jito's high-yield liquid staking token",
+      "Earn 8.24% APY by converting your idle 0.8 SOL ($119.18) to JitoSOL, Jito's high-yield liquid staking token",
     reason: [
       "You have 0.8 SOL ($119.18) sitting idle in your wallet", // Updated value
-      "jitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
+      "JitoSOL offers one of the highest yields among Solana LSTs (8.24% current APY)",
       "Zero fees: 0% management fee, 0% validator commission, 0% stake deposit fee",
     ],
     sources: [
-      { name: "Jito jitoSOL Documentation", url: "#" },
+      { name: "JitoSOL Documentation", url: "#" },
       { name: "Solana LST Comparison Analysis", url: "#" },
-      { name: "jitoSOL Performance Metrics", url: "#" },
+      { name: "JitoSOL Performance Metrics", url: "#" },
     ],
     type: "stake",
     proposedBy: "Daiko AI",
@@ -346,14 +346,14 @@ export const staticProposals: Omit<ProposalInsert, "userId">[] = [
     status: "active",
     contractCall: {
       type: "stake",
-      description: "Stake SOL to jitoSOL for higher yields",
+      description: "Stake SOL to JitoSOL for higher yields",
       params: {
         fromToken: {
           symbol: "SOL",
           address: "So11111111111111111111111111111111111111112",
         },
         toToken: {
-          symbol: "jitoSOL",
+          symbol: "JitoSOL",
           address: "jitoSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
         },
         fromAmount: 0.8,

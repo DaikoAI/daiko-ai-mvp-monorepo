@@ -254,7 +254,7 @@ const seedStakingTokenInterestRates = async () => {
     // 金利データ
     const interestRates = [
       { symbol: "INF", rate: 10.27 },
-      { symbol: "jitoSOL", rate: 7.87 },
+      { symbol: "JitoSOL", rate: 7.87 },
       { symbol: "jupSOL", rate: 8.48 },
     ];
 
@@ -307,29 +307,53 @@ const seedStakingTokenInterestRates = async () => {
  */
 const seedProposals = async (generatedUsers: UserSelect[]) => {
   try {
-    logger.debug("seedProposals", "Inserting static proposals...");
+    logger.debug("seedProposals", "Preparing proposals for insertion...");
 
-    // すでに存在する提案を確認
-    const existingProposals = await db.select().from(proposalTable);
+    // 1. 挿入候補のプロポーザルリストを作成
+    const allPotentialProposals: ProposalInsert[] = generatedUsers.flatMap((user) =>
+      staticProposals.map((staticProposal) => ({
+        ...staticProposal,
+        userId: user.id,
+      })),
+    );
 
-    for (const user of generatedUsers) {
-      for (const staticProposal of staticProposals) {
-        const proposal: ProposalInsert = {
-          ...staticProposal,
-          userId: user.id,
-        };
-
-        // タイトルとユーザーIDによる重複チェック
-        const existingProposal = existingProposals.find((p) => p.title === proposal.title && p.userId === user.id);
-
-        if (!existingProposal) {
-          await db.insert(proposalTable).values(proposal);
-          logger.info("seedProposals", `User "${user.name}" proposal "${proposal.title}" inserted`);
-        } else {
-          logger.info("seedProposals", `User "${user.name}" proposal "${proposal.title}" already exists`);
-        }
-      }
+    if (allPotentialProposals.length === 0) {
+      logger.info("seedProposals", "No potential proposals to insert.");
+      return;
     }
+
+    // 2. 既存のプロポーザルをすべて取得（タイトルとユーザーIDで判断するため）
+    // 大量データの場合、この部分の最適化も考慮が必要ですが、現状のデータ量では許容範囲とします。
+    const existingProposals = await db
+      .select({ title: proposalTable.title, userId: proposalTable.userId })
+      .from(proposalTable);
+    const existingProposalSet = new Set(existingProposals.map((p) => `${p.title}-${p.userId}`));
+
+    // 3. 挿入すべきプロポーザルをフィルタリング
+    const proposalsToInsert = allPotentialProposals.filter(
+      (proposal) => !existingProposalSet.has(`${proposal.title}-${proposal.userId}`),
+    );
+
+    if (proposalsToInsert.length === 0) {
+      logger.info("seedProposals", "All static proposals already exist for the generated users.");
+      return;
+    }
+
+    logger.info("seedProposals", `Attempting to insert ${proposalsToInsert.length} new proposals.`);
+
+    // 4. トランザクション内でバルクインサート
+    await db.transaction(async (tx) => {
+      // drizzle-ormのinsertはvaluesに配列を渡すことでバルクインサートをサポートします
+      await tx.insert(proposalTable).values(proposalsToInsert);
+    });
+
+    logger.info("seedProposals", `${proposalsToInsert.length} proposals inserted successfully.`);
+    proposalsToInsert.forEach((p) =>
+      logger.debug(
+        "seedProposals",
+        `Inserted: User "${generatedUsers.find((u) => u.id === p.userId)?.name}" proposal "${p.title}"`,
+      ),
+    );
   } catch (error) {
     logger.error("seedProposals", "Error inserting static proposals:", error);
     throw error;
@@ -351,7 +375,7 @@ async function seed() {
 
   // // ユーザートークン残高挿入
   // console.log("ユーザートークン残高データを挿入中...");
-  await seedUserTokenBalances(users);
+  // await seedUserTokenBalances(users);
 
   // // staking tokenの金利データ挿入
   // console.log("staking tokenの金利データを挿入中...");
