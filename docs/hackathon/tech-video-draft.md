@@ -57,55 +57,53 @@ Our development focused on testing 3 key things:
 #### Introduction (0:00-0:10)
 
 Hi, I'm Asuma, co-founder of Daiko.
-Today, I'll show you how our AI trading agent works, focusing on three key technical aspects.
+Daiko is the first AI-powered "vibe-trading" app.
+Today I'll show you how it works, focusing on three points:
 
-- how we optimize UI/UX
-- how we qualify sell signals
-- how we built a cost-efficient backend
+- How we optimize UI/UX
+- How we qualify sell signals
+- How we build a cost-efficient system
 
-#### One-Click Trading UI (0:10-0:45)
+#### How we optimize UI/UX (0:10-0:45)
 
-First, our UI/UX. We simplified trading to a single tap.
+We found complex UIs increase user drop-off. So, our top priority was radical simplicity.
 
-Let me show you the actual demo left below.
-As you can see, this proposal page is the core part of Daiko.
+First, let's look at the live demo on the left. This screen is the core of Daiko.
 
-Proposals clearly show:
+Users get personalized proposals. They only need to tap "Accept" or "Decline." That's it.
+Accepted proposals execute instantly through their connected wallet.
 
-- The action, for example, 'Sell 50% of your SOL'
-- The reasoning, explaining why this action is recommended
-- The expected outcome, like potential profit or risk mitigation
+And if they have questions or want to dive deeper about proposals, they can simply ask in our chat for personalized answers like Cursor.
 
-Users connect their wallet during onboarding. After that, it's incredibly simple. You just tap 'Accept' or 'Decline'.
-If you hit 'Accept', the trade executes instantly through your connected wallet.
+#### How we qualify sell-signals (0:45-1:25)
 
-We also added a contextual AI chat, like Cursor. Let's say you have a question about this proposal. You can type it in here. See? The AI understands your portfolio and chat history, providing a personalized answer to help you decide.
+This is Daiko's most critical part. We've invested significant time and resources here to achieve the proposal accuracy we need.
 
-#### AI for Quality Sell Signals (0:45-1:25)
-
-Next, our AI system. It has two parts:
+In our AI system. It has two parts:
 
 1. Signal Detection AI: Scans social media, news, and onchain data.
 2. Personalized Proposal AI: Tailors proposals to user portfolios and preferences.
 
-We found LLMs misinterpret natural language alone. So, we combine social sentiment with technical analysis.
+We found LLMs misinterpret natural language information alone. So, we combine social sentiment with technical analysis to generate more accurate proposal.
 
-If our AI sees negative X discussions, it cross-checks against on-chain metrics and chart patterns.
-This significantly boosts proposal accuracy.
+We're also building a LoRA-based fine-tuning pipeline that learns from user interactions to generate even better, truly personalized proposals.
 
-#### Cost-Efficient Development (1:25-1:50)
+#### How we build a cost-efficient system (1:25-1:50)
 
-Finally, our cost-efficient backend.
+We often heard, "Operational cost must be a challenge for Daiko." So, we tackled it head-on.
 
-We built a serverless architecture using Inngest, NeonDB, and Vercel Functions. This allows highly-scalable batch processing and AI workloads without managing infrastructure.
+Considering cost and speed, we chose a fully serverless approach, leveraging:
 
-Also, we created custom data scrapers instead of using expensive APIs, drastically cutting operational costs.
+- Inngest for orchestration
+- NeonDB for data
+- Vercel Functions for on-demand AI workloads
 
-In result, we built scalable, and maintainable system rapidly.
+This setup handles highly scalable operations including application APIs, batch jobs, and AI generation all without infrastructure management.
+We also built custom scrapers, avoiding pricey APIs and slashing operating costs.
 
 #### Closing (1:50-2:00)
 
-Daiko transforms crypto trading from complex analysis to simple decisions. Thank you.
+Daiko transforms crypto trading from complex analysis to simple one-tap decisions. Thank you for watching.
 
 ---
 
