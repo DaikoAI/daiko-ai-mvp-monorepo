@@ -43,7 +43,6 @@ Daiko AI is an AI-powered trading assistant for cryptocurrency traders. It integ
 ├── README.md
 ├── package.json
 ├── turbo.json
-├── pnpm-workspace.yaml
 ├── apps
 │   ├── lp                   # Landing page
 │   ├── selenium-worker      # X scraper job
@@ -62,6 +61,10 @@ Daiko AI is an AI-powered trading assistant for cryptocurrency traders. It integ
 │   │   ├── src
 │   │   └── package.json
 │   ├── news-scraper         # News site scraper
+│   │   ├── src
+│   │   └── package.json
+│   ├──
+│   ├── signal-detector      # Signal detection engine
 │   │   ├── src
 │   │   └── package.json
 │   └── x-scraper            # X (Twitter) scraper
@@ -195,8 +198,8 @@ flowchart TB
 ### Prerequisites
 
 - Node.js 20 or higher
-- pnpm 10.6.3 or higher
-- Firebase CLI tools
+- Bun 1.2.13 or higher
+- NeonDB
 
 ### Development Environment Setup
 
@@ -210,7 +213,7 @@ cd daiko-ai-mvp-monorepo
 2. Install dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 3. Configure environment variables
@@ -229,13 +232,13 @@ cp packages/news-scraper/.env.example packages/news-scraper/.env
 
 ```bash
 # Frontend
-pnpm dev:web
+bun dev:web
 
 # X (Twitter) Scraper
-pnpm dev:x-scraper
+bun dev:x-scraper
 
 # News Scraper
-pnpm dev:news-scraper
+bun dev:news-scraper
 ```
 
 ## Database Operations (Drizzle ORM + Neon Postgres)
@@ -253,8 +256,8 @@ DATABASE_URL=postgres://username:password@ep-xxx-xxx-xxx.region.aws.neon.tech/ne
 2. Install the required packages:
 
 ```bash
-pnpm add -F @daiko-ai/shared @neondatabase/serverless dotenv drizzle-orm
-pnpm add -D drizzle-kit
+bun add -F @daiko-ai/shared @neondatabase/serverless dotenv drizzle-orm
+bun add -D drizzle-kit
 ```
 
 ### Schema Definition
@@ -282,7 +285,7 @@ export type NewExample = typeof exampleTable.$inferInsert;
 After making schema changes, generate migration files with the following command:
 
 ```bash
-pnpm db:generate
+bun run -F @daiko-ai/shared db:generate
 ```
 
 The generated migration files are saved in the `migrations` directory.
@@ -293,10 +296,10 @@ To apply migrations to the database, execute the following command:
 
 ```bash
 # Update DB using migration files
-pnpm run -F @daiko-ai/shared migrate
+bun run -F @daiko-ai/shared migrate
 
 # Or directly apply schema (Recommended for development only)
-pnpm db:push
+bun run -F @daiko-ai/shared db:push
 ```
 
 ### Database Operations
@@ -347,7 +350,7 @@ export async function findUsersByAge(age: number) {
 You can visually interact with the database using Drizzle Studio:
 
 ```bash
-pnpm db:studio
+bun run -F @daiko-ai/shared db:studio
 ```
 
 Open `http://localhost:4983` in your browser to view and edit tables and data.

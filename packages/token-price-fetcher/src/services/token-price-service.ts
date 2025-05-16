@@ -1,4 +1,4 @@
-import { TokenSelect, db, tokenPrice24hAgoView, tokenPriceHistory, tokenPricesTable } from "@daiko-ai/shared";
+import { TokenSelect, db, logger, tokenPrice24hAgoView, tokenPriceHistory, tokenPricesTable } from "@daiko-ai/shared";
 import { sql } from "drizzle-orm";
 
 // Jupiterの価格レスポンスの型定義
@@ -40,16 +40,16 @@ export class TokenPriceService {
    */
   async updateAllTokenPrices(): Promise<void> {
     try {
-      console.log("トークン価格の更新を開始します...");
+      logger.debug("updateAllTokenPrices", "start updating all token prices...");
 
       // DBから全トークンを取得
       const tokens = await db.query.tokensTable.findMany();
       if (tokens.length === 0) {
-        console.log("更新するトークンがありません");
+        logger.debug("updateAllTokenPrices", "no tokens to update");
         return;
       }
 
-      console.log(`${tokens.length}個のトークンの価格を更新します`);
+      logger.debug("updateAllTokenPrices", `${tokens.length} tokens to update`);
 
       // バッチでトークンを処理（APIレート制限を考慮）
       const batchSize = 30;
@@ -63,9 +63,9 @@ export class TokenPriceService {
         }
       }
 
-      console.log("トークン価格の更新が完了しました");
+      logger.debug("updateAllTokenPrices", "token prices updated");
     } catch (error) {
-      console.error("トークン価格の更新中にエラーが発生しました:", error);
+      logger.error("updateAllTokenPrices", "error updating token prices", error);
       throw error;
     }
   }
@@ -83,6 +83,10 @@ export class TokenPriceService {
       const response = await fetch(`${this.jupiterApiUrl}?ids=${addressesParam}`);
 
       if (!response.ok) {
+        logger.error("updateTokenPricesBatch", "error fetching token prices", {
+          status: response.status,
+          statusText: response.statusText,
+        });
         throw new Error(`Jupiter API から価格を取得できませんでした: ${response.status} ${response.statusText}`);
       }
 
@@ -96,7 +100,7 @@ export class TokenPriceService {
       for (const token of tokens) {
         const tokenPrice = priceData.data[token.address];
         if (!tokenPrice || !tokenPrice.price) {
-          console.warn(`${token.symbol} (${token.address}) の価格が見つかりませんでした`);
+          logger.warn("updateTokenPricesBatch", `${token.symbol} (${token.address}) price not found`);
           continue;
         }
 
@@ -116,7 +120,7 @@ export class TokenPriceService {
           source: "jupiter",
         });
 
-        console.log(`${token.symbol} (${token.address}): ${tokenPrice.price} USD に更新準備完了`);
+        logger.debug("updateTokenPricesBatch", `${token.symbol} (${token.address}): ${tokenPrice.price} USD updated`);
       }
 
       // 一括でデータを更新
@@ -139,9 +143,9 @@ export class TokenPriceService {
         await db.insert(tokenPriceHistory).values(historyInserts);
       }
 
-      console.log(`${historyInserts.length}個のトークン価格を一括更新しました`);
+      logger.debug("updateTokenPricesBatch", `${historyInserts.length} tokens prices updated`);
     } catch (error) {
-      console.error("トークン価格のバッチ更新中にエラーが発生しました:", error);
+      logger.error("updateTokenPricesBatch", "error updating token prices", error);
       throw error;
     }
   }
@@ -167,7 +171,7 @@ export class TokenPriceService {
 
       return null;
     } catch (error) {
-      console.error(`トークン ${tokenAddress} の価格取得中にエラーが発生しました:`, error);
+      logger.error("getTokenPrice", `error fetching token price for ${tokenAddress}`, error);
       return null;
     }
   }
@@ -195,7 +199,10 @@ export class TokenPriceService {
       const currentDay = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
 
       if (lastRefreshDay === currentDay) {
-        console.log(`[TokenPriceService] Materialized view already refreshed today (${now.toLocaleDateString()}).`);
+        logger.debug(
+          "shouldRefreshTokenPriceView",
+          `materialized view already refreshed today (${now.toLocaleDateString()}).`,
+        );
         return false;
       }
     }
@@ -206,18 +213,15 @@ export class TokenPriceService {
   public async refreshMaterializedViewsIfNeeded(): Promise<void> {
     if (this.shouldRefreshTokenPriceView()) {
       // No await needed if shouldRefreshTokenPriceView is sync
-      console.log(
-        `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' のリフレッシュを開始します。`,
-      );
+      logger.debug("refreshMaterializedViewsIfNeeded", `start refreshing materialized view 'token_price_24h_ago_view'`);
       try {
         await db.refreshMaterializedView(tokenPrice24hAgoView).concurrently();
-        console.log(
-          `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' のリフレッシュに成功しました。`,
-        );
+        logger.debug("refreshMaterializedViewsIfNeeded", `materialized view 'token_price_24h_ago_view' refreshed`);
         this.lastRefreshDate = new Date(); // Record the time of this refresh
       } catch (refreshError) {
-        console.error(
-          `[TokenPriceService][${new Date().toISOString()}] Materialized view 'token_price_24h_ago_view' のリフレッシュ中にエラーが発生しました:`,
+        logger.error(
+          "refreshMaterializedViewsIfNeeded",
+          "error refreshing materialized view 'token_price_24h_ago_view'",
           refreshError,
         );
       }
