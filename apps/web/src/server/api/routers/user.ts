@@ -1,7 +1,7 @@
 import { revalidateProfile } from "@/app/actions";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { usersTable } from "@daiko-ai/shared";
 import type { UserSelect } from "@daiko-ai/shared";
+import { usersTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
 
 import { z } from "zod";
@@ -14,9 +14,9 @@ export const usersRouter = createTRPCRouter({
     const user: UserSelect | null =
       ctx.useMockDb && ctx.mock
         ? await ctx.mock.getUserByWallet(input.walletAddress)
-        : (await ctx.db.query.usersTable.findFirst({
+        : ((await ctx.db.query.usersTable.findFirst({
             where: eq(usersTable.walletAddress, input.walletAddress),
-          })) ?? null;
+          })) ?? null);
 
     return user;
   }),
@@ -41,9 +41,9 @@ export const usersRouter = createTRPCRouter({
       const existingUser: UserSelect | null =
         ctx.useMockDb && ctx.mock
           ? await ctx.mock.getUserByWallet(input.walletAddress)
-          : (await ctx.db.query.usersTable.findFirst({
+          : ((await ctx.db.query.usersTable.findFirst({
               where: eq(usersTable.walletAddress, input.walletAddress),
-            })) ?? null;
+            })) ?? null);
 
       if (existingUser) {
         return existingUser;
@@ -83,9 +83,9 @@ export const usersRouter = createTRPCRouter({
     const user: UserSelect | null =
       ctx.useMockDb && ctx.mock
         ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
-        : (await ctx.db.query.usersTable.findFirst({
+        : ((await ctx.db.query.usersTable.findFirst({
             where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-          })) ?? null;
+          })) ?? null);
 
     if (!user) {
       throw new Error("User not found");
@@ -123,9 +123,9 @@ export const usersRouter = createTRPCRouter({
       const user: UserSelect | null =
         ctx.useMockDb && ctx.mock
           ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
-          : (await ctx.db.query.usersTable.findFirst({
+          : ((await ctx.db.query.usersTable.findFirst({
               where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-            })) ?? null;
+            })) ?? null);
 
       if (!user) {
         throw new Error("User not found");
@@ -136,7 +136,9 @@ export const usersRouter = createTRPCRouter({
           riskTolerance: (input.riskTolerance ?? user.riskTolerance) as string,
           tradeStyle: (input.tradeStyle ?? user.tradeStyle) as string,
           totalAssetUsd: input.totalAssetUsd ? parseInt(input.totalAssetUsd, 10) : user.totalAssetUsd,
-          cryptoInvestmentUsd: input.cryptoInvestmentUsd ? parseInt(input.cryptoInvestmentUsd, 10) : user.cryptoInvestmentUsd,
+          cryptoInvestmentUsd: input.cryptoInvestmentUsd
+            ? parseInt(input.cryptoInvestmentUsd, 10)
+            : user.cryptoInvestmentUsd,
           age: input.age ? parseInt(input.age, 10) : user.age,
         });
         revalidateProfile();
@@ -150,7 +152,9 @@ export const usersRouter = createTRPCRouter({
           riskTolerance: input.riskTolerance,
           tradeStyle: input.tradeStyle,
           totalAssetUsd: input.totalAssetUsd ? parseInt(input.totalAssetUsd, 10) : user.totalAssetUsd,
-          cryptoInvestmentUsd: input.cryptoInvestmentUsd ? parseInt(input.cryptoInvestmentUsd, 10) : user.cryptoInvestmentUsd,
+          cryptoInvestmentUsd: input.cryptoInvestmentUsd
+            ? parseInt(input.cryptoInvestmentUsd, 10)
+            : user.cryptoInvestmentUsd,
           age: input.age ? parseInt(input.age, 10) : user.age,
         })
         .where(eq(usersTable.id, user.id))
@@ -180,9 +184,9 @@ export const usersRouter = createTRPCRouter({
       const user: UserSelect | null =
         ctx.useMockDb && ctx.mock
           ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
-          : (await ctx.db.query.usersTable.findFirst({
+          : ((await ctx.db.query.usersTable.findFirst({
               where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-            })) ?? null;
+            })) ?? null);
 
       if (!user) {
         throw new Error("User not found");
@@ -192,11 +196,7 @@ export const usersRouter = createTRPCRouter({
         return user;
       }
 
-      const [updatedUser] = await ctx.db
-        .update(usersTable)
-        .set({})
-        .where(eq(usersTable.id, user.id))
-        .returning();
+      const [updatedUser] = await ctx.db.update(usersTable).set({}).where(eq(usersTable.id, user.id)).returning();
 
       return updatedUser;
     }),
