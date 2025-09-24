@@ -1,3 +1,4 @@
+import { env } from "@/env";
 import { api } from "@/trpc/react";
 import { useState } from "react";
 import type { AlphaTx, AlphaTxInstruction, AlphaTxResult, TokenRegistry } from "../types";
@@ -25,6 +26,17 @@ export function useExecuteInstruction() {
   const transfer = api.token.transfer.useMutation();
   const stake = api.token.stake.useMutation();
 
+  function normalizeAmounts(instruction: AlphaTxInstruction): { fromAmount: string; toAmount: string } {
+    const fromAmount = instruction.fromAmount && Number(instruction.fromAmount) > 0 ? instruction.fromAmount : "1";
+    const toAmount =
+      instruction.toAmount && Number(instruction.toAmount) > 0
+        ? instruction.toAmount
+        : instruction.fromAmount && Number(instruction.fromAmount) > 0
+          ? instruction.fromAmount
+          : "1";
+    return { fromAmount, toAmount };
+  }
+
   async function execute(instruction: AlphaTxInstruction, walletAddress?: string | null): Promise<ExecuteResult> {
     if (!walletAddress) {
       return {
@@ -37,12 +49,21 @@ export function useExecuteInstruction() {
     setTransferError(null);
 
     try {
+      // In mock mode, don't call backend; simulate success immediately
+      if (env.NEXT_PUBLIC_USE_MOCK_DB) {
+        const { fromAmount, toAmount } = normalizeAmounts(instruction);
+        return {
+          success: true,
+          txHash: `sim-tx-${Date.now()}`,
+        };
+      }
       if (instruction.type === "swap") {
+        const { fromAmount, toAmount } = normalizeAmounts(instruction);
         const result = await transfer.mutateAsync({
           fromToken: instruction.fromToken.symbol,
           toToken: instruction.toToken.symbol,
-          fromAmount: instruction.fromAmount || "0",
-          toAmount: instruction.toAmount || "0",
+          fromAmount,
+          toAmount,
           walletAddress,
         });
 
@@ -52,10 +73,11 @@ export function useExecuteInstruction() {
           error: result.success ? undefined : result.message,
         };
       } else if (instruction.type === "stake") {
+        const { fromAmount } = normalizeAmounts(instruction);
         const result = await stake.mutateAsync({
           fromToken: instruction.fromToken.symbol,
           toToken: instruction.toToken.symbol,
-          amount: instruction.fromAmount,
+          amount: fromAmount,
           walletAddress,
         });
 

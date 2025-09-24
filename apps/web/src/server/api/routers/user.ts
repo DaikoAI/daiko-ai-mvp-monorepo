@@ -1,5 +1,6 @@
 import { revalidateProfile } from "@/app/actions";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import type { UserSelect } from "@daiko-ai/shared";
 import { usersTable } from "@daiko-ai/shared";
 import { eq } from "drizzle-orm";
 
@@ -10,9 +11,12 @@ export const usersRouter = createTRPCRouter({
    * GET /api/users/:wallet_address
    */
   getUserByWallet: publicProcedure.input(z.object({ walletAddress: z.string() })).query(async ({ ctx, input }) => {
-    const user = await ctx.db.query.usersTable.findFirst({
-      where: eq(usersTable.walletAddress, input.walletAddress),
-    });
+    const user: UserSelect | null =
+      ctx.useMockDb && ctx.mock
+        ? await ctx.mock.getUserByWallet(input.walletAddress)
+        : ((await ctx.db.query.usersTable.findFirst({
+            where: eq(usersTable.walletAddress, input.walletAddress),
+          })) ?? null);
 
     return user;
   }),
@@ -34,15 +38,23 @@ export const usersRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Check if user already exists
-      const existingUser = await ctx.db.query.usersTable.findFirst({
-        where: eq(usersTable.walletAddress, input.walletAddress),
-      });
+      const existingUser: UserSelect | null =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserByWallet(input.walletAddress)
+          : ((await ctx.db.query.usersTable.findFirst({
+              where: eq(usersTable.walletAddress, input.walletAddress),
+            })) ?? null);
 
       if (existingUser) {
         return existingUser;
       }
 
       // Create new user
+      if (ctx.useMockDb && ctx.mock) {
+        const ensured = await ctx.mock.ensureUser(input.walletAddress);
+        return ensured;
+      }
+
       const [newUser] = await ctx.db
         .insert(usersTable)
         .values({
@@ -68,9 +80,12 @@ export const usersRouter = createTRPCRouter({
       throw new Error("User not authenticated or wallet address not found");
     }
 
-    const user = await ctx.db.query.usersTable.findFirst({
-      where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-    });
+    const user: UserSelect | null =
+      ctx.useMockDb && ctx.mock
+        ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
+        : ((await ctx.db.query.usersTable.findFirst({
+            where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
+          })) ?? null);
 
     if (!user) {
       throw new Error("User not found");
@@ -94,8 +109,6 @@ export const usersRouter = createTRPCRouter({
       z.object({
         riskTolerance: z.enum(["low", "medium", "high"]).optional(),
         tradeStyle: z.enum(["day", "swing", "long"]).optional(),
-        stakingEnabled: z.boolean().optional(),
-        birthday: z.string().optional(),
         totalAssetUsd: z.string().optional(),
         cryptoInvestmentUsd: z.string().optional(),
         age: z.string().optional(),
@@ -107,28 +120,43 @@ export const usersRouter = createTRPCRouter({
       }
 
       // ユーザーの存在確認
-      const user = await ctx.db.query.usersTable.findFirst({
-        where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-      });
+      const user: UserSelect | null =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
+          : ((await ctx.db.query.usersTable.findFirst({
+              where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
+            })) ?? null);
 
       if (!user) {
         throw new Error("User not found");
       }
 
-      // ユーザー設定を更新（新しいフィールドを含むため型アサーションが必要）
-      const [updatedUser] = await ctx.db
-        .update(usersTable)
-        .set({
-          riskTolerance: input.riskTolerance,
-          tradeStyle: input.tradeStyle,
-          stakingEnabled: input.stakingEnabled,
-          birthday: input.birthday ? new Date(input.birthday) : undefined,
+      if (ctx.useMockDb && ctx.mock) {
+        const updated = await ctx.mock.updateUserPartial(user.id, {
+          riskTolerance: (input.riskTolerance ?? user.riskTolerance) as string,
+          tradeStyle: (input.tradeStyle ?? user.tradeStyle) as string,
           totalAssetUsd: input.totalAssetUsd ? parseInt(input.totalAssetUsd, 10) : user.totalAssetUsd,
           cryptoInvestmentUsd: input.cryptoInvestmentUsd
             ? parseInt(input.cryptoInvestmentUsd, 10)
             : user.cryptoInvestmentUsd,
           age: input.age ? parseInt(input.age, 10) : user.age,
-        } as any) // データベーススキーマの変更が反映されるまでの一時的な対処
+        });
+        revalidateProfile();
+        return updated;
+      }
+
+      // ユーザー設定を更新
+      const [updatedUser] = await ctx.db
+        .update(usersTable)
+        .set({
+          riskTolerance: input.riskTolerance,
+          tradeStyle: input.tradeStyle,
+          totalAssetUsd: input.totalAssetUsd ? parseInt(input.totalAssetUsd, 10) : user.totalAssetUsd,
+          cryptoInvestmentUsd: input.cryptoInvestmentUsd
+            ? parseInt(input.cryptoInvestmentUsd, 10)
+            : user.cryptoInvestmentUsd,
+          age: input.age ? parseInt(input.age, 10) : user.age,
+        })
         .where(eq(usersTable.id, user.id))
         .returning();
 
@@ -153,23 +181,22 @@ export const usersRouter = createTRPCRouter({
       }
 
       // ユーザーの存在確認
-      const user = await ctx.db.query.usersTable.findFirst({
-        where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-      });
+      const user: UserSelect | null =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
+          : ((await ctx.db.query.usersTable.findFirst({
+              where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
+            })) ?? null);
 
       if (!user) {
         throw new Error("User not found");
       }
 
-      // Twitterアカウント連携（実際の認証処理は省略）
-      const [updatedUser] = await ctx.db
-        .update(usersTable)
-        .set({
-          twitterConnected: true,
-          twitterUsername: input.twitterUsername,
-        } as any) // データベーススキーマの変更が反映されるまでの一時的な対処
-        .where(eq(usersTable.id, user.id))
-        .returning();
+      if (ctx.useMockDb && ctx.mock) {
+        return user;
+      }
+
+      const [updatedUser] = await ctx.db.update(usersTable).set({}).where(eq(usersTable.id, user.id)).returning();
 
       return updatedUser;
     }),

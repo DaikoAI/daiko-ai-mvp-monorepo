@@ -11,7 +11,9 @@ import { TRPCError, initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { env } from "@/env";
 import { auth } from "@/server/auth";
+import { mockRepo } from "@/server/mocks/repository";
 import { db } from "@daiko-ai/shared";
 
 /**
@@ -31,6 +33,8 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 
   return {
     db,
+    mock: env.USE_MOCK_DB ? mockRepo : null,
+    useMockDb: !!env.USE_MOCK_DB,
     session,
     ...opts,
   };

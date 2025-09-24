@@ -1,4 +1,5 @@
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import type { TokenSelect, UserBalanceSelect, UserSelect } from "@daiko-ai/shared";
 import {
   perpPositionsTable,
   portfolioSnapshots,
@@ -13,12 +14,12 @@ import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 // Define a type for the token price data (adjust based on your actual schema)
-type TokenPrice = {
-  tokenAddress: string;
-  priceUsd: string; // Based on usage below
-  // Include other relevant fields from your tokenPricesTable schema
-  timestamp?: Date; // Example: if you need timestamp
-};
+// type TokenPrice = {
+//   tokenAddress: string;
+//   priceUsd: string; // Based on usage below
+//   // Include other relevant fields from your tokenPricesTable schema
+//   timestamp?: Date; // Example: if you need timestamp
+// };
 
 // 24時間前の価格を取得する関数
 async function get24hPriceHistory(db: NodePostgresDatabase, tokenAddresses: string[]): Promise<Map<string, string>> {
@@ -69,21 +70,31 @@ export const portfolioRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Get user by wallet address
-      const user = await ctx.db.query.usersTable.findFirst({
-        where: eq(usersTable.walletAddress, input.walletAddress),
-      });
+      let user: UserSelect | null | undefined =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserByWallet(input.walletAddress)
+          : await ctx.db.query.usersTable.findFirst({
+              where: eq(usersTable.walletAddress, input.walletAddress),
+            });
+
+      if (!user && ctx.useMockDb && ctx.mock) {
+        user = await ctx.mock.ensureUser(input.walletAddress);
+      }
 
       if (!user) {
         throw new Error("User not found");
       }
 
       // Get user's token balances
-      const balances = await ctx.db.query.userBalancesTable.findMany({
-        where: eq(userBalancesTable.userId, user.id),
-        with: {
-          token: true,
-        },
-      });
+      const balances: Array<UserBalanceSelect & { token: TokenSelect }> =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserBalances(user.id)
+          : await ctx.db.query.userBalancesTable.findMany({
+              where: eq(userBalancesTable.userId, user.id),
+              with: {
+                token: true,
+              },
+            });
 
       // Get token prices
       const tokenAddresses = balances.map((balance) => balance.tokenAddress);
@@ -94,20 +105,26 @@ export const portfolioRouter = createTRPCRouter({
       let priceMap: Record<string, string> = {};
       let oldPrices: Map<string, string> = new Map();
       if (tokenAddresses.length > 0) {
-        const [currentResult, priceHistoryMap] = await Promise.all([
-          ctx.db.execute(sql`
-            SELECT DISTINCT ON (token_address) token_address, price_usd
-            FROM token_prices
-            WHERE token_address IN (${sql.join(tokenAddresses, sql`,`)})
-            ORDER BY token_address, last_updated DESC
-          `),
-          get24hPriceHistory(ctx.db, tokenAddresses),
-        ]);
-        const currentRows = (currentResult.rows ?? []) as Array<{ token_address: string; price_usd: string }>;
-        for (const row of currentRows) {
-          priceMap[row.token_address] = row.price_usd;
+        if (ctx.useMockDb && ctx.mock) {
+          const rows = await ctx.mock.getTokenPrices(tokenAddresses);
+          for (const r of rows) priceMap[r.tokenAddress] = r.priceUsd;
+          oldPrices = new Map();
+        } else {
+          const [currentResult, priceHistoryMap] = await Promise.all([
+            ctx.db.execute(sql`
+              SELECT DISTINCT ON (token_address) token_address, price_usd
+              FROM token_prices
+              WHERE token_address IN (${sql.join(tokenAddresses, sql`,`)})
+              ORDER BY token_address, last_updated DESC
+            `),
+            get24hPriceHistory(ctx.db, tokenAddresses),
+          ]);
+          const currentRows = (currentResult.rows ?? []) as Array<{ token_address: string; price_usd: string }>;
+          for (const row of currentRows) {
+            priceMap[row.token_address] = row.price_usd;
+          }
+          oldPrices = priceHistoryMap;
         }
-        oldPrices = priceHistoryMap;
       }
 
       // Calculate total value and build portfolio
@@ -141,12 +158,14 @@ export const portfolioRouter = createTRPCRouter({
       });
 
       // Get open perp positions
-      const perpPositions = await ctx.db.query.perpPositionsTable.findMany({
-        where: and(eq(perpPositionsTable.userId, user.id), eq(perpPositionsTable.status, "open")),
-        with: {
-          token: true,
-        },
-      });
+      const perpPositions = ctx.useMockDb
+        ? []
+        : await ctx.db.query.perpPositionsTable.findMany({
+            where: and(eq(perpPositionsTable.userId, user.id), eq(perpPositionsTable.status, "open")),
+            with: {
+              token: true,
+            },
+          });
 
       // Process perp positions and calculate their values
       const perpPositionsData = perpPositions.map((position) => {
@@ -191,9 +210,16 @@ export const portfolioRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Get user by wallet address
-      const user = await ctx.db.query.usersTable.findFirst({
-        where: eq(usersTable.walletAddress, input.walletAddress),
-      });
+      let user: UserSelect | null | undefined =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserByWallet(input.walletAddress)
+          : await ctx.db.query.usersTable.findFirst({
+              where: eq(usersTable.walletAddress, input.walletAddress),
+            });
+
+      if (!user && ctx.useMockDb && ctx.mock) {
+        user = await ctx.mock.ensureUser(input.walletAddress);
+      }
 
       if (!user) {
         throw new Error("User not found");
@@ -222,14 +248,16 @@ export const portfolioRouter = createTRPCRouter({
       }
 
       // Get snapshots for the period
-      const snapshots = await ctx.db.query.portfolioSnapshots.findMany({
-        where: and(
-          eq(portfolioSnapshots.userId, user.id),
-          gte(portfolioSnapshots.timestamp, startDate),
-          lte(portfolioSnapshots.timestamp, now),
-        ),
-        orderBy: [portfolioSnapshots.timestamp],
-      });
+      const snapshots = ctx.useMockDb
+        ? []
+        : await ctx.db.query.portfolioSnapshots.findMany({
+            where: and(
+              eq(portfolioSnapshots.userId, user.id),
+              gte(portfolioSnapshots.timestamp, startDate),
+              lte(portfolioSnapshots.timestamp, now),
+            ),
+            orderBy: [portfolioSnapshots.timestamp],
+          });
 
       // If no snapshots, return current portfolio value
       if (snapshots.length === 0) {
@@ -287,25 +315,30 @@ export const portfolioRouter = createTRPCRouter({
     }),
 
   getUserNfts: publicProcedure.input(z.object({ walletAddress: z.string() })).query(async ({ ctx, input }) => {
-    const user = await ctx.db.query.usersTable.findFirst({
-      where: eq(usersTable.walletAddress, input.walletAddress),
-    });
+    let user: UserSelect | null | undefined =
+      ctx.useMockDb && ctx.mock
+        ? await ctx.mock.getUserByWallet(input.walletAddress)
+        : await ctx.db.query.usersTable.findFirst({
+            where: eq(usersTable.walletAddress, input.walletAddress),
+          });
+
+    if (!user && ctx.useMockDb && ctx.mock) {
+      user = await ctx.mock.ensureUser(input.walletAddress);
+    }
 
     if (!user) {
       throw new Error("User not found");
     }
 
-    // const nfts = await ctx.db.query.nftsTable.findMany({
-    //   where: eq(nftsTable.userId, user.id),
-    // });
+    if (ctx.useMockDb && ctx.mock) {
+      return ctx.mock.getNfts(user.id);
+    }
 
-    return [] as {
+    return [] as Array<{
       id: string;
       name: string;
       image_url: string;
-      collection: {
-        name: string;
-      };
-    }[];
+      collection: { name: string };
+    }>;
   }),
 });

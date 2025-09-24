@@ -1,3 +1,4 @@
+import { env } from "@/env";
 import { cache } from "react";
 
 interface TokenPrice {
@@ -59,12 +60,31 @@ class TokenPriceService {
         return result;
       }
 
+      // In mock mode, short-circuit with static prices to avoid external calls
+      if (env.NEXT_PUBLIC_USE_MOCK_DB) {
+        const MOCK_PRICE_BY_ADDRESS: Record<string, string> = {
+          // USDC
+          EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: "1",
+          // SOL (approx)
+          So11111111111111111111111111111111111111112: "148.98",
+          // RAY (sample)
+          "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R": "1.20",
+        } as const;
+        uniqueAddresses.forEach((addr) => {
+          result[addr] = result[addr] ?? MOCK_PRICE_BY_ADDRESS[addr] ?? "0";
+        });
+        return result;
+      }
+
       // 未キャッシュの価格を取得
       const addressesParam = addressesToFetch.join(",");
       const response = await fetch(`${this.jupiterApiUrl}?ids=${addressesParam}`);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch prices: ${response.status}`);
+        // Graceful fallback: keep cached ones and fill others with 0
+        const fallback: Record<string, string> = {};
+        addressesToFetch.forEach((addr) => (fallback[addr] = result[addr] ?? "0"));
+        return { ...result, ...fallback };
       }
 
       const priceData = (await response.json()) as JupiterPriceResponse;
