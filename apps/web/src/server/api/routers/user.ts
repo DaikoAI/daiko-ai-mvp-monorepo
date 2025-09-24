@@ -109,8 +109,6 @@ export const usersRouter = createTRPCRouter({
       z.object({
         riskTolerance: z.enum(["low", "medium", "high"]).optional(),
         tradeStyle: z.enum(["day", "swing", "long"]).optional(),
-        stakingEnabled: z.boolean().optional(),
-        birthday: z.string().optional(),
         totalAssetUsd: z.string().optional(),
         cryptoInvestmentUsd: z.string().optional(),
         age: z.string().optional(),
@@ -137,8 +135,6 @@ export const usersRouter = createTRPCRouter({
         const updated = await ctx.mock.updateUserPartial(user.id, {
           riskTolerance: (input.riskTolerance ?? user.riskTolerance) as string,
           tradeStyle: (input.tradeStyle ?? user.tradeStyle) as string,
-          stakingEnabled: (input.stakingEnabled ?? false) as boolean,
-          birthday: input.birthday ? new Date(input.birthday) : (undefined as unknown as Date),
           totalAssetUsd: input.totalAssetUsd ? parseInt(input.totalAssetUsd, 10) : user.totalAssetUsd,
           cryptoInvestmentUsd: input.cryptoInvestmentUsd ? parseInt(input.cryptoInvestmentUsd, 10) : user.cryptoInvestmentUsd,
           age: input.age ? parseInt(input.age, 10) : user.age,
@@ -153,8 +149,6 @@ export const usersRouter = createTRPCRouter({
         .set({
           riskTolerance: input.riskTolerance,
           tradeStyle: input.tradeStyle,
-          stakingEnabled: input.stakingEnabled,
-          birthday: input.birthday ? new Date(input.birthday) : undefined,
           totalAssetUsd: input.totalAssetUsd ? parseInt(input.totalAssetUsd, 10) : user.totalAssetUsd,
           cryptoInvestmentUsd: input.cryptoInvestmentUsd ? parseInt(input.cryptoInvestmentUsd, 10) : user.cryptoInvestmentUsd,
           age: input.age ? parseInt(input.age, 10) : user.age,
@@ -195,19 +189,12 @@ export const usersRouter = createTRPCRouter({
       }
 
       if (ctx.useMockDb && ctx.mock) {
-        const updated = await ctx.mock.updateUserPartial(user.id, {
-          twitterConnected: true,
-          twitterUsername: input.twitterUsername,
-        });
-        return updated;
+        return user;
       }
 
       const [updatedUser] = await ctx.db
         .update(usersTable)
-        .set({
-          twitterConnected: true,
-          twitterUsername: input.twitterUsername,
-        })
+        .set({})
         .where(eq(usersTable.id, user.id))
         .returning();
 
