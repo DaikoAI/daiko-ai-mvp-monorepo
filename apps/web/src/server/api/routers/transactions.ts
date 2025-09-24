@@ -24,9 +24,10 @@ export const transactionsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Get user by wallet address
-      const user = await ctx.db.query.usersTable.findFirst({
-        where: eq(usersTable.walletAddress, input.walletAddress),
-      });
+      const user =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.getUserByWallet(input.walletAddress)
+          : await ctx.db.query.usersTable.findFirst({ where: eq(usersTable.walletAddress, input.walletAddress) });
 
       if (!user) {
         throw new TRPCError({
@@ -51,24 +52,30 @@ export const transactionsRouter = createTRPCRouter({
       }
 
       // Get transactions
-      const transactions = await ctx.db.query.transactionsTable.findMany({
-        where: conditions,
-        limit: input.limit,
-        offset: input.offset,
-        orderBy: [desc(transactionsTable.createdAt)],
-        with: {
-          user: true,
-          fromToken: true,
-          toToken: true,
-        },
-      });
+      const transactions =
+        ctx.useMockDb && ctx.mock
+          ? (await ctx.mock.getTransactions(user.id)).slice(input.offset, input.offset + input.limit)
+          : await ctx.db.query.transactionsTable.findMany({
+              where: conditions,
+              limit: input.limit,
+              offset: input.offset,
+              orderBy: [desc(transactionsTable.createdAt)],
+              with: {
+                user: true,
+                fromToken: true,
+                toToken: true,
+              },
+            });
 
       // Count total transactions for pagination
-      const totalCount = await ctx.db
-        .select({ count: sql`count(*)` })
-        .from(transactionsTable)
-        .where(conditions)
-        .then((result) => Number(result[0]?.count || 0));
+      const totalCount =
+        ctx.useMockDb && ctx.mock
+          ? (await ctx.mock.getTransactions(user.id)).length
+          : await ctx.db
+              .select({ count: sql`count(*)` })
+              .from(transactionsTable)
+              .where(conditions)
+              .then((result) => Number(result[0]?.count || 0));
 
       return {
         transactions,
@@ -86,14 +93,17 @@ export const transactionsRouter = createTRPCRouter({
    * GET /api/transactions/id/:id
    */
   getTransactionById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
-    const transaction = await ctx.db.query.transactionsTable.findFirst({
-      where: eq(transactionsTable.id, input.id),
-      with: {
-        user: true,
-        fromToken: true,
-        toToken: true,
-      },
-    });
+    const transaction =
+      ctx.useMockDb && ctx.mock
+        ? await ctx.mock.getTransactionById(input.id)
+        : await ctx.db.query.transactionsTable.findFirst({
+            where: eq(transactionsTable.id, input.id),
+            with: {
+              user: true,
+              fromToken: true,
+              toToken: true,
+            },
+          });
 
     if (!transaction) {
       throw new TRPCError({
@@ -162,53 +172,89 @@ export const transactionsRouter = createTRPCRouter({
       }
 
       // Create transaction
-      const [transaction] = await ctx.db
-        .insert(transactionsTable)
-        .values({
-          userId,
-          transactionType: input.transactionType,
-          fromTokenAddress: input.fromTokenAddress,
-          toTokenAddress: input.toTokenAddress,
-          amountFrom: input.amountFrom,
-          amountTo: input.amountTo,
-          fee: input.fee,
-          details: input.details || {},
-        })
-        .returning();
+      const transaction =
+        ctx.useMockDb && ctx.mock
+          ? await ctx.mock.createTransaction({
+              userId,
+              transactionType: input.transactionType,
+              fromTokenAddress: input.fromTokenAddress!,
+              toTokenAddress: input.toTokenAddress!,
+              amountFrom: input.amountFrom!,
+              amountTo: input.amountTo!,
+              fee: input.fee ?? null,
+              details: input.details || {},
+            })
+          : (
+              await ctx.db
+                .insert(transactionsTable)
+                .values({
+                  userId,
+                  transactionType: input.transactionType,
+                  fromTokenAddress: input.fromTokenAddress,
+                  toTokenAddress: input.toTokenAddress,
+                  amountFrom: input.amountFrom,
+                  amountTo: input.amountTo,
+                  fee: input.fee,
+                  details: input.details || {},
+                })
+                .returning()
+            )[0];
 
       // In a real implementation, we would also update user balances here
       // This is a simplified version
       if (input.transactionType === "swap" && input.fromTokenAddress && input.toTokenAddress) {
         // Update user's balance of fromToken (deduct)
-        const fromBalance = await ctx.db.query.userBalancesTable.findFirst({
-          where: and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.fromTokenAddress)),
-        });
+        const fromBalance =
+          ctx.useMockDb && ctx.mock
+            ? (await ctx.mock.getUserBalances(userId)).find((b) => b.tokenAddress === input.fromTokenAddress)
+            : await ctx.db.query.userBalancesTable.findFirst({
+                where: and(
+                  eq(userBalancesTable.userId, userId),
+                  eq(userBalancesTable.tokenAddress, input.fromTokenAddress),
+                ),
+              });
 
         if (fromBalance && input.amountFrom) {
           const newBalance = new BigNumber(fromBalance.balance).minus(input.amountFrom).toString();
 
           // Update with new balance
-          await ctx.db
-            .update(userBalancesTable)
-            .set({ balance: newBalance })
-            .where(
-              and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.fromTokenAddress)),
-            );
+          if (ctx.useMockDb && ctx.mock) {
+            await ctx.mock.updateUserBalance(userId, input.fromTokenAddress, newBalance);
+          } else {
+            await ctx.db
+              .update(userBalancesTable)
+              .set({ balance: newBalance })
+              .where(
+                and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.fromTokenAddress)),
+              );
+          }
         }
 
         // Update user's balance of toToken (add)
-        const toBalance = await ctx.db.query.userBalancesTable.findFirst({
-          where: and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.toTokenAddress)),
-        });
+        const toBalance =
+          ctx.useMockDb && ctx.mock
+            ? (await ctx.mock.getUserBalances(userId)).find((b) => b.tokenAddress === input.toTokenAddress)
+            : await ctx.db.query.userBalancesTable.findFirst({
+                where: and(
+                  eq(userBalancesTable.userId, userId),
+                  eq(userBalancesTable.tokenAddress, input.toTokenAddress),
+                ),
+              });
 
         if (toBalance && input.amountTo) {
           const newBalance = new BigNumber(toBalance.balance).plus(input.amountTo).toString();
 
           // Update with new balance
-          await ctx.db
-            .update(userBalancesTable)
-            .set({ balance: newBalance })
-            .where(and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.toTokenAddress)));
+          if (ctx.useMockDb && ctx.mock) {
+            await ctx.mock.updateUserBalance(userId, input.toTokenAddress, newBalance);
+          } else {
+            await ctx.db
+              .update(userBalancesTable)
+              .set({ balance: newBalance })
+              .where(
+                and(eq(userBalancesTable.userId, userId), eq(userBalancesTable.tokenAddress, input.toTokenAddress)),
+              );
+          }
         }
       }
 

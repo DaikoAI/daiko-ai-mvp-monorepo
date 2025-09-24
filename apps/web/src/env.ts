@@ -15,12 +15,20 @@ export const env = createEnv({
     // AUTH_TWITTER_SECRET: z.string(),
     WEB_PUSH_VAPID_PRIVATE_KEY: z.string(),
     CRON_SECRET: z.string(),
+    USE_MOCK_DB: z
+      .string()
+      .optional()
+      .transform((s) => s === "true" || s === "1"),
     // INNGEST_EVENT_KEY: z.string(),
     // INNGEST_SIGNING_KEY: z.string(),
   },
   client: {
     NEXT_PUBLIC_DEBUG: z.string().transform((s) => s !== "false" && s !== "0"),
     NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: z.string(),
+    NEXT_PUBLIC_USE_MOCK_DB: z
+      .string()
+      .optional()
+      .transform((s) => s === "true" || s === "1"),
   },
   // If you're using Next.js < 13.4.4, you'll need to specify the runtimeEnv manually
   runtimeEnv: {
@@ -36,8 +44,10 @@ export const env = createEnv({
     // AUTH_TWITTER_ID: process.env.AUTH_TWITTER_ID,
     // AUTH_TWITTER_SECRET: process.env.AUTH_TWITTER_SECRET,
     NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY,
+    NEXT_PUBLIC_USE_MOCK_DB: process.env.NEXT_PUBLIC_USE_MOCK_DB,
     WEB_PUSH_VAPID_PRIVATE_KEY: process.env.WEB_PUSH_VAPID_PRIVATE_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
+    USE_MOCK_DB: process.env.USE_MOCK_DB,
     // INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
     // INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
   },

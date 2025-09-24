@@ -1,3 +1,4 @@
+import { env } from "@/env";
 import { api } from "@/trpc/react";
 import { useState } from "react";
 import type { AlphaTx, AlphaTxInstruction, AlphaTxResult, TokenRegistry } from "../types";
@@ -37,12 +38,27 @@ export function useExecuteInstruction() {
     setTransferError(null);
 
     try {
+      // In mock mode, don't call backend; simulate success immediately
+      if (env.NEXT_PUBLIC_USE_MOCK_DB) {
+        // Validate basic amounts
+        const fromAmount = instruction.fromAmount && Number(instruction.fromAmount) > 0 ? instruction.fromAmount : "1";
+        const toAmount = instruction.toAmount && Number(instruction.toAmount) > 0 ? instruction.toAmount : fromAmount;
+        return {
+          success: true,
+          txHash: `sim-tx-${Date.now()}`,
+        };
+      }
       if (instruction.type === "swap") {
         const result = await transfer.mutateAsync({
           fromToken: instruction.fromToken.symbol,
           toToken: instruction.toToken.symbol,
-          fromAmount: instruction.fromAmount || "0",
-          toAmount: instruction.toAmount || "0",
+          fromAmount: instruction.fromAmount && Number(instruction.fromAmount) > 0 ? instruction.fromAmount : "1",
+          toAmount:
+            instruction.toAmount && Number(instruction.toAmount) > 0
+              ? instruction.toAmount
+              : instruction.fromAmount && Number(instruction.fromAmount) > 0
+                ? instruction.fromAmount
+                : "1",
           walletAddress,
         });
 

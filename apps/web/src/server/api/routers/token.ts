@@ -48,10 +48,13 @@ export const tokenRouter = createTRPCRouter({
    * GET /api/tokens
    */
   getAllTokens: publicProcedure.query(async ({ ctx }) => {
+    if (ctx.useMockDb && ctx.mock) {
+      const tokens = await ctx.mock.getAllTokens();
+      return tokens.sort((a, b) => a.symbol.localeCompare(b.symbol));
+    }
     const tokens = await ctx.db.query.tokensTable.findMany({
       orderBy: [tokensTable.symbol],
     });
-
     return tokens;
   }),
 
@@ -60,10 +63,12 @@ export const tokenRouter = createTRPCRouter({
    * GET /api/tokens/:symbol
    */
   getTokenBySymbol: publicProcedure.input(z.object({ symbol: z.string() })).query(async ({ ctx, input }) => {
+    if (ctx.useMockDb && ctx.mock) {
+      return await ctx.mock.getTokenBySymbol(input.symbol);
+    }
     const token = await ctx.db.query.tokensTable.findFirst({
       where: eq(tokensTable.symbol, input.symbol),
     });
-
     return token;
   }),
 
@@ -72,10 +77,12 @@ export const tokenRouter = createTRPCRouter({
    * GET /api/tokens/address/:address
    */
   getTokenByAddress: publicProcedure.input(z.object({ address: z.string() })).query(async ({ ctx, input }) => {
+    if (ctx.useMockDb && ctx.mock) {
+      return await ctx.mock.getTokenByAddress(input.address);
+    }
     const token = await ctx.db.query.tokensTable.findFirst({
       where: eq(tokensTable.address, input.address),
     });
-
     return token;
   }),
 
@@ -91,6 +98,16 @@ export const tokenRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      if (ctx.useMockDb && ctx.mock) {
+        const rows = await ctx.mock.getTokenPrices(input.tokenAddresses);
+        // Mimic shape of drizzle with token relation
+        return rows.slice(0, input.limit).map((r) => ({
+          tokenAddress: r.tokenAddress,
+          priceUsd: r.priceUsd,
+          lastUpdated: r.lastUpdated,
+          token: r.token,
+        }));
+      }
       // If tokenAddresses is provided, get prices for specific tokens
       if (input.tokenAddresses && input.tokenAddresses.length > 0) {
         const prices = await ctx.db.query.tokenPricesTable.findMany({
@@ -103,7 +120,6 @@ export const tokenRouter = createTRPCRouter({
         });
         return prices;
       }
-
       // Otherwise, get prices for all tokens with limit
       const prices = await ctx.db.query.tokenPricesTable.findMany({
         limit: input.limit,
@@ -112,7 +128,6 @@ export const tokenRouter = createTRPCRouter({
           token: true,
         },
       });
-
       return prices;
     }),
 
@@ -120,7 +135,7 @@ export const tokenRouter = createTRPCRouter({
    * Get token types
    * GET /api/tokens/types
    */
-  getTokenTypes: publicProcedure.query(async ({ ctx }) => {
+  getTokenTypes: publicProcedure.query(async () => {
     // In a real implementation, this would query distinct types from the database
     // For simplicity, we'll return the predefined types
     return [
@@ -143,12 +158,15 @@ export const tokenRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      if (ctx.useMockDb && ctx.mock) {
+        const tokens = (await ctx.mock.getAllTokens()).filter((t) => t.type === input.type);
+        return tokens.sort((a, b) => a.symbol.localeCompare(b.symbol)).slice(0, input.limit);
+      }
       const tokens = await ctx.db.query.tokensTable.findMany({
         where: eq(tokensTable.type, input.type),
         limit: input.limit,
         orderBy: [tokensTable.symbol],
       });
-
       return tokens;
     }),
   transfer: publicProcedure
@@ -163,32 +181,78 @@ export const tokenRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { fromToken, toToken, fromAmount, toAmount, walletAddress } = input;
-
+      if (ctx.useMockDb && ctx.mock) {
+        const user = (await ctx.mock.getUserByWallet(walletAddress)) ?? (await ctx.mock.ensureUser(walletAddress));
+        const fromInfo = await ctx.mock.getTokenBySymbol(fromToken);
+        const toInfo = await ctx.mock.getTokenBySymbol(toToken);
+        if (!fromInfo) throw new TokenError(`From token not found: ${fromToken}`, ErrorCodes.TOKEN_NOT_FOUND);
+        if (!toInfo) throw new TokenError(`To token not found: ${toToken}`, ErrorCodes.TOKEN_NOT_FOUND);
+        const fromAmountBN = new BigNumber(fromAmount || "0");
+        const toAmountBN = new BigNumber(toAmount || "0");
+        if (
+          fromAmountBN.isNaN() ||
+          toAmountBN.isNaN() ||
+          fromAmountBN.isLessThanOrEqualTo(0) ||
+          toAmountBN.isLessThanOrEqualTo(0)
+        ) {
+          throw new TokenError("Invalid amount", ErrorCodes.INVALID_AMOUNT);
+        }
+        const balances = await ctx.mock.getUserBalances(user.id);
+        const fromBal = balances.find((b) => b.tokenAddress === fromInfo.address);
+        if (!fromBal || new BigNumber(fromBal.balance).isLessThan(fromAmountBN)) {
+          throw new TokenError("Insufficient balance for fromToken", ErrorCodes.INSUFFICIENT_BALANCE);
+        }
+        const newFrom = new BigNumber(fromBal.balance).minus(fromAmountBN).toString();
+        await ctx.mock.updateUserBalance(user.id, fromInfo.address, newFrom);
+        const toBal = balances.find((b) => b.tokenAddress === toInfo.address);
+        const newTo = (toBal ? new BigNumber(toBal.balance) : new BigNumber(0)).plus(toAmountBN).toString();
+        await ctx.mock.upsertBalance(user.id, toInfo.address, newTo);
+        await ctx.mock.createTransaction({
+          userId: user.id,
+          transactionType: "swap",
+          fromTokenAddress: fromInfo.address,
+          toTokenAddress: toInfo.address,
+          amountFrom: fromAmountBN.toString(),
+          amountTo: toAmountBN.toString(),
+          fee: "0",
+          details: {},
+        });
+        return {
+          success: true,
+          message: "Transfer successful",
+          txHash: `sim-tx-${Date.now()}`,
+          transaction: {
+            fromToken: fromInfo.symbol,
+            toToken: toInfo.symbol,
+            fromAmount: fromAmountBN.toString(),
+            toAmount: toAmountBN.toString(),
+          },
+          balances: {
+            fromTokenBalance: newFrom,
+            toTokenBalance: newTo,
+          },
+        };
+      }
       return ctx.db
         .transaction(async (tx) => {
           const user = await tx.query.usersTable.findFirst({
             where: eq(usersTable.walletAddress, walletAddress),
           });
-
           if (!user) {
             throw new TokenError("User not found", ErrorCodes.USER_NOT_FOUND);
           }
-
           const [fromTokenInfo, toTokenInfo] = await Promise.all([
             tx.query.tokensTable.findFirst({ where: eq(tokensTable.symbol, fromToken) }),
             tx.query.tokensTable.findFirst({ where: eq(tokensTable.symbol, toToken) }),
           ]);
-
           if (!fromTokenInfo) {
             throw new TokenError(`From token not found: ${fromToken}`, ErrorCodes.TOKEN_NOT_FOUND);
           }
           if (!toTokenInfo) {
             throw new TokenError(`To token not found: ${toToken}`, ErrorCodes.TOKEN_NOT_FOUND);
           }
-
           const fromAmountBN = new BigNumber(fromAmount || "0");
           const toAmountBN = new BigNumber(toAmount || "0");
-
           if (
             fromAmountBN.isNaN() ||
             toAmountBN.isNaN() ||
@@ -197,19 +261,15 @@ export const tokenRouter = createTRPCRouter({
           ) {
             throw new TokenError("Invalid amount", ErrorCodes.INVALID_AMOUNT);
           }
-
           const fromBalance = await tx.query.userBalancesTable.findFirst({
             where: and(
               eq(userBalancesTable.userId, user.id),
               eq(userBalancesTable.tokenAddress, fromTokenInfo.address),
             ),
           });
-
           if (!fromBalance || new BigNumber(fromBalance.balance).isLessThan(fromAmountBN)) {
             throw new TokenError("Insufficient balance for fromToken", ErrorCodes.INSUFFICIENT_BALANCE);
           }
-
-          // Record the transaction
           await tx.insert(transactionsTable).values({
             userId: user.id,
             fromTokenAddress: fromTokenInfo.address,
@@ -218,19 +278,14 @@ export const tokenRouter = createTRPCRouter({
             amountTo: toAmountBN.toString(),
             transactionType: "swap",
           });
-
-          // Update fromToken balance
           const newFromBalance = new BigNumber(fromBalance.balance).minus(fromAmountBN);
           await tx
             .update(userBalancesTable)
             .set({ balance: newFromBalance.toString() })
             .where(eq(userBalancesTable.id, fromBalance.id));
-
-          // Update toToken balance
           let toBalance = await tx.query.userBalancesTable.findFirst({
             where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, toTokenInfo.address)),
           });
-
           let finalToTokenBalance;
           if (toBalance) {
             const newToBalance = new BigNumber(toBalance.balance).plus(toAmountBN);
@@ -247,7 +302,6 @@ export const tokenRouter = createTRPCRouter({
             });
             finalToTokenBalance = toAmountBN.toString();
           }
-
           return {
             success: true,
             message: "Transfer successful",
@@ -265,11 +319,10 @@ export const tokenRouter = createTRPCRouter({
           };
         })
         .catch((error) => {
-          // Catch block for the transaction
           console.error("Transfer failed within transaction:", error);
           if (error instanceof TokenError) {
             throw new TRPCError({
-              code: "BAD_REQUEST", // Or appropriate TRPC error code based on TokenError.code
+              code: "BAD_REQUEST",
               message: error.message,
               cause: error,
             });
@@ -292,63 +345,73 @@ export const tokenRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { fromToken: baseTokenSymbol, toToken: lstTokenSymbol, amount, walletAddress } = input;
+      if (ctx.useMockDb && ctx.mock) {
+        const user = (await ctx.mock.getUserByWallet(walletAddress)) ?? (await ctx.mock.ensureUser(walletAddress));
+        const baseToken = await ctx.mock.getTokenBySymbol(baseTokenSymbol);
+        const lstToken = await ctx.mock.getTokenBySymbol(lstTokenSymbol);
+        if (!baseToken) throw new Error(`Base token ${baseTokenSymbol} not found`);
+        if (!lstToken || lstToken.type !== "liquid_staking") throw new Error(`LST token ${lstTokenSymbol} not found`);
+        const amountBN = new BigNumber(amount || "0");
+        if (amountBN.isNaN()) throw new Error("Invalid amount format");
+        if (amountBN.isLessThanOrEqualTo(0)) throw new Error("Amount must be greater than 0");
+        const balances = await ctx.mock.getUserBalances(user.id);
+        const baseBal = balances.find((b) => b.tokenAddress === baseToken.address);
+        const currentBase = new BigNumber(baseBal?.balance || "0");
+        if (currentBase.isLessThan(amountBN)) throw new Error(`Insufficient balance for ${baseTokenSymbol}`);
+        await ctx.mock.updateUserBalance(user.id, baseToken.address, currentBase.minus(amountBN).toString());
+        const lstBal = balances.find((b) => b.tokenAddress === lstToken.address);
+        const newLst = (lstBal ? new BigNumber(lstBal.balance) : new BigNumber(0)).plus(amountBN).toString();
+        await ctx.mock.upsertBalance(user.id, lstToken.address, newLst);
+        await ctx.mock.createTransaction({
+          userId: user.id,
+          transactionType: "stake",
+          fromTokenAddress: baseToken.address,
+          toTokenAddress: lstToken.address,
+          amountFrom: amountBN.toString(),
+          amountTo: amountBN.toString(),
+          fee: "0",
+          details: { ...input, status: "completed" },
+        });
+        return { success: true, txHash: `sim-tx-${Date.now()}` };
+      }
 
       const user = await ctx.db.query.usersTable.findFirst({
         where: eq(usersTable.walletAddress, walletAddress),
       });
-
-      // Add user existence check here
       if (!user) {
         throw new TokenError("User not found for staking", ErrorCodes.USER_NOT_FOUND);
       }
-
-      // ベーストークン（例：SOL）の情報を取得
       const baseToken = await ctx.db.query.tokensTable.findFirst({
         where: eq(tokensTable.symbol, baseTokenSymbol),
       });
-
       if (!baseToken) {
         throw new Error(`Base token ${baseTokenSymbol} not found`);
       }
-
-      // LSTトークン（例：jupSOL）の情報を取得
       const lstToken = await ctx.db.query.tokensTable.findFirst({
         where: and(eq(tokensTable.symbol, lstTokenSymbol), eq(tokensTable.type, "liquid_staking")),
       });
-
       if (!lstToken) {
         throw new Error(`LST token ${lstTokenSymbol} not found`);
       }
-
       const interestRate = "5.0";
       const amountBN = new BigNumber(amount || "0");
-
       if (amountBN.isNaN()) {
         throw new Error("Invalid amount format");
       }
-
       if (amountBN.isLessThanOrEqualTo(0)) {
         throw new Error("Amount must be greater than 0");
       }
-
       try {
-        // 1. ベーストークンの残高を確認
         const baseBalanceRecord = await ctx.db.query.userBalancesTable.findFirst({
           where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, baseToken.address)),
         });
-
         if (!baseBalanceRecord) {
           throw new Error(`No balance record found for ${baseTokenSymbol}`);
         }
-
         const currentBaseBalance = new BigNumber(baseBalanceRecord.balance || "0");
-
-        // 2. 残高の検証
         if (currentBaseBalance.isLessThan(amountBN)) {
           throw new Error(`Insufficient balance for ${baseTokenSymbol}`);
         }
-
-        // 3. トランザクションを記録
         const transaction = (
           await ctx.db
             .insert(transactionsTable)
@@ -367,26 +430,19 @@ export const tokenRouter = createTRPCRouter({
             })
             .returning()
         )[0];
-
         if (!transaction) {
           throw new Error("Failed to create transaction record");
         }
-
         try {
-          // 4. ベーストークンの残高を減少
           const newBaseBalance = currentBaseBalance.minus(amountBN).toString();
           await ctx.db
             .update(userBalancesTable)
             .set({ balance: newBaseBalance, updatedAt: new Date() })
             .where(eq(userBalancesTable.id, baseBalanceRecord.id));
-
-          // 5. LSTの残高を取得または作成
           let lstBalanceRecord = await ctx.db.query.userBalancesTable.findFirst({
             where: and(eq(userBalancesTable.userId, user.id), eq(userBalancesTable.tokenAddress, lstToken.address)),
           });
-
           if (lstBalanceRecord) {
-            // 既存のLST残高を更新
             const currentLstBalance = new BigNumber(lstBalanceRecord.balance || "0");
             const newLstBalance = currentLstBalance.plus(amountBN).toString();
             await ctx.db
@@ -394,7 +450,6 @@ export const tokenRouter = createTRPCRouter({
               .set({ balance: newLstBalance, updatedAt: new Date() })
               .where(eq(userBalancesTable.id, lstBalanceRecord.id));
           } else {
-            // 新しいLST残高レコードを作成
             await ctx.db.insert(userBalancesTable).values({
               userId: user.id,
               tokenAddress: lstToken.address,
@@ -402,8 +457,6 @@ export const tokenRouter = createTRPCRouter({
               updatedAt: new Date(),
             });
           }
-
-          // 6. 投資記録を作成
           await ctx.db.insert(investmentsTable).values({
             userId: user.id,
             tokenAddress: baseToken.address,
@@ -415,8 +468,6 @@ export const tokenRouter = createTRPCRouter({
             interestRate: parseFloat(interestRate),
             status: "active",
           });
-
-          // 7. トランザクションステータスを更新
           await ctx.db
             .update(transactionsTable)
             .set({
@@ -426,13 +477,11 @@ export const tokenRouter = createTRPCRouter({
               },
             })
             .where(eq(transactionsTable.id, transaction.id));
-
           return {
             success: true,
             txHash: `sim-tx-${Date.now()}`,
           };
         } catch (error) {
-          // トランザクションステータスを更新
           await ctx.db
             .update(transactionsTable)
             .set({
@@ -443,7 +492,6 @@ export const tokenRouter = createTRPCRouter({
               },
             })
             .where(eq(transactionsTable.id, transaction.id));
-
           throw error;
         }
       } catch (error) {

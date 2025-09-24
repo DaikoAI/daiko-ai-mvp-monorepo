@@ -54,6 +54,10 @@ export const pushRouter = createTRPCRouter({
     // 3. Insert the new subscription into the database.
 
     try {
+      if (ctx.useMockDb && ctx.mock) {
+        await ctx.mock.updateUserPartial(userId, { notificationEnabled: true });
+        return { success: true };
+      }
       // Example: Insert or update logic (using endpoint as unique identifier)
       await ctx.db
         .insert(pushSubscriptionTable)
