@@ -14,9 +14,9 @@ export const usersRouter = createTRPCRouter({
     const user: UserSelect | null =
       ctx.useMockDb && ctx.mock
         ? await ctx.mock.getUserByWallet(input.walletAddress)
-        : await ctx.db.query.usersTable.findFirst({
+        : (await ctx.db.query.usersTable.findFirst({
             where: eq(usersTable.walletAddress, input.walletAddress),
-          });
+          })) ?? null;
 
     return user;
   }),
@@ -41,9 +41,9 @@ export const usersRouter = createTRPCRouter({
       const existingUser: UserSelect | null =
         ctx.useMockDb && ctx.mock
           ? await ctx.mock.getUserByWallet(input.walletAddress)
-          : await ctx.db.query.usersTable.findFirst({
+          : (await ctx.db.query.usersTable.findFirst({
               where: eq(usersTable.walletAddress, input.walletAddress),
-            });
+            })) ?? null;
 
       if (existingUser) {
         return existingUser;
@@ -83,9 +83,9 @@ export const usersRouter = createTRPCRouter({
     const user: UserSelect | null =
       ctx.useMockDb && ctx.mock
         ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
-        : await ctx.db.query.usersTable.findFirst({
+        : (await ctx.db.query.usersTable.findFirst({
             where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-          });
+          })) ?? null;
 
     if (!user) {
       throw new Error("User not found");
@@ -125,9 +125,9 @@ export const usersRouter = createTRPCRouter({
       const user: UserSelect | null =
         ctx.useMockDb && ctx.mock
           ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
-          : await ctx.db.query.usersTable.findFirst({
+          : (await ctx.db.query.usersTable.findFirst({
               where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-            });
+            })) ?? null;
 
       if (!user) {
         throw new Error("User not found");
@@ -186,9 +186,9 @@ export const usersRouter = createTRPCRouter({
       const user: UserSelect | null =
         ctx.useMockDb && ctx.mock
           ? await ctx.mock.getUserByWallet(ctx.session.user.walletAddress)
-          : await ctx.db.query.usersTable.findFirst({
+          : (await ctx.db.query.usersTable.findFirst({
               where: eq(usersTable.walletAddress, ctx.session.user.walletAddress),
-            });
+            })) ?? null;
 
       if (!user) {
         throw new Error("User not found");
